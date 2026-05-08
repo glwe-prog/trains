@@ -190,7 +190,12 @@
   // estimated if passing (BDM→WBO ≈ 11 min, KTR→WBO ≈ 6 min).
 
   const REFRESH_MS  = 60_000;
+  const DISPLAY_MS  = 15_000;   // how often to re-filter cached data without an API call
   const EMR_CODE    = 'EM';
+
+  // Cache of all upcoming trains, kept between API refreshes
+  let cachedNorth = [];
+  let cachedSouth = [];
 
   // Approximate travel time in minutes from query station to Wellingborough
   const NORTH_STA = { crs: 'BDM', offsetMins: 11 };  // Bedford  → WBO
@@ -365,14 +370,11 @@ ${badge}
         .filter(e => toMins(e.wboTime) >= nowMins)
         .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
 
-      renderPanel(northbound[0] || null, 'north-body');
-      renderPanel(southbound[0] || null, 'south-body');
+      // Store full lists so the display timer can re-filter without an API call
+      cachedNorth = northbound;
+      cachedSouth = southbound;
 
-      requestAnimationFrame(() => requestAnimationFrame(initMarquees));
-
-      document.getElementById('footer').textContent =
-        `Updated ${new Date().toLocaleTimeString('en-GB')} · `
-        + `${northbound.length} northbound, ${southbound.length} southbound · Auto-refresh 60s`;
+      updateDisplay();
 
     } catch (err) {
       const msg = `<div class="state">DATA ERROR — retrying in 30s</div>`;
@@ -385,12 +387,31 @@ ${badge}
     }
   }
 
+  // ── Re-filter cached data and repaint — no API call needed ───────────
+  function updateDisplay() {
+    const nowMins = toMins(new Date().toLocaleTimeString('en-GB',
+      { hour: '2-digit', minute: '2-digit' }));
+
+    const north = cachedNorth.filter(e => toMins(e.wboTime) >= nowMins);
+    const south = cachedSouth.filter(e => toMins(e.wboTime) >= nowMins);
+
+    renderPanel(north[0] || null, 'north-body');
+    renderPanel(south[0] || null, 'south-body');
+
+    requestAnimationFrame(() => requestAnimationFrame(initMarquees));
+
+    document.getElementById('footer').textContent =
+      `Updated ${new Date().toLocaleTimeString('en-GB')} · `
+      + `${north.length} northbound, ${south.length} southbound · Auto-refresh 60s`;
+  }
+
   function tick() {
     document.getElementById('clock').textContent =
       new Date().toLocaleTimeString('en-GB');
   }
 
   setInterval(tick, 1000);
+  setInterval(updateDisplay, DISPLAY_MS);   // re-filter every 15s, no API call
   tick();
   refresh();
   setInterval(refresh, REFRESH_MS);
