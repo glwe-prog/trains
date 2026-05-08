@@ -187,10 +187,7 @@
 
 <script>
   // ── Strategy ───────────────────────────────────────────────────────
-  // All data comes from the Realtime Trains NG API (data.rtt.io).
-  // We query the neighbouring stations Bedford (northbound) and Kettering
-  // (southbound) to see ALL trains passing Wellingborough, including
-  // expresses that don't stop there.
+  // Darwin only knows about trains that STOP at a station.
   // To see ALL trains passing Wellingborough (including expresses that
   // don't stop), we query the neighbouring stations:
   //   NORTHBOUND — query Bedford (BDM): northbound departures that will
@@ -201,31 +198,23 @@
   // (it stops) or not (it passes through). Times are exact if stopping,
   // estimated if passing (BDM→WBO ≈ 11 min, KTR→WBO ≈ 6 min).
 
-  const REFRESH_MS = 60_000;
-  const DISPLAY_MS = 15_000;
-  const EMR_CODE   = 'EM';
-  const RTT_TOKEN  = '06d0b3b2-b937-4c50-b375-38fb18e201cb';
-  const RTT_BASE   = 'https://data.rtt.io';
+  const REFRESH_MS  = 60_000;
+  const DISPLAY_MS  = 15_000;   // how often to re-filter cached data without an API call
+  const EMR_CODE    = 'EM';
 
-  // Neighbouring stations queried to capture all pass-through trains
-  const NORTH_STA = { crs: 'BDM', offsetMins: 11 };  // Bedford  → WEL
-  const SOUTH_STA = { crs: 'KET', offsetMins:  6 };  // Kettering → WEL
-
+  // Cache of all upcoming trains, kept between API refreshes
   let cachedNorth = [];
   let cachedSouth = [];
 
-  // Service detail cache: uniqueIdentity → full RTT service response
-  const svcCache = new Map();
+  // Approximate travel time in minutes from query station to Wellingborough
+  const NORTH_STA = { crs: 'BDM', offsetMins: 11 };  // Bedford  → WBO
+  const SOUTH_STA = { crs: 'KET', offsetMins:  6 };  // Kettering → WBO
 
-  // ── Helpers ────────────────────────────────────────────────────────
-  const rttHdr = () => ({ Authorization: `Bearer ${RTT_TOKEN}` });
-
-  function isoToHHMM(iso) {
-    if (!iso) return null;
-    const m = iso.match(/T(\d{2}):(\d{2})/);
-    return m ? `${m[1]}:${m[2]}` : null;
+  function apiUrl(crs) {
+    return `https://huxley2.azurewebsites.net/departures/${crs}/20?expand=true`;
   }
 
+  // ── Helpers ────────────────────────────────────────────────────────
   function addMins(timeStr, mins) {
     try {
       const [h, m] = timeStr.split(':').map(Number);
@@ -239,183 +228,72 @@
     catch (_) { return 0; }
   }
 
-  function nowHHMM() {
-    return new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
-  }
-
-  // ── Direction detection ────────────────────────────────────────────
+  // Is this train heading north (towards Leicester / Nottingham)?
+  // Check destination name — more reliable than CRS code sets.
   function isNorthbound(svc) {
-    const dest = (svc.destination?.[0]?.location?.description || '').toLowerCase();
-    return /leicester|nottingham|sheffield|derby|loughborough|kettering|corby|market harborough|chesterfield/.test(dest);
+    const dest = (svc.destination?.[0]?.locationName || '').toLowerCase();
+    return /leicester|nottingham|sheffield|derby|loughborough|kettering|corby|market harborough|chesterfield|long eaton|beeston/.test(dest);
   }
 
+  // Is this train heading south (towards London)?
   function isSouthbound(svc) {
-    const dest = (svc.destination?.[0]?.location?.description || '').toLowerCase();
+    const dest = (svc.destination?.[0]?.locationName || '').toLowerCase();
     return /london|pancras|bedford|luton|st albans|flitwick|harlington|leagrave/.test(dest);
   }
 
-  // ── Rolling stock ──────────────────────────────────────────────────
-  function classToLabel(cls) {
-    const c = (cls || '').toString().trim();
-    if (c.startsWith('810')) return 'Class 810 Aurora';
-    if (c.startsWith('222')) return 'Class 222 Meridian';
-    if (c.startsWith('360')) return 'Class 360 Desiro';
-    if (c.startsWith('158')) return 'Class 158 Express Sprinter';
-    if (c.startsWith('180')) return 'Class 180 Adelante';
-    if (c) return `Class ${c}`;
-    return null;
+  function getClass(svc) {
+    const stops = (svc.subsequentCallingPoints?.[0]?.callingPoint || []).length;
+    const dest  = (svc.destination?.[0]?.locationName || '').toLowerCase();
+    const fast  = stops <= 6
+      || dest.includes('sheffield') || dest.includes('nottingham')
+      || dest.includes('st pancras') || dest.includes('derby');
+    return fast ? 'Class 810 Aurora / 222 Meridian' : 'Class 158 Express Sprinter';
   }
 
-  function parseAllocationLabel(alloc) {
-    if (!alloc) return null;
-    const label = alloc.leadingClass ? classToLabel(alloc.leadingClass) : null;
-    const units = (alloc.allocationItems || [])
-      .map(u => (u.identity || '').toString().trim())
-      .filter(Boolean)
-      .map(id => id.replace(/^(\d{3})(\d+)$/, '$1 $2'));
-    if (!label && !units.length) return null;
-    if (label && units.length) return `${label} · ${units.join(' + ')}`;
-    if (label) return label;
-    const first = (alloc.allocationItems?.[0]?.identity || '').toString();
-    return first ? classToLabel(first.substring(0, 3)) : null;
-  }
-
-  // Heuristic fallback when RTT has no allocation data
-  function heuristicClass(svc, detail) {
-    const dest  = (svc.destination?.[0]?.location?.description || '').toLowerCase();
-    const orig  = (svc.origin?.[0]?.location?.description || '').toLowerCase();
-    const stops = detail
-      ? (detail.service?.locations || []).filter(l => {
-          const d = l.temporalData?.displayAs;
-          return d === 'CALL' || d === 'STARTS' || d === 'TERMINATES';
-        }).length
-      : 0;
-    const is360 = dest.includes('corby') || orig.includes('corby')
-      || (dest.includes('bedford') && stops >= 3)
-      || (orig.includes('bedford') && stops >= 3
-          && !dest.includes('pancras') && !dest.includes('nottingham')
-          && !dest.includes('sheffield') && !dest.includes('derby'));
-    if (is360) return 'Class 360 Desiro';
-    return 'Class 810 or 222';
-  }
-
-  function resolveClass(svc, detail) {
-    const label = parseAllocationLabel(detail?.service?.allocationData?.[0]);
-    return label || heuristicClass(svc, detail);
-  }
-
-  // ── Status / timing labels ─────────────────────────────────────────
-  function getStatus(enriched) {
-    if (enriched.isCancelled) return { text: 'CANCELLED', cls: 'cancelled' };
-    if (enriched.welLoc) {
-      if (enriched.welLoc.temporalData?.departure?.isCancelled ||
-          enriched.welLoc.temporalData?.arrival?.isCancelled)
-        return { text: 'CANCELLED', cls: 'cancelled' };
-      const sched = isoToHHMM(enriched.welLoc.temporalData?.departure?.scheduleAdvertised)
-                 || isoToHHMM(enriched.welLoc.temporalData?.arrival?.scheduleAdvertised);
-      const live  = isoToHHMM(enriched.welLoc.temporalData?.departure?.realtimeForecast)
-                 || isoToHHMM(enriched.welLoc.temporalData?.arrival?.realtimeForecast);
-      if (live && sched && live !== sched) return { text: `Exp ${live}`, cls: 'late' };
-      return { text: 'On time', cls: 'ontime' };
+  function getStatus(svc, wboEntry) {
+    if (svc.isCancelled) return { text: 'CANCELLED', cls: 'cancelled' };
+    if (wboEntry) {
+      const at = wboEntry.at || '';
+      if (!at || at === 'On time') return { text: 'On time',  cls: 'ontime' };
+      if (at === 'Cancelled')      return { text: 'Cancelled', cls: 'cancelled' };
+      return { text: `Exp ${at}`, cls: 'late' };
     }
-    const sched = isoToHHMM(enriched.svc.temporalData?.departure?.scheduleAdvertised);
-    const live  = isoToHHMM(enriched.svc.temporalData?.departure?.realtimeForecast
-                          || enriched.svc.temporalData?.departure?.realtimeActual);
-    if (live && sched && live !== sched) return { text: 'Delayed', cls: 'late' };
-    return { text: 'On time', cls: 'ontime' };
+    // No WBO entry — use overall service status
+    const est = svc.etd || svc.eta || '';
+    if (!est || est === 'On time') return { text: 'On time', cls: 'ontime' };
+    if (est === 'Cancelled')       return { text: 'Cancelled', cls: 'cancelled' };
+    return { text: `Exp ${est}`, cls: 'late' };
   }
 
-  function expLabel(enriched) {
-    if (enriched.isCancelled) return { text: 'Cancelled', cls: 'late' };
-    if (enriched.welLoc) {
-      const sched = isoToHHMM(enriched.welLoc.temporalData?.departure?.scheduleAdvertised)
-                 || isoToHHMM(enriched.welLoc.temporalData?.arrival?.scheduleAdvertised);
-      const live  = isoToHHMM(enriched.welLoc.temporalData?.departure?.realtimeForecast)
-                 || isoToHHMM(enriched.welLoc.temporalData?.arrival?.realtimeForecast);
-      if (live && sched && live !== sched) return { text: `Exp ${live}`, cls: 'late' };
-      return { text: `Exp ${enriched.wboTime}`, cls: 'ontime' };
+  function expLabel(wboTime, wboEntry, svc) {
+    if (svc.isCancelled) return { text: 'Cancelled', cls: 'late' };
+    if (wboEntry) {
+      const at = wboEntry.at || '';
+      if (!at || at === 'On time') return { text: `Exp ${wboTime}`, cls: 'ontime' };
+      if (at === 'Cancelled')      return { text: 'Cancelled', cls: 'late' };
+      return { text: `Exp ${at}`, cls: 'late' };
     }
-    return { text: `~${enriched.wboTime} est`, cls: '' };
+    return { text: `~${wboTime} est`, cls: '' };
   }
 
-  // ── Build enriched record ──────────────────────────────────────────
-  // Combines a location-lineup entry with its service detail (if cached).
-  function buildEnriched(svc, crs, offsetMins, detail) {
-    const uid        = svc.scheduleMetadata?.uniqueIdentity;
-    const deptTime   = isoToHHMM(svc.temporalData?.departure?.scheduleAdvertised) || '??:??';
-    const isCancelled = !!svc.temporalData?.departure?.isCancelled;
-    const dest       = (svc.destination?.[0]?.location?.description || 'Unknown').toUpperCase();
+  // ── Enrich a service with WBO passing/stop data ────────────────────
+  function enrichWithWBO(svc, offsetMins) {
+    const deptTime = svc.std || svc.etd || '??:??';
+    const cp       = svc.subsequentCallingPoints?.[0]?.callingPoint || [];
+    const wboEntry = cp.find(p => p.crs === 'WEL');
 
-    let wboTime, welLoc, stopsAtWBO, callingStr;
+    const wboTime  = wboEntry ? wboEntry.st : addMins(deptTime, offsetMins);
+    const stopsAtWBO = !!wboEntry;
 
-    if (detail) {
-      const locs = detail.service?.locations || [];
-      welLoc = locs.find(l =>
-        l.location?.shortCodes?.includes('WEL') &&
-        l.temporalData?.displayAs !== 'PASS'
-      );
-      wboTime = welLoc
-        ? (isoToHHMM(welLoc.temporalData?.departure?.scheduleAdvertised)
-           || isoToHHMM(welLoc.temporalData?.arrival?.scheduleAdvertised)
-           || addMins(deptTime, offsetMins))
-        : addMins(deptTime, offsetMins);
-      stopsAtWBO = !!welLoc;
-      callingStr = locs
-        .filter(l => l.temporalData?.displayAs === 'CALL'
-                  || l.temporalData?.displayAs === 'TERMINATES')
-        .map(l => l.location?.description)
-        .filter(Boolean)
-        .join('   ·   ');
-    } else {
-      wboTime    = addMins(deptTime, offsetMins);
-      welLoc     = null;
-      stopsAtWBO = false;
-      callingStr = '';
-    }
+    // Calling points to show: all stops AFTER the origin station
+    const callingStr = cp.map(p => p.locationName).join('   ·   ');
 
-    const classLabel = resolveClass(svc, detail);
-
-    return { uid, svc, detail, crs, offsetMins, wboTime, welLoc,
-             stopsAtWBO, callingStr, classLabel, dest, deptTime, isCancelled };
-  }
-
-  // ── Service detail fetch ───────────────────────────────────────────
-  async function fetchDetail(uid) {
-    try {
-      const res = await fetch(
-        `${RTT_BASE}/gb-nr/service?uniqueIdentity=${encodeURIComponent(uid)}`,
-        { headers: rttHdr() }
-      );
-      if (!res.ok) return null;
-      return await res.json();
-    } catch (_) { return null; }
-  }
-
-  // Fetch service detail for all services not already cached.
-  // Sequential with a short gap to stay within RTT's 30 req/min limit.
-  async function fetchMissingDetails(svcs) {
-    for (const svc of svcs) {
-      const uid = svc.scheduleMetadata?.uniqueIdentity;
-      if (!uid || svcCache.has(uid)) continue;
-      const detail = await fetchDetail(uid);
-      if (detail) {
-        svcCache.set(uid, detail);
-        // Update any matching enriched records in the display cache
-        for (const list of [cachedNorth, cachedSouth]) {
-          for (let i = 0; i < list.length; i++) {
-            if (list[i].uid === uid) {
-              const { svc: s, crs, offsetMins } = list[i];
-              list[i] = buildEnriched(s, crs, offsetMins, detail);
-            }
-          }
-        }
-        updateDisplay();
-      }
-      await new Promise(r => setTimeout(r, 250));
-    }
+    return { svc, wboTime, wboEntry, stopsAtWBO, callingStr };
   }
 
   // ── Marquee animation ──────────────────────────────────────────────
+  // Always scrolls calling points (like a real departure board), using the
+  // Web Animations API which is more reliable than CSS transitions.
   function startMarquee(ticker) {
     const text = ticker.querySelector('.calling-text');
     if (!text) return;
@@ -444,9 +322,10 @@
     document.querySelectorAll('.calling-ticker').forEach(startMarquee);
   }
 
-  // ── Render ─────────────────────────────────────────────────────────
+  // Track which train is currently shown per panel to detect changes
   const _shown = {};
 
+  // ── Render ─────────────────────────────────────────────────────────
   function renderPanel(enriched, elId) {
     const el = document.getElementById(elId);
 
@@ -458,22 +337,21 @@
       return;
     }
 
-    const { wboTime, stopsAtWBO, callingStr, classLabel, dest, detail, isCancelled } = enriched;
-    const st  = getStatus(enriched);
-    const exp = expLabel(enriched);
+    const { svc, wboTime, wboEntry, stopsAtWBO, callingStr } = enriched;
+    const dest  = (svc.destination?.[0]?.locationName || 'Unknown').toUpperCase();
+    const cls   = getClass(svc);
+    const st    = getStatus(svc, wboEntry);
+    const exp   = expLabel(wboTime, wboEntry, svc);
+    const badge = stopsAtWBO
+      ? '<span class="stop-badge stops">● STOPS</span>'
+      : '<span class="stop-badge passes">○ PASSES THROUGH</span>';
 
-    // Show "· · ·" while service detail is still loading
-    const badge = detail === null
-      ? '<span class="stop-badge passes">· · ·</span>'
-      : stopsAtWBO
-        ? '<span class="stop-badge stops">● STOPS</span>'
-        : '<span class="stop-badge passes">○ PASSES THROUGH</span>';
-
+    // Key to detect when the displayed train actually changes
     const key = `${wboTime}|${dest}`;
     const trainChanged = _shown[elId] !== key;
     _shown[elId] = key;
 
-    el.innerHTML = `
+    const html = `
 <div class="row1${trainChanged ? ' panel-enter' : ''}">
   <span class="r1-time">${wboTime}</span>
   <span class="r1-dest">${dest}</span>
@@ -487,14 +365,59 @@ ${badge}
   </div>
 </div>
 <div class="row3">
-  <span class="r3-class">${classLabel}</span>
+  <span class="r3-class">${cls}</span>
   <span class="r3-status ${st.cls}">${st.text}</span>
 </div>`;
+
+    el.innerHTML = html;
   }
 
-  // ── Update display from cache ──────────────────────────────────────
+  // ── Fetch & refresh ────────────────────────────────────────────────
+  async function refresh() {
+    try {
+      const [bdmData, ktrData] = await Promise.all([
+        fetch(apiUrl(NORTH_STA.crs)).then(r => r.json()),
+        fetch(apiUrl(SOUTH_STA.crs)).then(r => r.json())
+      ]);
+
+      const nowMins = toMins(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+
+      // Northbound: trains leaving Bedford heading north through Wellingborough
+      const northbound = (bdmData.trainServices || [])
+        .filter(s => s.operatorCode === EMR_CODE && isNorthbound(s))
+        .map(s => enrichWithWBO(s, NORTH_STA.offsetMins))
+        .filter(e => toMins(e.wboTime) >= nowMins)
+        .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
+
+      // Southbound: trains leaving Kettering heading south through Wellingborough
+      const southbound = (ktrData.trainServices || [])
+        .filter(s => s.operatorCode === EMR_CODE && isSouthbound(s))
+        .map(s => enrichWithWBO(s, SOUTH_STA.offsetMins))
+        .filter(e => toMins(e.wboTime) >= nowMins)
+        .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
+
+      // Store full lists so the display timer can re-filter without an API call
+      cachedNorth = northbound;
+      cachedSouth = southbound;
+
+      updateDisplay();
+
+    } catch (err) {
+      const msg = `<div class="state">DATA ERROR — retrying in 30s</div>`;
+      document.getElementById('north-body').innerHTML = msg;
+      document.getElementById('south-body').innerHTML = msg;
+      document.getElementById('footer').textContent =
+        `Error at ${new Date().toLocaleTimeString('en-GB')} — ${err.message}`;
+      // Retry sooner after an error
+      setTimeout(refresh, 30_000);
+    }
+  }
+
+  // ── Re-filter cached data and repaint — no API call needed ───────────
   function updateDisplay() {
-    const nowMins = toMins(nowHHMM());
+    const nowMins = toMins(new Date().toLocaleTimeString('en-GB',
+      { hour: '2-digit', minute: '2-digit' }));
+
     const north = cachedNorth.filter(e => toMins(e.wboTime) >= nowMins);
     const south = cachedSouth.filter(e => toMins(e.wboTime) >= nowMins);
 
@@ -508,54 +431,13 @@ ${badge}
       + `${north.length} northbound, ${south.length} southbound · Auto-refresh 60s`;
   }
 
-  // ── Main refresh ───────────────────────────────────────────────────
-  async function refresh() {
-    try {
-      const [bdmData, ketData] = await Promise.all([
-        fetch(`${RTT_BASE}/gb-nr/location?code=${NORTH_STA.crs}&timeWindow=120`, { headers: rttHdr() }).then(r => r.json()),
-        fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=120`, { headers: rttHdr() }).then(r => r.json()),
-      ]);
-
-      const nowMins = toMins(nowHHMM());
-
-      const northSvcs = (bdmData.services || [])
-        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isNorthbound(s));
-      const southSvcs = (ketData.services || [])
-        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isSouthbound(s));
-
-      // Build enriched records — use cached service detail where available
-      cachedNorth = northSvcs
-        .map(s => buildEnriched(s, NORTH_STA.crs, NORTH_STA.offsetMins,
-                                svcCache.get(s.scheduleMetadata?.uniqueIdentity) ?? null))
-        .filter(e => toMins(e.wboTime) >= nowMins)
-        .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
-
-      cachedSouth = southSvcs
-        .map(s => buildEnriched(s, SOUTH_STA.crs, SOUTH_STA.offsetMins,
-                                svcCache.get(s.scheduleMetadata?.uniqueIdentity) ?? null))
-        .filter(e => toMins(e.wboTime) >= nowMins)
-        .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
-
-      updateDisplay();
-
-      // Background: fetch service detail for any not yet cached
-      fetchMissingDetails([...northSvcs, ...southSvcs]);
-
-    } catch (err) {
-      document.getElementById('north-body').innerHTML = '<div class="state">DATA ERROR — retrying in 30s</div>';
-      document.getElementById('south-body').innerHTML = '<div class="state">DATA ERROR — retrying in 30s</div>';
-      document.getElementById('footer').textContent =
-        `RTT error at ${new Date().toLocaleTimeString('en-GB')} — ${err.message}`;
-      setTimeout(refresh, 30_000);
-    }
-  }
-
   function tick() {
-    document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-GB');
   }
 
   setInterval(tick, 1000);
-  setInterval(updateDisplay, DISPLAY_MS);
+  setInterval(updateDisplay, DISPLAY_MS);   // re-filter every 15s, no API call
   tick();
   refresh();
   setInterval(refresh, REFRESH_MS);
