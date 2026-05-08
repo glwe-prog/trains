@@ -244,10 +244,24 @@
   function getClass(svc) {
     const stops = (svc.subsequentCallingPoints?.[0]?.callingPoint || []).length;
     const dest  = (svc.destination?.[0]?.locationName || '').toLowerCase();
-    const fast  = stops <= 6
+    const orig  = (svc.origin?.[0]?.locationName      || '').toLowerCase();
+
+    // Bedford ↔ Corby stopping service = Class 360 Desiro (4 or 8 car)
+    const is360Route = dest.includes('corby') || orig.includes('corby')
+      || (dest.includes('bedford') && stops >= 3)
+      || (orig.includes('bedford') && stops >= 3 && !dest.includes('pancras')
+          && !dest.includes('nottingham') && !dest.includes('sheffield')
+          && !dest.includes('derby'));
+    if (is360Route) return 'Class 360 Desiro (4 or 8 car)';
+
+    // Fast intercity = Class 810 Aurora or Class 222 Meridian
+    const isFast = stops <= 6
       || dest.includes('sheffield') || dest.includes('nottingham')
       || dest.includes('st pancras') || dest.includes('derby');
-    return fast ? 'Class 810 Aurora / 222 Meridian' : 'Class 158 Express Sprinter';
+    if (isFast) return 'Class 810 Aurora / 222 Meridian';
+
+    // Anything else stopping on the MML
+    return 'Class 360 Desiro';
   }
 
   function getStatus(svc, wboEntry) {
