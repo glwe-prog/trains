@@ -275,16 +275,30 @@
     return iso.replace(':', '');               // already HHMM
   }
 
-  // Extract class label from a RTT NG service entry.
+  // Extract class label (and unit number if known) from a RTT NG service entry.
+  // Returns e.g. "Class 810 Aurora · 810 109"  or  "Class 222 Meridian"  or null.
   function rttNgClassLabel(svc) {
-    // NG API: allocationData.leadingClass  (e.g. "810", "222", "360")
     const alloc = svc.allocationData
                || svc.locationMetadata?.allocationData;
-    if (alloc?.leadingClass) return classToLabel(alloc.leadingClass);
-    // NG API: may be nested in allocationItems[0]
-    const item = alloc?.allocationItems?.[0];
-    if (item?.identity) return classToLabel(item.identity.substring(0, 3));
-    return null;
+    if (!alloc) return null;
+
+    // leadingClass: "810", "222", "360/2" etc.
+    const label = alloc.leadingClass
+      ? classToLabel(alloc.leadingClass)
+      : null;
+
+    // Collect unit numbers from allocationItems
+    const units = (alloc.allocationItems || [])
+      .map(u => (u.identity || '').toString().trim())
+      .filter(Boolean)
+      .map(id => id.replace(/^(\d{3})(\d+)$/, '$1 $2'));  // "810109" → "810 109"
+
+    if (!label && !units.length) return null;
+    if (label && units.length) return `${label} · ${units.join(' + ')}`;
+    if (label) return label;
+    // No leadingClass but have unit id — derive class from first unit
+    const first = (alloc.allocationItems[0].identity || '').toString();
+    return classToLabel(first.substring(0, 3));
   }
 
   // Fetch RTT NG departure board for one station and populate rttClassCache.
