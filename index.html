@@ -310,8 +310,9 @@
     } catch (_) { /* non-fatal */ }
   }
 
-  // Fetch RTT location lineup for a station, then kick off service-detail
-  // fetches for any services not already in the class cache.
+  // Fetch RTT location lineup for a station, then sequentially fetch
+  // service-detail for any services not already in the class cache.
+  // Sequential (not parallel) to avoid flooding the RTT API.
   async function fetchRttClasses(crs) {
     if (!RTT_TOKEN) return;
     try {
@@ -322,18 +323,17 @@
       if (!res.ok) return;
       const data = await res.json();
       const svcs = data.services || [];
-      // For each service: record its uniqueIdentity and fetch class if unknown
-      const fetches = [];
       for (const svc of svcs) {
         const dep = rttNgDep(svc);
         const uid = svc.scheduleMetadata?.uniqueIdentity;
         if (!dep || !uid) continue;
         const key = `${crs}:${dep}`;
         if (!rttClassCache.has(key)) {
-          fetches.push(fetchServiceClass(uid, key));
+          await fetchServiceClass(uid, key);
+          // Small gap between calls — stays well within RTT's 30 req/min limit
+          await new Promise(r => setTimeout(r, 300));
         }
       }
-      await Promise.all(fetches);
     } catch (_) { /* RTT errors are non-fatal */ }
   }
 
