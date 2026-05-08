@@ -302,11 +302,8 @@
       const allocations = data.service?.allocationData || [];
       // Pick the first allocation (formation at origin / before any split)
       const label = parseAllocationLabel(allocations[0]);
-      if (label) {
-        rttClassCache.set(cacheKey, label);
-        // Refresh display immediately so the new class appears without waiting
-        updateDisplay();
-      }
+      if (label) rttClassCache.set(cacheKey, label);
+      // Display updates on next natural 15s tick — no race condition
     } catch (_) { /* non-fatal */ }
   }
 
