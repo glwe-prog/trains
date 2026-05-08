@@ -210,8 +210,7 @@
   const REFRESH_MS = 60_000;
   const DISPLAY_MS = 15_000;
   const EMR_CODE   = 'EM';
-  const RTT_REFRESH = '06d0b3b2-b937-4c50-b375-38fb18e201cb';
-  const RTT_BASE    = 'https://data.rtt.io';
+  const RTT_BASE    = 'https://summer-cloudwrtt-prozy-cee7.glwe.workers.dev';
 
   const NORTH_STA = { crs: 'BDM', offsetMins: 11 };
   const SOUTH_STA = { crs: 'KET', offsetMins:  6 };
@@ -220,27 +219,6 @@
   let cachedSouth = [];
   const svcCache  = new Map();   // uid → service detail (calling points + class)
 
-  // ── Auth: try token exchange, fall back to direct bearer ──────────
-  let _accessToken = null;
-  let _tokenExpiry = 0;
-
-  async function getToken() {
-    if (_accessToken && Date.now() < _tokenExpiry - 30_000) return _accessToken;
-    try {
-      const r = await fetch(`${RTT_BASE}/api/get_access_token`,
-        { headers: { Authorization: `Bearer ${RTT_REFRESH}` } });
-      if (r.ok) {
-        const j = await r.json();
-        _accessToken = j.access_token ?? j.token ?? j.accessToken ?? RTT_REFRESH;
-        _tokenExpiry  = Date.now() + ((j.expires_in ?? 270) * 1000);
-        return _accessToken;
-      }
-    } catch (_) { /* fall through to direct */ }
-    // Token exchange not available — use credential directly
-    _accessToken = RTT_REFRESH;
-    _tokenExpiry  = Date.now() + 3_600_000;
-    return _accessToken;
-  }
 
   // ── Helpers ────────────────────────────────────────────────────────
   function isoToHHMM(iso) {
@@ -281,10 +259,8 @@
   async function fetchDetail(uid) {
     if (svcCache.has(uid)) return svcCache.get(uid);
     try {
-      const tok = await getToken();
       const res = await fetch(
-        `${RTT_BASE}/gb-nr/service?uniqueIdentity=${encodeURIComponent(uid)}`,
-        { headers: { Authorization: `Bearer ${tok}` } }
+        `${RTT_BASE}/gb-nr/service?uniqueIdentity=${encodeURIComponent(uid)}`
       );
       if (!res.ok) return null;
       const data = await res.json();
@@ -460,16 +436,14 @@ ${badge}
   // ── Main refresh ───────────────────────────────────────────────────
   async function refresh() {
     try {
-      const tok = await getToken();
-      const hdrs = { Authorization: `Bearer ${tok}` };
       const checkOk = tag => async r => {
         if (!r.ok) throw new Error(`${tag} ${r.status} ${r.statusText}`);
         return r.json();
       };
       const [welData, bdmData, ketData] = await Promise.all([
-        fetch(`${RTT_BASE}/gb-nr/location?code=WEL&timeWindow=180`, { headers: hdrs }).then(checkOk('WEL')),
-        fetch(`${RTT_BASE}/gb-nr/location?code=${NORTH_STA.crs}&timeWindow=120`, { headers: hdrs }).then(checkOk('BDM')),
-        fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=120`, { headers: hdrs }).then(checkOk('KET')),
+        fetch(`${RTT_BASE}/gb-nr/location?code=WEL&timeWindow=180`).then(checkOk('WEL')),
+        fetch(`${RTT_BASE}/gb-nr/location?code=${NORTH_STA.crs}&timeWindow=120`).then(checkOk('BDM')),
+        fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=120`).then(checkOk('KET')),
       ]);
 
       // Index WEL stopping trains by UID
