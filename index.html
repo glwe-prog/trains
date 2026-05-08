@@ -220,18 +220,25 @@
   let cachedSouth = [];
   const svcCache  = new Map();   // uid → service detail (calling points + class)
 
-  // ── Token exchange (refresh → short-lived access token) ───────────
+  // ── Auth: try token exchange, fall back to direct bearer ──────────
   let _accessToken = null;
   let _tokenExpiry = 0;
 
   async function getToken() {
     if (_accessToken && Date.now() < _tokenExpiry - 30_000) return _accessToken;
-    const r = await fetch(`${RTT_BASE}/api/get_access_token`,
-      { headers: { Authorization: `Bearer ${RTT_REFRESH}` } });
-    if (!r.ok) throw new Error(`Auth failed (${r.status})`);
-    const j = await r.json();
-    _accessToken = j.access_token ?? j.token ?? j.accessToken ?? j;
-    _tokenExpiry  = Date.now() + ((j.expires_in ?? 270) * 1000);
+    try {
+      const r = await fetch(`${RTT_BASE}/api/get_access_token`,
+        { headers: { Authorization: `Bearer ${RTT_REFRESH}` } });
+      if (r.ok) {
+        const j = await r.json();
+        _accessToken = j.access_token ?? j.token ?? j.accessToken ?? RTT_REFRESH;
+        _tokenExpiry  = Date.now() + ((j.expires_in ?? 270) * 1000);
+        return _accessToken;
+      }
+    } catch (_) { /* fall through to direct */ }
+    // Token exchange not available — use credential directly
+    _accessToken = RTT_REFRESH;
+    _tokenExpiry  = Date.now() + 3_600_000;
     return _accessToken;
   }
 
@@ -455,10 +462,14 @@ ${badge}
     try {
       const tok = await getToken();
       const hdrs = { Authorization: `Bearer ${tok}` };
+      const checkOk = tag => async r => {
+        if (!r.ok) throw new Error(`${tag} ${r.status} ${r.statusText}`);
+        return r.json();
+      };
       const [welData, bdmData, ketData] = await Promise.all([
-        fetch(`${RTT_BASE}/gb-nr/location?code=WEL&timeWindow=180`, { headers: hdrs }).then(r => r.json()),
-        fetch(`${RTT_BASE}/gb-nr/location?code=${NORTH_STA.crs}&timeWindow=120`, { headers: hdrs }).then(r => r.json()),
-        fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=120`, { headers: hdrs }).then(r => r.json()),
+        fetch(`${RTT_BASE}/gb-nr/location?code=WEL&timeWindow=180`, { headers: hdrs }).then(checkOk('WEL')),
+        fetch(`${RTT_BASE}/gb-nr/location?code=${NORTH_STA.crs}&timeWindow=120`, { headers: hdrs }).then(checkOk('BDM')),
+        fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=120`, { headers: hdrs }).then(checkOk('KET')),
       ]);
 
       // Index WEL stopping trains by UID
@@ -494,10 +505,11 @@ ${badge}
       enrichDisplayed();   // fetch calling points in background
 
     } catch (err) {
-      document.getElementById('north-body').innerHTML = '<div class="state">DATA ERROR — retrying in 30s</div>';
-      document.getElementById('south-body').innerHTML = '<div class="state">DATA ERROR — retrying in 30s</div>';
+      const msg = err.message || String(err);
+      document.getElementById('north-body').innerHTML = `<div class="state">ERROR — ${msg}</div>`;
+      document.getElementById('south-body').innerHTML = `<div class="state">ERROR — ${msg}</div>`;
       document.getElementById('footer').textContent =
-        `RTT error at ${new Date().toLocaleTimeString('en-GB')} — ${err.message}`;
+        `RTT error at ${new Date().toLocaleTimeString('en-GB')} — ${msg}`;
       setTimeout(refresh, 30_000);
     }
   }
