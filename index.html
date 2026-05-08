@@ -283,43 +283,34 @@
   }
 
   // ── Marquee animation ──────────────────────────────────────────────
-  // Called after fonts are confirmed loaded so scrollWidth is accurate.
-  // dataset.scrolling prevents double-starting if called again on same element.
+  // Always scrolls calling points (like a real departure board), using the
+  // Web Animations API which is more reliable than CSS transitions.
   function startMarquee(ticker) {
     const text = ticker.querySelector('.calling-text');
-    if (!text || ticker.dataset.scrolling) return;
+    if (!text) return;
 
-    text.style.transition = 'none';
+    // Cancel any previous animation on this element
+    text.getAnimations().forEach(a => a.cancel());
     text.style.left = '0px';
 
-    const tw = ticker.offsetWidth;
-    const iw = text.scrollWidth;
-    if (iw <= tw) return;   // fits — no scroll needed
+    // Short delay so layout + fonts are settled
+    setTimeout(() => {
+      const tw = ticker.offsetWidth;
+      const iw = text.scrollWidth;
+      if (!tw || !iw) return;
 
-    ticker.dataset.scrolling = '1';
-    const durMs   = ((tw + iw) / 90) * 1000;
-    const pauseMs = 1500;
+      const durMs = ((tw + iw) / 80) * 1000;   // 80px/s
 
-    function run() {
-      if (!document.contains(text)) return;   // element replaced — stop loop
-      text.style.transition = 'none';
-      text.style.left = tw + 'px';
-      setTimeout(() => {
-        if (!document.contains(text)) return;
-        text.style.transition = `left ${durMs}ms linear`;
-        text.style.left = (-iw) + 'px';
-      }, pauseMs);
-      setTimeout(run, durMs + pauseMs + 800);
-    }
-    run();
+      text.animate(
+        [{ left: `${tw}px` }, { left: `${-iw}px` }],
+        { duration: durMs, delay: 1200, iterations: Infinity,
+          easing: 'linear', fill: 'backwards' }
+      );
+    }, 200);
   }
 
   function initMarquees() {
-    // Wait for web fonts before measuring — fixes the GitHub Pages / Fire Stick issue
-    // where font loads after initMarquees fires and scrollWidth is wrong.
-    document.fonts.ready.then(() => {
-      document.querySelectorAll('.calling-ticker').forEach(startMarquee);
-    });
+    document.querySelectorAll('.calling-ticker').forEach(startMarquee);
   }
 
   // ── Render ─────────────────────────────────────────────────────────
