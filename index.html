@@ -202,9 +202,19 @@
   const DISPLAY_MS  = 15_000;   // how often to re-filter cached data without an API call
   const EMR_CODE    = 'EM';
 
+  // ── RTT credentials ────────────────────────────────────────────────
+  // Register free at https://api.rtt.io  (1,000 requests/day free tier)
+  // Leave blank to use heuristic-only class detection.
+  const RTT_USER = '';   // ← your RTT API username
+  const RTT_PASS = '';   // ← your RTT API password
+  const RTT_REFRESH_MS = 10 * 60_000;  // refresh class data every 10 min
+
   // Cache of all upcoming trains, kept between API refreshes
   let cachedNorth = [];
   let cachedSouth = [];
+
+  // RTT class cache: "CRS:HHMM" → friendly class string (e.g. "Class 810 Aurora")
+  const rttClassCache = new Map();
 
   // Approximate travel time in minutes from query station to Wellingborough
   const NORTH_STA = { crs: 'BDM', offsetMins: 11 };  // Bedford  → WBO
@@ -239,6 +249,66 @@
   function isSouthbound(svc) {
     const dest = (svc.destination?.[0]?.locationName || '').toLowerCase();
     return /london|pancras|bedford|luton|st albans|flitwick|harlington|leagrave/.test(dest);
+  }
+
+  // ── RTT class lookup ───────────────────────────────────────────────
+  // Convert RTT traction array to a friendly class label.
+  // RTT may return className ("810", "222", "360/2") or unit id ("810109").
+  function rttClassLabel(traction) {
+    if (!traction?.length) return null;
+    // Try className field first
+    for (const unit of traction) {
+      const c = (unit.className || '').toString().trim();
+      if (c.startsWith('810')) return 'Class 810 Aurora';
+      if (c.startsWith('222')) return 'Class 222 Meridian';
+      if (c.startsWith('360')) return 'Class 360 Desiro';
+      if (c.startsWith('158')) return 'Class 158 Express Sprinter';
+      if (c.startsWith('180')) return 'Class 180 Adelante';
+      if (c) return `Class ${c}`;
+    }
+    // Fall back to numeric unit ID prefix
+    for (const unit of traction) {
+      const id = (unit.id || '').toString();
+      if (id.startsWith('810')) return 'Class 810 Aurora';
+      if (id.startsWith('222')) return 'Class 222 Meridian';
+      if (id.startsWith('360')) return 'Class 360 Desiro';
+    }
+    return null;
+  }
+
+  // Fetch RTT departure board for one station and populate rttClassCache.
+  // Key format: "CRS:HHMM"  (e.g. "BDM:0930")
+  // Non-fatal — if credentials missing or request fails, cache stays as-is.
+  async function fetchRttClasses(crs) {
+    if (!RTT_USER || !RTT_PASS) return;
+    try {
+      const auth = 'Basic ' + btoa(`${RTT_USER}:${RTT_PASS}`);
+      const res  = await fetch(`https://api.rtt.io/api/v1/json/search/${crs}`,
+                               { headers: { Authorization: auth } });
+      if (!res.ok) return;
+      const data = await res.json();
+      for (const svc of (data.services || [])) {
+        const dep   = svc.locationDetail?.gbttBookedDeparture;  // "0930"
+        const label = rttClassLabel(svc.traction);
+        if (dep && label) rttClassCache.set(`${crs}:${dep}`, label);
+      }
+    } catch (_) { /* RTT errors are non-fatal */ }
+  }
+
+  // Refresh RTT class cache for both query stations.
+  async function refreshRtt() {
+    await Promise.all([
+      fetchRttClasses(NORTH_STA.crs),
+      fetchRttClasses(SOUTH_STA.crs),
+    ]);
+  }
+
+  // Resolve class for a display-ready enriched record.
+  // Checks RTT cache first; falls back to heuristic getClass().
+  function resolveClass(enriched) {
+    const cached = rttClassCache.get(enriched.rttKey);
+    if (cached) return cached;
+    return getClass(enriched.svc);
   }
 
   function getClass(svc) {
@@ -291,18 +361,21 @@
   }
 
   // ── Enrich a service with WBO passing/stop data ────────────────────
-  function enrichWithWBO(svc, offsetMins) {
+  function enrichWithWBO(svc, crs, offsetMins) {
     const deptTime = svc.std || svc.etd || '??:??';
     const cp       = svc.subsequentCallingPoints?.[0]?.callingPoint || [];
     const wboEntry = cp.find(p => p.crs === 'WEL');
 
-    const wboTime  = wboEntry ? wboEntry.st : addMins(deptTime, offsetMins);
+    const wboTime    = wboEntry ? wboEntry.st : addMins(deptTime, offsetMins);
     const stopsAtWBO = !!wboEntry;
 
     // Calling points to show: all stops AFTER the origin station
     const callingStr = cp.map(p => p.locationName).join('   ·   ');
 
-    return { svc, wboTime, wboEntry, stopsAtWBO, callingStr };
+    // RTT cache key: "CRS:HHMM" — matches RTT's gbttBookedDeparture field
+    const rttKey = `${crs}:${deptTime.replace(':', '')}`;
+
+    return { svc, wboTime, wboEntry, stopsAtWBO, callingStr, rttKey };
   }
 
   // ── Marquee animation ──────────────────────────────────────────────
@@ -353,7 +426,7 @@
 
     const { svc, wboTime, wboEntry, stopsAtWBO, callingStr } = enriched;
     const dest  = (svc.destination?.[0]?.locationName || 'Unknown').toUpperCase();
-    const cls   = getClass(svc);
+    const cls   = resolveClass(enriched);
     const st    = getStatus(svc, wboEntry);
     const exp   = expLabel(wboTime, wboEntry, svc);
     const badge = stopsAtWBO
@@ -399,14 +472,14 @@ ${badge}
       // Northbound: trains leaving Bedford heading north through Wellingborough
       const northbound = (bdmData.trainServices || [])
         .filter(s => s.operatorCode === EMR_CODE && isNorthbound(s))
-        .map(s => enrichWithWBO(s, NORTH_STA.offsetMins))
+        .map(s => enrichWithWBO(s, NORTH_STA.crs, NORTH_STA.offsetMins))
         .filter(e => toMins(e.wboTime) >= nowMins)
         .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
 
       // Southbound: trains leaving Kettering heading south through Wellingborough
       const southbound = (ktrData.trainServices || [])
         .filter(s => s.operatorCode === EMR_CODE && isSouthbound(s))
-        .map(s => enrichWithWBO(s, SOUTH_STA.offsetMins))
+        .map(s => enrichWithWBO(s, SOUTH_STA.crs, SOUTH_STA.offsetMins))
         .filter(e => toMins(e.wboTime) >= nowMins)
         .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
 
@@ -453,8 +526,10 @@ ${badge}
   setInterval(tick, 1000);
   setInterval(updateDisplay, DISPLAY_MS);   // re-filter every 15s, no API call
   tick();
+  refreshRtt();                             // prime RTT cache immediately
   refresh();
   setInterval(refresh, REFRESH_MS);
+  setInterval(refreshRtt, RTT_REFRESH_MS);  // top up RTT cache every 10 min
 </script>
 </body>
 </html>
