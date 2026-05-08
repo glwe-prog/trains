@@ -263,47 +263,55 @@
     return null;
   }
 
-  // Extract scheduled departure as "HHMM" from a RTT NG service entry.
-  // Handles ISO 8601 ("2026-05-08T09:30:00") and plain "HHMM" (legacy).
+  // Extract scheduled departure as "HHMM" from a RTT NG location lineup entry.
   function rttNgDep(svc) {
-    const iso = svc.temporalData?.scheduledDeparture   // NG API
-             || svc.temporalData?.scheduledPass
-             || svc.locationDetail?.gbttBookedDeparture; // old API fallback
+    const iso = svc.temporalData?.scheduledDeparture
+             || svc.temporalData?.scheduledPass;
     if (!iso) return null;
-    const m = iso.match(/T(\d{2}):(\d{2})/);   // ISO 8601
-    if (m) return m[1] + m[2];                 // "0930"
-    return iso.replace(':', '');               // already HHMM
+    const m = iso.match(/T(\d{2}):(\d{2})/);
+    return m ? m[1] + m[2] : null;   // "0930"
   }
 
-  // Extract class label (and unit number if known) from a RTT NG service entry.
-  // Returns e.g. "Class 810 Aurora · 810 109"  or  "Class 222 Meridian"  or null.
-  function rttNgClassLabel(svc) {
-    const alloc = svc.allocationData
-               || svc.locationMetadata?.allocationData;
+  // Build a friendly class + unit string from an allocation entry.
+  // Returns e.g. "Class 810 Aurora · 810 109" or "Class 222 Meridian" or null.
+  function parseAllocationLabel(alloc) {
     if (!alloc) return null;
-
-    // leadingClass: "810", "222", "360/2" etc.
-    const label = alloc.leadingClass
-      ? classToLabel(alloc.leadingClass)
-      : null;
-
-    // Collect unit numbers from allocationItems
+    const label = alloc.leadingClass ? classToLabel(alloc.leadingClass) : null;
     const units = (alloc.allocationItems || [])
       .map(u => (u.identity || '').toString().trim())
       .filter(Boolean)
       .map(id => id.replace(/^(\d{3})(\d+)$/, '$1 $2'));  // "810109" → "810 109"
-
     if (!label && !units.length) return null;
     if (label && units.length) return `${label} · ${units.join(' + ')}`;
     if (label) return label;
-    // No leadingClass but have unit id — derive class from first unit
-    const first = (alloc.allocationItems[0].identity || '').toString();
-    return classToLabel(first.substring(0, 3));
+    // No leadingClass but have a unit number — derive class from first digits
+    const first = (alloc.allocationItems?.[0]?.identity || '').toString();
+    return first ? classToLabel(first.substring(0, 3)) : null;
   }
 
-  // Fetch RTT NG departure board for one station and populate rttClassCache.
-  // Key format: "CRS:HHMM"  (e.g. "BDM:0930")
-  // Non-fatal — if token missing or request fails, cache stays as-is.
+  // Fetch full service detail for one train and cache its class/unit string.
+  // uniqueIdentity format: "L01525:2025-10-26"
+  async function fetchServiceClass(uniqueIdentity, cacheKey) {
+    try {
+      const res = await fetch(
+        `https://data.rtt.io/gb-nr/service?uniqueIdentity=${encodeURIComponent(uniqueIdentity)}`,
+        { headers: { Authorization: `Bearer ${RTT_TOKEN}` } }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const allocations = data.service?.allocationData || [];
+      // Pick the first allocation (formation at origin / before any split)
+      const label = parseAllocationLabel(allocations[0]);
+      if (label) {
+        rttClassCache.set(cacheKey, label);
+        // Refresh display immediately so the new class appears without waiting
+        updateDisplay();
+      }
+    } catch (_) { /* non-fatal */ }
+  }
+
+  // Fetch RTT location lineup for a station, then kick off service-detail
+  // fetches for any services not already in the class cache.
   async function fetchRttClasses(crs) {
     if (!RTT_TOKEN) return;
     try {
@@ -313,13 +321,19 @@
       );
       if (!res.ok) return;
       const data = await res.json();
-      // NG API response: { systemStatus, query, services: [...] }
-      const svcs = data.services || data.locations || [];
+      const svcs = data.services || [];
+      // For each service: record its uniqueIdentity and fetch class if unknown
+      const fetches = [];
       for (const svc of svcs) {
-        const dep   = rttNgDep(svc);
-        const label = rttNgClassLabel(svc);
-        if (dep && label) rttClassCache.set(`${crs}:${dep}`, label);
+        const dep = rttNgDep(svc);
+        const uid = svc.scheduleMetadata?.uniqueIdentity;
+        if (!dep || !uid) continue;
+        const key = `${crs}:${dep}`;
+        if (!rttClassCache.has(key)) {
+          fetches.push(fetchServiceClass(uid, key));
+        }
       }
+      await Promise.all(fetches);
     } catch (_) { /* RTT errors are non-fatal */ }
   }
 
