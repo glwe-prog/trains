@@ -533,7 +533,7 @@ ${badge}
       document.getElementById('north-body').innerHTML = msg;
       document.getElementById('south-body').innerHTML = msg;
       document.getElementById('footer').textContent =
-        `Error at ${new Date().toLocaleTimeString('en-GB')} — ${err.message}`;
+        `Huxley2 error at ${new Date().toLocaleTimeString('en-GB')} — ${err.message}`;
       // Retry sooner after an error
       setTimeout(refresh, 30_000);
     }
@@ -565,10 +565,10 @@ ${badge}
   setInterval(tick, 1000);
   setInterval(updateDisplay, DISPLAY_MS);   // re-filter every 15s, no API call
   tick();
-  refreshRtt();                             // prime RTT cache immediately
-  refresh();
+  refresh();                                         // Huxley2 — runs immediately
   setInterval(refresh, REFRESH_MS);
-  setInterval(refreshRtt, RTT_REFRESH_MS);  // top up RTT cache every 10 min
+  setTimeout(refreshRtt, 8000);                      // RTT — wait 8s so Huxley2 loads first
+  setInterval(refreshRtt, RTT_REFRESH_MS);           // then every 10 min
 </script>
 </body>
 </html>
