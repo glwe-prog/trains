@@ -146,6 +146,15 @@
     /* ── States ───────────────────────────── */
     .state { font-size: 0.72rem; letter-spacing: 3px; color: var(--ydim); padding: 14px 0; }
 
+    /* ── Smooth panel transition ──────────── */
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .panel-enter {
+      animation: fade-in 0.35s ease forwards;
+    }
+
     /* ── Footer ───────────────────────────── */
     .footer {
       margin-top: 12px;
@@ -313,11 +322,18 @@
     document.querySelectorAll('.calling-ticker').forEach(startMarquee);
   }
 
+  // Track which train is currently shown per panel to detect changes
+  const _shown = {};
+
   // ── Render ─────────────────────────────────────────────────────────
   function renderPanel(enriched, elId) {
     const el = document.getElementById(elId);
+
     if (!enriched) {
-      el.innerHTML = '<div class="state">NO UPCOMING EMR SERVICE</div>';
+      if (_shown[elId] !== 'none') {
+        _shown[elId] = 'none';
+        el.innerHTML = '<div class="state panel-enter">NO UPCOMING EMR SERVICE</div>';
+      }
       return;
     }
 
@@ -330,8 +346,13 @@
       ? '<span class="stop-badge stops">● STOPS</span>'
       : '<span class="stop-badge passes">○ PASSES THROUGH</span>';
 
-    el.innerHTML = `
-<div class="row1">
+    // Key to detect when the displayed train actually changes
+    const key = `${wboTime}|${dest}`;
+    const trainChanged = _shown[elId] !== key;
+    _shown[elId] = key;
+
+    const html = `
+<div class="row1${trainChanged ? ' panel-enter' : ''}">
   <span class="r1-time">${wboTime}</span>
   <span class="r1-dest">${dest}</span>
   <span class="r1-exp ${exp.cls}">${exp.text}</span>
@@ -347,6 +368,8 @@ ${badge}
   <span class="r3-class">${cls}</span>
   <span class="r3-status ${st.cls}">${st.text}</span>
 </div>`;
+
+    el.innerHTML = html;
   }
 
   // ── Fetch & refresh ────────────────────────────────────────────────
