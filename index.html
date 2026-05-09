@@ -273,13 +273,15 @@
     } catch (_) { return null; }
   }
 
-  // Extract calling points after Wellingborough from service detail.
-  function callingAfterWEL(detail) {
+  // Extract calling points after Wellingborough (or nearest neighbour) from service detail.
+  function callingAfterWEL(detail, fallbackCrs) {
     const locs = detail?.service?.locations || [];
-    let welIdx = locs.findIndex(l => l.location?.shortCodes?.includes('WEL'));
-    if (welIdx === -1) return '';
+    let idx = locs.findIndex(l => l.location?.shortCodes?.includes('WEL'));
+    if (idx === -1 && fallbackCrs)
+      idx = locs.findIndex(l => l.location?.shortCodes?.includes(fallbackCrs));
+    if (idx === -1) return '';
     return locs
-      .slice(welIdx + 1)
+      .slice(idx + 1)
       .filter(l => {
         const d = l.temporalData?.displayAs;
         return d === 'CALL' || d === 'TERMINATES';
@@ -290,7 +292,7 @@
   }
 
   // ── Enrich a BDM/KET service with WEL stop data ───────────────────
-  function buildEnriched(svc, offsetMins, welEntry, detail) {
+  function buildEnriched(svc, offsetMins, staCrs, welEntry, detail) {
     const uid        = svc.scheduleMetadata?.uniqueIdentity;
     const deptTime   = isoToHHMM(svc.temporalData?.departure?.scheduleAdvertised) || '??:??';
     const isCancelled = !!svc.temporalData?.departure?.isCancelled;
@@ -310,9 +312,9 @@
          || isoToHHMM(welEntry.temporalData?.arrival?.realtimeForecast))
       : null;
 
-    const callingStr = detail ? callingAfterWEL(detail) : '';
+    const callingStr = detail ? callingAfterWEL(detail, staCrs) : '';
 
-    return { uid, svc, welEntry, wboLive, stopsAtWBO, wboTime, callingStr, dest, deptTime, isCancelled, offsetMins };
+    return { uid, svc, welEntry, wboLive, stopsAtWBO, wboTime, callingStr, dest, deptTime, isCancelled, offsetMins, staCrs };
   }
 
   // ── Status / timing labels ─────────────────────────────────────────
@@ -428,7 +430,7 @@ ${badge}
       if (!e.uid || svcCache.has(e.uid)) continue;
       const detail = await fetchDetail(e.uid);
       if (!detail) continue;
-      const calling = callingAfterWEL(detail);
+      const calling = callingAfterWEL(detail, e.staCrs);
       // Patch the cached entry in-place
       for (const list of [cachedNorth, cachedSouth]) {
         const idx = list.findIndex(x => x.uid === e.uid);
@@ -466,7 +468,7 @@ ${badge}
 
       cachedNorth = (bdmData.services || [])
         .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isNorthbound(s))
-        .map(s => buildEnriched(s, NORTH_STA.offsetMins,
+        .map(s => buildEnriched(s, NORTH_STA.offsetMins, NORTH_STA.crs,
               welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
               svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
         .filter(e => toMins(e.wboTime) >= nowMins)
@@ -474,7 +476,7 @@ ${badge}
 
       cachedSouth = (ketData.services || [])
         .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isSouthbound(s))
-        .map(s => buildEnriched(s, SOUTH_STA.offsetMins,
+        .map(s => buildEnriched(s, SOUTH_STA.offsetMins, SOUTH_STA.crs,
               welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
               svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
         .filter(e => toMins(e.wboTime) >= nowMins)
