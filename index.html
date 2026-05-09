@@ -406,9 +406,10 @@ ${badge}
     renderPanel(north[0] || null, 'north-body');
     renderPanel(south[0] || null, 'south-body');
     requestAnimationFrame(() => requestAnimationFrame(initMarquees));
-    document.getElementById('footer').textContent =
+    document.getElementById('footer').innerHTML =
       `Updated ${new Date().toLocaleTimeString('en-GB')} · `
-      + `${north.length} northbound, ${south.length} southbound · Auto-refresh 60s`;
+      + `${north.length} northbound, ${south.length} southbound · Auto-refresh 60s`
+      + ` · Data: <a href="https://realtimetrains.co.uk" target="_blank" style="color:var(--ydim);text-decoration:none;">Realtime Trains</a>`;
   }
 
   // Fetch calling points for displayed trains and update panels
