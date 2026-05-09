@@ -298,22 +298,27 @@
     'turbostar': '158', 'electrostar': '357'
   };
 
+  // Quick class from location board entry (no service detail needed)
+  function boardClass(svc) {
+    const brand = (svc.locationMetadata?.stockBranding || '').toLowerCase();
+    if (BRANDING_CLASS[brand]) return `Class ${BRANDING_CLASS[brand]}`;
+    const n = svc.locationMetadata?.numberOfVehicles;
+    if (n === 4 || n === 8) return 'Class 360';  // Corby corridor Desiros
+    return '';
+  }
+
+  // Refined class from service detail
   function extractClass(detail) {
-    // Prefer allocationData.leadingClass (needs detailed=true)
-    const alloc = detail?.service?.allocationData;
-    if (alloc) {
-      const lc = alloc[0]?.leadingClass || alloc?.leadingClass;
-      if (lc) return `Class ${lc}`;
-    }
-    // Fall back to stockBranding from any location
     const locs = detail?.service?.locations || [];
     for (const l of locs) {
-      const brand = l.locationMetadata?.stockBranding?.toLowerCase();
+      const brand = (l.locationMetadata?.stockBranding
+                  || l.locationMetadata?.knowYourTrainData?.stockBranding
+                  || '').toLowerCase();
       if (brand && BRANDING_CLASS[brand]) return `Class ${BRANDING_CLASS[brand]}`;
-      // knowYourTrainData path (detailed mode)
-      const kyb = l.locationMetadata?.knowYourTrainData?.stockBranding?.toLowerCase();
-      if (kyb && BRANDING_CLASS[kyb]) return `Class ${BRANDING_CLASS[kyb]}`;
     }
+    // numberOfVehicles heuristic (EMR Corby corridor = Class 360)
+    const n = locs[0]?.locationMetadata?.numberOfVehicles;
+    if (n === 4 || n === 8) return 'Class 360';
     return '';
   }
 
@@ -339,7 +344,7 @@
       : null;
 
     const callingStr  = detail ? callingAfterWEL(detail, staCrs) : '';
-    const trainClass  = detail ? extractClass(detail) : '';
+    const trainClass  = detail ? extractClass(detail) : boardClass(svc);
 
     return { uid, svc, welEntry, wboLive, stopsAtWBO, wboTime, callingStr, trainClass, dest, deptTime, isCancelled, offsetMins, staCrs };
   }
