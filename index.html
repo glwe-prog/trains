@@ -213,8 +213,9 @@
   const EMR_CODE   = 'EM';
   const RTT_BASE    = 'https://summer-cloudwrtt-prozy-cee7.glwe.workers.dev';
 
-  const NORTH_STA = { crs: 'BDM', offsetMins: 11 };
-  const SOUTH_STA = { crs: 'KET', offsetMins:  6 };
+  const NORTH_STA    = { crs: 'BDM', offsetMins: 11 };
+  const SOUTH_STA    = { crs: 'KET', offsetMins:  6 };
+  const HOUSE_OFFSET = 3;   // mins south of Wellingborough station
 
   let cachedNorth = [];
   let cachedSouth = [];
@@ -343,10 +344,16 @@
          || isoToHHMM(welEntry.temporalData?.arrival?.realtimeForecast))
       : null;
 
+    // Adjust for house position: 3 mins south of station
+    // Northbound passes house before station (-3), southbound after (+3)
+    const houseTime = staCrs === NORTH_STA.crs
+      ? addMins(wboTime, -HOUSE_OFFSET)
+      : addMins(wboTime,  HOUSE_OFFSET);
+
     const callingStr  = detail ? callingAfterWEL(detail, staCrs) : '';
     const trainClass  = detail ? extractClass(detail) : boardClass(svc);
 
-    return { uid, svc, welEntry, wboLive, stopsAtWBO, wboTime, callingStr, trainClass, dest, deptTime, isCancelled, offsetMins, staCrs };
+    return { uid, svc, welEntry, wboLive, stopsAtWBO, wboTime: houseTime, callingStr, trainClass, dest, deptTime, isCancelled, offsetMins, staCrs };
   }
 
   // ── Status / timing labels ─────────────────────────────────────────
