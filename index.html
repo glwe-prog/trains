@@ -98,6 +98,7 @@
       margin-bottom: 8px;
     }
     .stop-badge.stops   { background: var(--y); color: #000; }
+    .train-class { display: inline-block; font-size: clamp(0.6rem, 1.8vw, 0.8rem); letter-spacing: 2px; padding: 2px 8px; border-radius: 2px; margin-bottom: 8px; margin-left: 6px; border: 1px solid var(--ydim); color: var(--ydim); }
     .stop-badge.passes  { border: 1px solid var(--ydim); color: var(--ydim); }
 
     /* ── Calling at (scrolling) ───────────── */
@@ -264,7 +265,7 @@
       const identity = parts[1] || uid;
       const date     = parts[2] || new Date().toISOString().slice(0, 10);
       const res = await fetch(
-        `${RTT_BASE}/gb-nr/service?identity=${encodeURIComponent(identity)}&departureDate=${date}`
+        `${RTT_BASE}/gb-nr/service?identity=${encodeURIComponent(identity)}&departureDate=${date}&detailed=true`
       );
       if (!res.ok) return null;
       const data = await res.json();
@@ -291,6 +292,31 @@
       .join('   ·   ');
   }
 
+  // ── Extract train class from service detail ────────────────────────
+  const BRANDING_CLASS = {
+    'meridian': '222', 'aurora': '810', 'desiro': '360',
+    'turbostar': '158', 'electrostar': '357'
+  };
+
+  function extractClass(detail) {
+    // Prefer allocationData.leadingClass (needs detailed=true)
+    const alloc = detail?.service?.allocationData;
+    if (alloc) {
+      const lc = alloc[0]?.leadingClass || alloc?.leadingClass;
+      if (lc) return `Class ${lc}`;
+    }
+    // Fall back to stockBranding from any location
+    const locs = detail?.service?.locations || [];
+    for (const l of locs) {
+      const brand = l.locationMetadata?.stockBranding?.toLowerCase();
+      if (brand && BRANDING_CLASS[brand]) return `Class ${BRANDING_CLASS[brand]}`;
+      // knowYourTrainData path (detailed mode)
+      const kyb = l.locationMetadata?.knowYourTrainData?.stockBranding?.toLowerCase();
+      if (kyb && BRANDING_CLASS[kyb]) return `Class ${BRANDING_CLASS[kyb]}`;
+    }
+    return '';
+  }
+
   // ── Enrich a BDM/KET service with WEL stop data ───────────────────
   function buildEnriched(svc, offsetMins, staCrs, welEntry, detail) {
     const uid        = svc.scheduleMetadata?.uniqueIdentity;
@@ -312,9 +338,10 @@
          || isoToHHMM(welEntry.temporalData?.arrival?.realtimeForecast))
       : null;
 
-    const callingStr = detail ? callingAfterWEL(detail, staCrs) : '';
+    const callingStr  = detail ? callingAfterWEL(detail, staCrs) : '';
+    const trainClass  = detail ? extractClass(detail) : '';
 
-    return { uid, svc, welEntry, wboLive, stopsAtWBO, wboTime, callingStr, dest, deptTime, isCancelled, offsetMins, staCrs };
+    return { uid, svc, welEntry, wboLive, stopsAtWBO, wboTime, callingStr, trainClass, dest, deptTime, isCancelled, offsetMins, staCrs };
   }
 
   // ── Status / timing labels ─────────────────────────────────────────
@@ -383,6 +410,8 @@
     const badge = e.stopsAtWBO
       ? '<span class="stop-badge stops">● STOPS</span>'
       : '<span class="stop-badge passes">○ PASSES THROUGH</span>';
+    const classTag = e.trainClass
+      ? `<span class="train-class">${e.trainClass}</span>` : '';
     const key = `${e.wboTime}|${e.dest}`;
     const changed = _shown[elId] !== key;
     _shown[elId] = key;
@@ -392,7 +421,7 @@
   <span class="r1-dest">${e.dest}</span>
   <span class="r1-exp ${exp.cls}">${exp.text}</span>
 </div>
-${badge}
+${badge}${classTag}
 <div class="calling-wrap">
   <span class="calling-label">Calling at:</span>
   <div class="calling-ticker">
@@ -430,11 +459,12 @@ ${badge}
       if (!e.uid || svcCache.has(e.uid)) continue;
       const detail = await fetchDetail(e.uid);
       if (!detail) continue;
-      const calling = callingAfterWEL(detail, e.staCrs);
+      const calling    = callingAfterWEL(detail, e.staCrs);
+      const trainClass = extractClass(detail);
       // Patch the cached entry in-place
       for (const list of [cachedNorth, cachedSouth]) {
         const idx = list.findIndex(x => x.uid === e.uid);
-        if (idx !== -1) { list[idx] = { ...list[idx], callingStr: calling }; updated = true; }
+        if (idx !== -1) { list[idx] = { ...list[idx], callingStr: calling, trainClass }; updated = true; }
       }
     }
     if (updated) updateDisplay();
