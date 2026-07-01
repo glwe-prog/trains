@@ -331,7 +331,8 @@
   // ── Enrich a BDM/KET service with WEL stop data ───────────────────
   function buildEnriched(svc, offsetMins, staCrs, welEntry, detail) {
     const uid        = svc.scheduleMetadata?.uniqueIdentity;
-    const deptTime   = isoToHHMM(svc.temporalData?.departure?.scheduleAdvertised) || '??:??';
+    const deptTime   = isoToHHMM(svc.temporalData?.departure?.scheduleAdvertised
+                     || svc.temporalData?.arrival?.scheduleAdvertised) || '??:??';
     const isCancelled = !!svc.temporalData?.departure?.isCancelled;
     const dest       = (svc.destination?.[0]?.location?.description || 'Unknown').toUpperCase();
     const stopsAtWBO = !!welEntry && welEntry.temporalData?.displayAs !== 'PASS';
@@ -485,8 +486,8 @@ ${badge}${classTag}
   async function enrichDisplayed() {
     const nowMins = toMins(nowHHMM());
     const toEnrich = [
-      ...cachedNorth.filter(e => toMins(e.stationTime) >= nowMins - 5).slice(0, 2),
-      ...cachedSouth.filter(e => toMins(e.stationTime) >= nowMins - 5).slice(0, 2),
+      ...cachedNorth.filter(e => toMins(e.stationTime) >= nowMins - 20).slice(0, 4),
+      ...cachedSouth.filter(e => toMins(e.stationTime) >= nowMins - 20).slice(0, 4),
     ];
     let updated = false;
     for (const e of toEnrich) {
@@ -557,7 +558,7 @@ ${badge}${classTag}
         .map(s => buildEnriched(s, NORTH_STA.offsetMins, NORTH_STA.crs,
               welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
               svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
-        .filter(e => toMins(e.stationTime) >= nowMins - 5)
+        .filter(e => toMins(e.stationTime) >= nowMins - 20)
         .sort((a, b) => toMins(a.stationTime) - toMins(b.stationTime));
 
       cachedSouth = (ketData.services || [])
@@ -565,7 +566,7 @@ ${badge}${classTag}
         .map(s => buildEnriched(s, SOUTH_STA.offsetMins, SOUTH_STA.crs,
               welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
               svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
-        .filter(e => toMins(e.stationTime) >= nowMins - 5)
+        .filter(e => toMins(e.stationTime) >= nowMins - 20)
         .sort((a, b) => toMins(a.stationTime) - toMins(b.stationTime));
 
       updateDisplay();
