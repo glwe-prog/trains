@@ -510,10 +510,10 @@ ${badge}${classTag}
         if (uid && s.scheduleMetadata?.operator?.code === EMR_CODE)
           welByUid.set(uid, s);
       }
-      // DEBUG — log all WEL EMR services to understand field structure
+      // DEBUG — use console.error so it shows even with console filter on errors/warnings
       const emrWEL = (welData.services || []).filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE);
-      console.log('WEL EMR count:', emrWEL.length);
-      emrWEL.slice(0, 3).forEach((s, i) => console.log(`WEL[${i}]:`, JSON.stringify(s, null, 2)));
+      console.error('DBG WEL count:', emrWEL.length, '| first 3:',
+        emrWEL.slice(0,3).map(s => JSON.stringify(s)));
 
       const nowMins = toMins(nowHHMM());
 
