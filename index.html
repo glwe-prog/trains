@@ -254,7 +254,7 @@
   // ── Direction detection ────────────────────────────────────────────
   function isNorthbound(svc) {
     const dest = (svc.destination?.[0]?.location?.description || '').toLowerCase();
-    return /leicester|nottingham|sheffield|derby|loughborough|kettering|corby|market harborough|chesterfield/.test(dest);
+    return /leicester|nottingham|sheffield|derby|loughborough|kettering|corby|market harborough|chesterfield|leeds|york|lincoln|mansfield|worksop/.test(dest);
   }
 
   function isSouthbound(svc) {
@@ -514,7 +514,7 @@ ${badge}${classTag}
       const nowMins = toMins(nowHHMM());
 
       cachedNorth = (bdmData.services || [])
-        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE)
+        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isNorthbound(s))
         .map(s => buildEnriched(s, NORTH_STA.offsetMins, NORTH_STA.crs,
               welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
               svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
