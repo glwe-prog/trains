@@ -495,68 +495,45 @@ ${badge}${classTag}
         return r.json();
       };
 
-      // WEL board returns ALL services (CALL + PASS) — use it as sole source
-      const welData = await fetch(`${RTT_BASE}/gb-nr/location?code=WEL&timeWindow=180`)
-        .then(checkOk('WEL'));
+      const [welData, bdmData, ketData] = await Promise.all([
+        fetch(`${RTT_BASE}/gb-nr/location?code=WEL&timeWindow=180`).then(checkOk('WEL')),
+        fetch(`${RTT_BASE}/gb-nr/location?code=${NORTH_STA.crs}&timeWindow=180`).then(checkOk('BDM')),
+        fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=180`).then(checkOk('KET')),
+      ]);
+
+      // Index WEL stopping trains by UID for exact times and stop badge
+      const welByUid = new Map();
+      for (const s of (welData.services || [])) {
+        const uid     = s.scheduleMetadata?.uniqueIdentity;
+        const display = s.temporalData?.displayAs;
+        if (uid && s.scheduleMetadata?.operator?.code === EMR_CODE && display !== 'PASS')
+          welByUid.set(uid, s);
+      }
 
       const nowMins = toMins(nowHHMM());
 
-      const emrAtWEL = (welData.services || [])
-        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE);
-
-      function welEntry(s) {
-        // Stopping trains have departure/arrival; passing trains have pass
-        const dep  = isoToHHMM(s.temporalData?.departure?.scheduleAdvertised);
-        const arr  = isoToHHMM(s.temporalData?.arrival?.scheduleAdvertised);
-        const pass = isoToHHMM(s.temporalData?.pass?.scheduleAdvertised);
-        return dep || arr || pass || null;
+      // Bedford is the southern terminus — every EMR departure goes north UNLESS
+      // the destination is itself southward (handles any terminating/arriving trains
+      // that leak onto the departure board).
+      function isNorthboundFromBDM(s) {
+        const dest = (s.destination?.[0]?.location?.description || '').toLowerCase();
+        if (!dest) return true;
+        return !/(london|pancras|bedford|luton|flitwick|harlington|leagrave|st albans)/.test(dest);
       }
 
-      function welLive(s) {
-        return isoToHHMM(s.temporalData?.departure?.realtimeForecast
-                      || s.temporalData?.departure?.realtimeActual
-                      || s.temporalData?.arrival?.realtimeForecast
-                      || s.temporalData?.arrival?.realtimeActual
-                      || s.temporalData?.pass?.realtimeForecast
-                      || s.temporalData?.pass?.realtimeActual);
-      }
-
-      function buildFromWEL(s, houseOffset) {
-        const wbo  = welEntry(s);
-        if (!wbo) return null;
-        const house = addMins(wbo, houseOffset);
-        const live  = welLive(s);
-        const stopsAtWBO = s.temporalData?.displayAs !== 'PASS';
-        const uid   = s.scheduleMetadata?.uniqueIdentity;
-        const isCancelled = !!(s.temporalData?.departure?.isCancelled
-                             || s.temporalData?.arrival?.isCancelled
-                             || s.temporalData?.pass?.isCancelled);
-        return {
-          uid, svc: s,
-          welEntry: stopsAtWBO ? s : null,
-          wboLive:  live !== wbo ? live : null,
-          stopsAtWBO,
-          wboTime:  house,
-          callingStr: '',
-          trainClass: boardClass(s),
-          dest:  (s.destination?.[0]?.location?.description || 'Unknown').toUpperCase(),
-          deptTime: wbo,
-          isCancelled,
-          staCrs: 'WEL',
-        };
-      }
-
-      cachedNorth = emrAtWEL
-        .filter(s => isNorthbound(s))
-        .map(s => buildFromWEL(s, -HOUSE_OFFSET))   // house is south of station: train hits it first
-        .filter(Boolean)
+      cachedNorth = (bdmData.services || [])
+        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isNorthboundFromBDM(s))
+        .map(s => buildEnriched(s, NORTH_STA.offsetMins, NORTH_STA.crs,
+              welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
+              svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
         .filter(e => toMins(e.wboTime) >= nowMins)
         .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
 
-      cachedSouth = emrAtWEL
-        .filter(s => isSouthbound(s))
-        .map(s => buildFromWEL(s, +HOUSE_OFFSET))   // house is south: southbound hits it after station
-        .filter(Boolean)
+      cachedSouth = (ketData.services || [])
+        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isSouthbound(s))
+        .map(s => buildEnriched(s, SOUTH_STA.offsetMins, SOUTH_STA.crs,
+              welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
+              svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
         .filter(e => toMins(e.wboTime) >= nowMins)
         .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
 
