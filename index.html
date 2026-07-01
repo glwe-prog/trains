@@ -334,7 +334,7 @@
     const deptTime   = isoToHHMM(svc.temporalData?.departure?.scheduleAdvertised) || '??:??';
     const isCancelled = !!svc.temporalData?.departure?.isCancelled;
     const dest       = (svc.destination?.[0]?.location?.description || 'Unknown').toUpperCase();
-    const stopsAtWBO = !!welEntry;
+    const stopsAtWBO = !!welEntry && welEntry.temporalData?.displayAs !== 'PASS';
 
     // WEL time: exact from WEL board if stopping, estimated if passing
     const wboTime = welEntry
@@ -501,12 +501,11 @@ ${badge}${classTag}
         fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=180`).then(checkOk('KET')),
       ]);
 
-      // Index WEL stopping trains by UID for exact times and stop badge
+      // Index ALL EMR services at WEL by UID — both CALL and PASS get exact times
       const welByUid = new Map();
       for (const s of (welData.services || [])) {
-        const uid     = s.scheduleMetadata?.uniqueIdentity;
-        const display = s.temporalData?.displayAs;
-        if (uid && s.scheduleMetadata?.operator?.code === EMR_CODE && display !== 'PASS')
+        const uid = s.scheduleMetadata?.uniqueIdentity;
+        if (uid && s.scheduleMetadata?.operator?.code === EMR_CODE)
           welByUid.set(uid, s);
       }
 
