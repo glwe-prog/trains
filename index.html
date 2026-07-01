@@ -510,6 +510,11 @@ ${badge}${classTag}
         if (uid && s.scheduleMetadata?.operator?.code === EMR_CODE)
           welByUid.set(uid, s);
       }
+      // DEBUG — log first PASS entry to understand field structure
+      const firstPass = (welData.services || []).find(s =>
+        s.scheduleMetadata?.operator?.code === EMR_CODE &&
+        s.temporalData?.displayAs === 'PASS');
+      if (firstPass) console.log('WEL PASS entry:', JSON.stringify(firstPass, null, 2));
 
       const nowMins = toMins(nowHHMM());
 
