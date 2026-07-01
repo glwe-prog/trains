@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Train Spotter Quiz — Wellingborough Line</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --y:    #FFE100;
+      --ydim: #C09000;
+      --bg:   #07070A;
+      --div:  #2A2A2A;
+      --grn:  #44EE44;
+      --red:  #FF3030;
+      --ora:  #FF9900;
+    }
+    body {
+      background: var(--bg);
+      color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      min-height: 100vh;
+      padding: 14px;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(to bottom,
+        transparent 0, transparent 3px,
+        rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
+      pointer-events: none;
+      z-index: 9999;
+    }
+    .page-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid var(--ydim);
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .page-title { font-size: clamp(0.55rem, 2vw, 0.82rem); letter-spacing: 3px; }
+    .page-clock { font-size: clamp(1.4rem, 5vw, 2rem); letter-spacing: 5px; }
+    .container  { max-width: 700px; margin: 0 auto; }
+
+    /* ── Quiz panel ──────────────────────────── */
+    #quiz-panel { border: 1px solid var(--ydim); padding: clamp(12px, 4vw, 22px); }
+
+    .progress {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      color: var(--ydim);
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .dots { display: flex; gap: 5px; }
+    .dot  { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--ydim); }
+    .dot.current { background: var(--y); border-color: var(--y); box-shadow: 0 0 5px var(--y); }
+    .dot.correct { background: var(--grn); border-color: var(--grn); }
+    .dot.wrong   { background: var(--red); border-color: var(--red); }
+
+    .img-wrap {
+      width: 100%;
+      height: clamp(180px, 40vw, 300px);
+      border: 1px solid var(--div);
+      margin-bottom: 14px;
+      overflow: hidden;
+      background: #111;
+    }
+    .img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .no-img {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--ydim); font-size: 0.75rem; letter-spacing: 2px;
+    }
+
+    .question { font-size: clamp(0.8rem, 2.5vw, 1rem); letter-spacing: 2px; margin-bottom: 14px; }
+
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 460px) { .choices { grid-template-columns: 1fr; } }
+
+    .choice-btn {
+      background: transparent;
+      border: 1px solid var(--ydim);
+      color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      font-size: clamp(0.62rem, 1.8vw, 0.82rem);
+      letter-spacing: 1px;
+      padding: 9px 12px;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.3;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .choice-btn:hover:not(:disabled) { border-color: var(--y); background: rgba(255,225,0,0.07); }
+    .choice-btn.correct { border-color: var(--grn) !important; background: rgba(68,238,68,0.12) !important; color: var(--grn) !important; }
+    .choice-btn.wrong   { border-color: var(--red) !important; background: rgba(255,48,48,0.10) !important; color: var(--red) !important; }
+    .choice-btn:disabled { cursor: default; }
+    .ltr { color: var(--ydim); flex-shrink: 0; }
+    .choice-btn.correct .ltr { color: var(--grn); }
+    .choice-btn.wrong   .ltr { color: var(--red); }
+
+    #feedback { min-height: 1.5em; font-size: 0.82rem; letter-spacing: 2px; margin-bottom: 10px; }
+    .fb-ok  { color: var(--grn); }
+    .fb-err { color: var(--red); }
+
+    #next-btn {
+      background: transparent;
+      border: 1px solid var(--y);
+      color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      font-size: 0.82rem;
+      letter-spacing: 3px;
+      padding: 9px 22px;
+      cursor: pointer;
+      display: none;
+    }
+    #next-btn:hover { background: rgba(255,225,0,0.10); }
+
+    /* ── Results ─────────────────────────────── */
+    #results {
+      border: 1px solid var(--ydim);
+      padding: clamp(20px, 6vw, 44px);
+      text-align: center;
+      display: none;
+    }
+    .res-score { font-size: clamp(3rem, 10vw, 5rem); letter-spacing: 6px; margin-bottom: 10px; }
+    .res-msg   { font-size: clamp(0.85rem, 2.5vw, 1.1rem); letter-spacing: 2px; margin-bottom: 8px; }
+    .res-sub   { font-size: 0.7rem; letter-spacing: 2px; color: var(--ydim); margin-bottom: 26px; line-height: 1.8; }
+    .play-again {
+      background: transparent;
+      border: 1px solid var(--y);
+      color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      font-size: 0.88rem;
+      letter-spacing: 3px;
+      padding: 11px 28px;
+      cursor: pointer;
+    }
+    .play-again:hover { background: rgba(255,225,0,0.10); }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 12px;
+      font-size: 0.63rem;
+      letter-spacing: 2px;
+      color: var(--ydim);
+      text-decoration: none;
+    }
+    .back-link:hover { color: var(--y); }
+  </style>
+</head>
+<body>
+
+<div class="page-hdr">
+  <div class="page-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; TRAIN SPOTTER QUIZ &nbsp;·&nbsp; LOUIE LINE</div>
+  <div class="page-clock" id="clock">--:--:--</div>
+</div>
+
+<div class="container">
+
+  <div id="quiz-panel">
+    <div class="progress">
+      <span id="q-label">QUESTION 1 OF 10</span>
+      <div class="dots" id="dots"></div>
+      <span id="q-score">SCORE: 0/0</span>
+    </div>
+    <div class="img-wrap" id="img-wrap"></div>
+    <div class="question">WHICH TRAIN CLASS IS THIS?</div>
+    <div class="choices" id="choices"></div>
+    <div id="feedback"></div>
+    <button id="next-btn" onclick="nextQuestion()">NEXT →</button>
+  </div>
+
+  <div id="results">
+    <div class="res-score" id="res-score"></div>
+    <div class="res-msg"   id="res-msg"></div>
+    <div class="res-sub"   id="res-sub"></div>
+    <button class="play-again" onclick="resetQuiz()">▶ PLAY AGAIN</button>
+  </div>
+
+  <a href="/" class="back-link">← LIVE TRAIN BOARD</a>
+
+</div>
+
+<script>
+// Catalogue — 54 classes, diesels & electrics since 1980
+// slug maps to /images/<slug>.jpg (pre-processed, TOPS codes blurred)
+const CATALOGUE = [
+  // Intercity / express diesel
+  { slug: 'class_43_hst', name: 'Class 43 HST (IC125)'        },
+  { slug: 'class_220',    name: 'Class 220 Voyager'           },
+  { slug: 'class_221',    name: 'Class 221 Super Voyager'     },
+  { slug: 'class_222',    name: 'Class 222 Meridian'          },
+  { slug: 'class_180',    name: 'Class 180 Adelante'          },
+  // Intercity / express electric & bi-mode
+  { slug: 'class_91',     name: 'Class 91 (IC225)'            },
+  { slug: 'class_390',    name: 'Class 390 Pendolino'         },
+  { slug: 'class_395',    name: 'Class 395 Javelin'           },
+  { slug: 'class_800',    name: 'Class 800 Azuma'             },
+  { slug: 'class_802',    name: 'Class 802'                   },
+  { slug: 'class_810',    name: 'Class 810 Aurora'            },
+  // Regional diesel units
+  { slug: 'class_153',    name: 'Class 153'                   },
+  { slug: 'class_155',    name: 'Class 155 Super Sprinter'    },
+  { slug: 'class_156',    name: 'Class 156 Super Sprinter'    },
+  { slug: 'class_158',    name: 'Class 158 Express Sprinter'  },
+  { slug: 'class_159',    name: 'Class 159'                   },
+  { slug: 'class_170',    name: 'Class 170 Turbostar'         },
+  { slug: 'class_171',    name: 'Class 171 Turbostar'         },
+  { slug: 'class_175',    name: 'Class 175 Coradia'           },
+  { slug: 'class_185',    name: 'Class 185 Desiro'            },
+  { slug: 'class_195',    name: 'Class 195 Civity'            },
+  { slug: 'class_197',    name: 'Class 197 Civity'            },
+  // Electric suburban
+  { slug: 'class_313',    name: 'Class 313'                   },
+  { slug: 'class_315',    name: 'Class 315'                   },
+  { slug: 'class_317',    name: 'Class 317'                   },
+  { slug: 'class_319',    name: 'Class 319'                   },
+  { slug: 'class_321',    name: 'Class 321'                   },
+  { slug: 'class_323',    name: 'Class 323'                   },
+  { slug: 'class_331',    name: 'Class 331 Civity'            },
+  { slug: 'class_333',    name: 'Class 333'                   },
+  { slug: 'class_350',    name: 'Class 350 Desiro'            },
+  { slug: 'class_357',    name: 'Class 357'                   },
+  { slug: 'class_360',    name: 'Class 360 Desiro'            },
+  { slug: 'class_365',    name: 'Class 365 Networker'         },
+  { slug: 'class_375',    name: 'Class 375 Electrostar'       },
+  { slug: 'class_377',    name: 'Class 377 Electrostar'       },
+  { slug: 'class_380',    name: 'Class 380 Desiro'            },
+  { slug: 'class_385',    name: 'Class 385 AT200'             },
+  { slug: 'class_387',    name: 'Class 387 Electrostar'       },
+  { slug: 'class_444',    name: 'Class 444 Desiro'            },
+  { slug: 'class_450',    name: 'Class 450 Desiro'            },
+  { slug: 'class_455',    name: 'Class 455'                   },
+  { slug: 'class_465',    name: 'Class 465 Networker'         },
+  { slug: 'class_700',    name: 'Class 700 Desiro City'       },
+  { slug: 'class_707',    name: 'Class 707 Desiro City'       },
+  { slug: 'class_710',    name: 'Class 710 Aventra'           },
+  { slug: 'class_720',    name: 'Class 720 Aventra'           },
+  { slug: 'class_745',    name: 'Class 745'                   },
+  // Diesel locomotives
+  { slug: 'class_37',     name: 'Class 37'                    },
+  { slug: 'class_47',     name: 'Class 47'                    },
+  { slug: 'class_57',     name: 'Class 57'                    },
+  { slug: 'class_66',     name: 'Class 66'                    },
+  { slug: 'class_67',     name: 'Class 67'                    },
+  { slug: 'class_68',     name: 'Class 68'                    },
+];
+
+const QUIZ_SIZE = 10;
+const LETTERS   = ['A','B','C','D'];
+
+let questions  = [];
+let current    = 0;
+let score      = 0;
+let answered   = false;
+let dotStates  = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── Build a fresh quiz (synchronous — images are local) ─────────────────────
+function buildQuiz() {
+  const picks = shuffle(CATALOGUE).slice(0, QUIZ_SIZE);
+  questions = picks.map(train => {
+    const wrongs  = shuffle(CATALOGUE.filter(c => c.slug !== train.slug))
+                      .slice(0, 3).map(c => c.name);
+    const choices = shuffle([train.name, ...wrongs]);
+    return { train, choices };
+  });
+  dotStates = Array(QUIZ_SIZE).fill('pending');
+  current   = 0;
+  score     = 0;
+  answered  = false;
+  document.getElementById('results').style.display    = 'none';
+  document.getElementById('quiz-panel').style.display = 'block';
+  showQuestion();
+}
+
+// ── Render progress dots ─────────────────────────────────────────────────────
+function renderDots() {
+  document.getElementById('dots').innerHTML =
+    dotStates.map((s, i) => {
+      const cls = i === current ? 'dot current'
+                : s === 'correct' ? 'dot correct'
+                : s === 'wrong'   ? 'dot wrong'
+                : 'dot';
+      return `<div class="${cls}"></div>`;
+    }).join('');
+}
+
+// ── Show one question ────────────────────────────────────────────────────────
+function showQuestion() {
+  answered = false;
+  const q  = questions[current];
+
+  document.getElementById('q-label').textContent  = `QUESTION ${current + 1} OF ${QUIZ_SIZE}`;
+  document.getElementById('q-score').textContent  = `SCORE: ${score}/${current}`;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className   = '';
+  document.getElementById('next-btn').style.display = 'none';
+  renderDots();
+
+  const wrap = document.getElementById('img-wrap');
+  wrap.innerHTML = '';
+  const img  = document.createElement('img');
+  img.src    = `images/${q.train.slug}.jpg`;
+  img.alt    = 'Train';
+  img.onerror = () => { wrap.innerHTML = '<div class="no-img">NO PHOTO AVAILABLE</div>'; };
+  wrap.appendChild(img);
+
+  document.getElementById('choices').innerHTML =
+    q.choices.map((c, i) =>
+      `<button class="choice-btn" data-choice="${escAttr(c)}" onclick="handleAnswer(this)">
+        <span class="ltr">${LETTERS[i]}.</span><span>${c}</span>
+       </button>`
+    ).join('');
+}
+
+function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+// ── Handle answer ────────────────────────────────────────────────────────────
+function handleAnswer(btn) {
+  if (answered) return;
+  answered = true;
+
+  const chosen  = btn.dataset.choice;
+  const correct = questions[current].train.name;
+  const fb      = document.getElementById('feedback');
+
+  document.querySelectorAll('.choice-btn').forEach(b => {
+    b.disabled = true;
+    if (b.dataset.choice === correct) b.classList.add('correct');
+  });
+
+  if (chosen === correct) {
+    score++;
+    dotStates[current] = 'correct';
+    fb.textContent = '✓  CORRECT!';
+    fb.className   = 'fb-ok';
+  } else {
+    btn.classList.add('wrong');
+    dotStates[current] = 'wrong';
+    fb.textContent = `✗  WRONG — It was the ${correct}`;
+    fb.className   = 'fb-err';
+  }
+
+  renderDots();
+
+  const nb = document.getElementById('next-btn');
+  nb.textContent   = current + 1 < QUIZ_SIZE ? 'NEXT QUESTION →' : 'SEE RESULTS →';
+  nb.style.display = 'inline-block';
+}
+
+// ── Advance ──────────────────────────────────────────────────────────────────
+function nextQuestion() {
+  current++;
+  if (current >= QUIZ_SIZE) { showResults(); return; }
+  showQuestion();
+}
+
+// ── Results ──────────────────────────────────────────────────────────────────
+function showResults() {
+  document.getElementById('quiz-panel').style.display = 'none';
+  document.getElementById('results').style.display    = 'block';
+
+  const pct = score / QUIZ_SIZE;
+  let msg, colour;
+  if (pct === 1)       { msg = '★  PERFECT — True train expert!';           colour = 'var(--grn)'; }
+  else if (pct >= 0.8) { msg = 'EXCELLENT — Nearly a perfect spotter!';          colour = 'var(--grn)'; }
+  else if (pct >= 0.6) { msg = 'GOOD EFFORT — Keep those eyes on the line!';    colour = 'var(--y)';   }
+  else if (pct >= 0.4) { msg = 'NOT BAD — More platform time needed!';          colour = 'var(--ora)'; }
+  else                 { msg = 'KEEP PRACTISING — Hit the platform!';           colour = 'var(--red)'; }
+
+  document.getElementById('res-score').textContent = `${score}/${QUIZ_SIZE}`;
+  document.getElementById('res-score').style.color = colour;
+  document.getElementById('res-msg').textContent   = msg;
+  document.getElementById('res-sub').innerHTML     =
+    `${score} correct out of ${QUIZ_SIZE} questions<br>`
+    + `Quiz drawn from a catalogue of ${CATALOGUE.length} train classes`;
+}
+
+// ── Reset ────────────────────────────────────────────────────────────────────
+function resetQuiz() { buildQuiz(); }
+
+// ── Clock ────────────────────────────────────────────────────────────────────
+function tick() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
+}
+setInterval(tick, 1000);
+tick();
+
+buildQuiz();
+</script>
+</body>
+</html>
