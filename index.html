@@ -196,7 +196,6 @@
 </div>
 
 <div class="footer" id="footer">—</div>
-<pre id="debug-out" style="color:#ff0;background:#111;font-size:10px;padding:8px;white-space:pre-wrap;word-break:break-all;margin-top:8px;"></pre>
 <div class="footer" style="margin-top:10px;">
   <a href="quiz.html" style="color:var(--y);text-decoration:none;letter-spacing:2px;">
     ► THINK YOU KNOW YOUR TRAIN CLASSES? TAKE THE TEST
@@ -350,8 +349,9 @@
          || isoToHHMM(welEntry.temporalData?.arrival?.realtimeForecast))
       : null;
 
-    // Adjust for house position: 3 mins south of station
-    // Northbound passes house before station (-3), southbound after (+3)
+    // stationTime: used for filtering/sorting (actual WEL time)
+    // wboTime: house-adjusted display time (3 mins south of station)
+    const stationTime = wboTime;
     const houseTime = staCrs === NORTH_STA.crs
       ? addMins(wboTime, -HOUSE_OFFSET)
       : addMins(wboTime,  HOUSE_OFFSET);
@@ -359,7 +359,7 @@
     const callingStr  = detail ? callingAfterWEL(detail, staCrs) : '';
     const trainClass  = detail ? extractClass(detail) : boardClass(svc);
 
-    return { uid, svc, welEntry, wboLive, stopsAtWBO, wboTime: houseTime, callingStr, trainClass, dest, deptTime, isCancelled, offsetMins, staCrs };
+    return { uid, svc, welEntry, wboLive, stopsAtWBO, stationTime, wboTime: houseTime, callingStr, trainClass, dest, deptTime, isCancelled, offsetMins, staCrs };
   }
 
   // ── Status / timing labels ─────────────────────────────────────────
@@ -456,8 +456,8 @@ ${badge}${classTag}
   // ── Update display ─────────────────────────────────────────────────
   function updateDisplay() {
     const nowMins = toMins(nowHHMM());
-    const north = cachedNorth.filter(e => toMins(e.wboTime) >= nowMins);
-    const south = cachedSouth.filter(e => toMins(e.wboTime) >= nowMins);
+    const north = cachedNorth.filter(e => toMins(e.stationTime) >= nowMins);
+    const south = cachedSouth.filter(e => toMins(e.stationTime) >= nowMins);
     renderPanel(north[0] || null, 'north-body');
     renderPanel(south[0] || null, 'south-body');
     requestAnimationFrame(() => requestAnimationFrame(initMarquees));
@@ -467,12 +467,26 @@ ${badge}${classTag}
       + ` · Data: <a href="https://realtimetrains.co.uk" target="_blank" style="color:var(--ydim);text-decoration:none;">Realtime Trains</a>`;
   }
 
+  // Extract exact WEL scheduled/live time from service detail locations
+  function welTimesFromDetail(detail) {
+    const locs = detail?.service?.locations || [];
+    const welLoc = locs.find(l => l.location?.shortCodes?.includes('WEL'));
+    if (!welLoc) return null;
+    const sched = isoToHHMM(welLoc.temporalData?.departure?.scheduleAdvertised
+                          || welLoc.temporalData?.arrival?.scheduleAdvertised);
+    const live  = isoToHHMM(welLoc.temporalData?.departure?.realtimeForecast
+                          || welLoc.temporalData?.departure?.realtimeActual
+                          || welLoc.temporalData?.arrival?.realtimeForecast
+                          || welLoc.temporalData?.arrival?.realtimeActual);
+    return sched ? { sched, live } : null;
+  }
+
   // Fetch calling points for displayed trains and update panels
   async function enrichDisplayed() {
     const nowMins = toMins(nowHHMM());
     const toEnrich = [
-      ...cachedNorth.filter(e => toMins(e.wboTime) >= nowMins).slice(0, 2),
-      ...cachedSouth.filter(e => toMins(e.wboTime) >= nowMins).slice(0, 2),
+      ...cachedNorth.filter(e => toMins(e.stationTime) >= nowMins - 5).slice(0, 2),
+      ...cachedSouth.filter(e => toMins(e.stationTime) >= nowMins - 5).slice(0, 2),
     ];
     let updated = false;
     for (const e of toEnrich) {
@@ -481,10 +495,25 @@ ${badge}${classTag}
       if (!detail) continue;
       const calling    = callingAfterWEL(detail, e.staCrs);
       const trainClass = extractClass(detail);
-      // Patch the cached entry in-place
+      const welTimes   = welTimesFromDetail(detail);
       for (const list of [cachedNorth, cachedSouth]) {
         const idx = list.findIndex(x => x.uid === e.uid);
-        if (idx !== -1) { list[idx] = { ...list[idx], callingStr: calling, trainClass }; updated = true; }
+        if (idx === -1) continue;
+        const entry = list[idx];
+        let patch = { ...entry, callingStr: calling, trainClass };
+        if (welTimes) {
+          // Replace estimated time with exact WEL time from service detail
+          const house = list === cachedNorth
+            ? addMins(welTimes.sched, -HOUSE_OFFSET)
+            : addMins(welTimes.sched,  HOUSE_OFFSET);
+          patch = { ...patch, stationTime: welTimes.sched, wboTime: house,
+                    wboLive: welTimes.live && welTimes.live !== welTimes.sched
+                              ? (list === cachedNorth ? addMins(welTimes.live, -HOUSE_OFFSET)
+                                                      : addMins(welTimes.live,  HOUSE_OFFSET))
+                              : null };
+        }
+        list[idx] = patch;
+        updated = true;
       }
     }
     if (updated) updateDisplay();
@@ -511,11 +540,6 @@ ${badge}${classTag}
         if (uid && s.scheduleMetadata?.operator?.code === EMR_CODE)
           welByUid.set(uid, s);
       }
-      // DEBUG — write raw WEL data visibly on the page
-      const emrWEL = (welData.services || []).filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE);
-      const dbgEl = document.getElementById('debug-out');
-      if (dbgEl) dbgEl.textContent = emrWEL.slice(0,3).map((s,i) =>
-        `[${i}] ${JSON.stringify(s)}`).join('\n\n');
 
       const nowMins = toMins(nowHHMM());
 
@@ -533,16 +557,16 @@ ${badge}${classTag}
         .map(s => buildEnriched(s, NORTH_STA.offsetMins, NORTH_STA.crs,
               welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
               svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
-        .filter(e => toMins(e.wboTime) >= nowMins)
-        .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
+        .filter(e => toMins(e.stationTime) >= nowMins - 5)
+        .sort((a, b) => toMins(a.stationTime) - toMins(b.stationTime));
 
       cachedSouth = (ketData.services || [])
         .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isSouthbound(s))
         .map(s => buildEnriched(s, SOUTH_STA.offsetMins, SOUTH_STA.crs,
               welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
               svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
-        .filter(e => toMins(e.wboTime) >= nowMins)
-        .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
+        .filter(e => toMins(e.stationTime) >= nowMins - 5)
+        .sort((a, b) => toMins(a.stationTime) - toMins(b.stationTime));
 
       updateDisplay();
       enrichDisplayed();   // fetch calling points in background
