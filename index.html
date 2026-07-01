@@ -364,15 +364,17 @@
   // ── Status / timing labels ─────────────────────────────────────────
   function getStatus(e) {
     if (e.isCancelled) return { text: 'CANCELLED', cls: 'cancelled' };
-    if (e.welEntry) {
+    // Only check welEntry cancellation flags for trains that actually stop —
+    // RTT may set departure.isCancelled=true for PASS events (meaning no stop, not cancelled)
+    if (e.stopsAtWBO && e.welEntry) {
       if (e.welEntry.temporalData?.departure?.isCancelled ||
           e.welEntry.temporalData?.arrival?.isCancelled)
         return { text: 'CANCELLED', cls: 'cancelled' };
-      if (e.wboLive && e.wboLive !== e.wboTime)
-        return { text: `Exp ${e.wboLive}`, cls: 'late' };
-      return { text: 'On time', cls: 'ontime' };
     }
-    // Pass-through — check departure from BDM/KET for delay
+    if (e.wboLive && e.wboLive !== e.wboTime)
+      return { text: `Exp ${e.wboLive}`, cls: 'late' };
+    if (e.welEntry) return { text: 'On time', cls: 'ontime' };
+    // No WEL entry — check departure from BDM/KET for delay
     const live = isoToHHMM(e.svc.temporalData?.departure?.realtimeForecast
                          || e.svc.temporalData?.departure?.realtimeActual);
     if (live && live !== e.deptTime) return { text: 'Delayed', cls: 'late' };
