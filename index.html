@@ -196,6 +196,7 @@
 </div>
 
 <div class="footer" id="footer">—</div>
+<pre id="debug-out" style="color:#ff0;background:#111;font-size:10px;padding:8px;white-space:pre-wrap;word-break:break-all;margin-top:8px;"></pre>
 <div class="footer" style="margin-top:10px;">
   <a href="quiz.html" style="color:var(--y);text-decoration:none;letter-spacing:2px;">
     ► THINK YOU KNOW YOUR TRAIN CLASSES? TAKE THE TEST
@@ -510,10 +511,11 @@ ${badge}${classTag}
         if (uid && s.scheduleMetadata?.operator?.code === EMR_CODE)
           welByUid.set(uid, s);
       }
-      // DEBUG — use console.error so it shows even with console filter on errors/warnings
+      // DEBUG — write raw WEL data visibly on the page
       const emrWEL = (welData.services || []).filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE);
-      console.error('DBG WEL count:', emrWEL.length, '| first 3:',
-        emrWEL.slice(0,3).map(s => JSON.stringify(s)));
+      const dbgEl = document.getElementById('debug-out');
+      if (dbgEl) dbgEl.textContent = emrWEL.slice(0,3).map((s,i) =>
+        `[${i}] ${JSON.stringify(s)}`).join('\n\n');
 
       const nowMins = toMins(nowHHMM());
 
