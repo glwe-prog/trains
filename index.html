@@ -505,17 +505,20 @@ ${badge}${classTag}
         .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE);
 
       function welEntry(s) {
-        // Time at WEL: prefer departure, fall back to arrival (for passing trains)
-        const dep = isoToHHMM(s.temporalData?.departure?.scheduleAdvertised);
-        const arr = isoToHHMM(s.temporalData?.arrival?.scheduleAdvertised);
-        return dep || arr || null;
+        // Stopping trains have departure/arrival; passing trains have pass
+        const dep  = isoToHHMM(s.temporalData?.departure?.scheduleAdvertised);
+        const arr  = isoToHHMM(s.temporalData?.arrival?.scheduleAdvertised);
+        const pass = isoToHHMM(s.temporalData?.pass?.scheduleAdvertised);
+        return dep || arr || pass || null;
       }
 
       function welLive(s) {
         return isoToHHMM(s.temporalData?.departure?.realtimeForecast
                       || s.temporalData?.departure?.realtimeActual
                       || s.temporalData?.arrival?.realtimeForecast
-                      || s.temporalData?.arrival?.realtimeActual);
+                      || s.temporalData?.arrival?.realtimeActual
+                      || s.temporalData?.pass?.realtimeForecast
+                      || s.temporalData?.pass?.realtimeActual);
       }
 
       function buildFromWEL(s, houseOffset) {
@@ -526,7 +529,8 @@ ${badge}${classTag}
         const stopsAtWBO = s.temporalData?.displayAs !== 'PASS';
         const uid   = s.scheduleMetadata?.uniqueIdentity;
         const isCancelled = !!(s.temporalData?.departure?.isCancelled
-                             || s.temporalData?.arrival?.isCancelled);
+                             || s.temporalData?.arrival?.isCancelled
+                             || s.temporalData?.pass?.isCancelled);
         return {
           uid, svc: s,
           welEntry: stopsAtWBO ? s : null,
