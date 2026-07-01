@@ -496,8 +496,8 @@ ${badge}${classTag}
       };
       const [welData, bdmData, ketData] = await Promise.all([
         fetch(`${RTT_BASE}/gb-nr/location?code=WEL&timeWindow=180`).then(checkOk('WEL')),
-        fetch(`${RTT_BASE}/gb-nr/location?code=${NORTH_STA.crs}&timeWindow=120`).then(checkOk('BDM')),
-        fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=120`).then(checkOk('KET')),
+        fetch(`${RTT_BASE}/gb-nr/location?code=${NORTH_STA.crs}&timeWindow=180`).then(checkOk('BDM')),
+        fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=180`).then(checkOk('KET')),
       ]);
 
       // Index WEL stopping trains by UID
@@ -514,7 +514,7 @@ ${badge}${classTag}
       const nowMins = toMins(nowHHMM());
 
       cachedNorth = (bdmData.services || [])
-        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isNorthbound(s))
+        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE)
         .map(s => buildEnriched(s, NORTH_STA.offsetMins, NORTH_STA.crs,
               welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
               svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
