@@ -494,38 +494,65 @@ ${badge}${classTag}
         if (!r.ok) throw new Error(`${tag} ${r.status} ${r.statusText}`);
         return r.json();
       };
-      const [welData, bdmData, ketData] = await Promise.all([
-        fetch(`${RTT_BASE}/gb-nr/location?code=WEL&timeWindow=180`).then(checkOk('WEL')),
-        fetch(`${RTT_BASE}/gb-nr/location?code=${NORTH_STA.crs}&timeWindow=180`).then(checkOk('BDM')),
-        fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=180`).then(checkOk('KET')),
-      ]);
 
-      // Index WEL stopping trains by UID
-      const welByUid = new Map();
-      for (const s of (welData.services || [])) {
-        const uid = s.scheduleMetadata?.uniqueIdentity;
-        const display = s.temporalData?.displayAs;
-        if (uid && s.scheduleMetadata?.operator?.code === EMR_CODE
-            && display !== 'PASS') {
-          welByUid.set(uid, s);
-        }
-      }
+      // WEL board returns ALL services (CALL + PASS) — use it as sole source
+      const welData = await fetch(`${RTT_BASE}/gb-nr/location?code=WEL&timeWindow=180`)
+        .then(checkOk('WEL'));
 
       const nowMins = toMins(nowHHMM());
 
-      cachedNorth = (bdmData.services || [])
-        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isNorthbound(s))
-        .map(s => buildEnriched(s, NORTH_STA.offsetMins, NORTH_STA.crs,
-              welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
-              svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
+      const emrAtWEL = (welData.services || [])
+        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE);
+
+      function welEntry(s) {
+        // Time at WEL: prefer departure, fall back to arrival (for passing trains)
+        const dep = isoToHHMM(s.temporalData?.departure?.scheduleAdvertised);
+        const arr = isoToHHMM(s.temporalData?.arrival?.scheduleAdvertised);
+        return dep || arr || null;
+      }
+
+      function welLive(s) {
+        return isoToHHMM(s.temporalData?.departure?.realtimeForecast
+                      || s.temporalData?.departure?.realtimeActual
+                      || s.temporalData?.arrival?.realtimeForecast
+                      || s.temporalData?.arrival?.realtimeActual);
+      }
+
+      function buildFromWEL(s, houseOffset) {
+        const wbo  = welEntry(s);
+        if (!wbo) return null;
+        const house = addMins(wbo, houseOffset);
+        const live  = welLive(s);
+        const stopsAtWBO = s.temporalData?.displayAs !== 'PASS';
+        const uid   = s.scheduleMetadata?.uniqueIdentity;
+        const isCancelled = !!(s.temporalData?.departure?.isCancelled
+                             || s.temporalData?.arrival?.isCancelled);
+        return {
+          uid, svc: s,
+          welEntry: stopsAtWBO ? s : null,
+          wboLive:  live !== wbo ? live : null,
+          stopsAtWBO,
+          wboTime:  house,
+          callingStr: '',
+          trainClass: boardClass(s),
+          dest:  (s.destination?.[0]?.location?.description || 'Unknown').toUpperCase(),
+          deptTime: wbo,
+          isCancelled,
+          staCrs: 'WEL',
+        };
+      }
+
+      cachedNorth = emrAtWEL
+        .filter(s => isNorthbound(s))
+        .map(s => buildFromWEL(s, -HOUSE_OFFSET))   // house is south of station: train hits it first
+        .filter(Boolean)
         .filter(e => toMins(e.wboTime) >= nowMins)
         .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
 
-      cachedSouth = (ketData.services || [])
-        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isSouthbound(s))
-        .map(s => buildEnriched(s, SOUTH_STA.offsetMins, SOUTH_STA.crs,
-              welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
-              svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
+      cachedSouth = emrAtWEL
+        .filter(s => isSouthbound(s))
+        .map(s => buildFromWEL(s, +HOUSE_OFFSET))   // house is south: southbound hits it after station
+        .filter(Boolean)
         .filter(e => toMins(e.wboTime) >= nowMins)
         .sort((a, b) => toMins(a.wboTime) - toMins(b.wboTime));
 
