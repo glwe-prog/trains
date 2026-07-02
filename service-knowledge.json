@@ -1,5 +1,13 @@
 {
-  "C04222": { "origin": "Corby", "originTime": "09:10", "class": "Class 360" },
-  "W70677": { "origin": "Lincoln Central", "originTime": "06:40", "class": "" },
-  "W70680": { "origin": "Nottingham", "originTime": "08:12", "class": "" }
+  "C04222": { "origin": "Corby",                    "originTime": "09:10", "class": "Class 360" },
+  "C04229": { "origin": "Corby",                    "originTime": "10:10", "class": "Class 360" },
+  "C04232": { "origin": "Corby",                    "originTime": "10:40", "class": "Class 360" },
+  "C41869": { "origin": "St Pancras International", "originTime": "09:15", "class": "Class 360" },
+  "C41873": { "origin": "St Pancras International", "originTime": "09:45", "class": "Class 360" },
+  "C21645": { "origin": "St Pancras International", "originTime": "10:05", "class": "Class 810" },
+  "W70677": { "origin": "Lincoln Central",          "originTime": "06:40", "class": ""          },
+  "W70680": { "origin": "Nottingham",               "originTime": "08:12", "class": ""          },
+  "W70685": { "origin": "Nottingham",               "originTime": "09:12", "class": "Class 222" },
+  "W70688": { "origin": "Nottingham",               "originTime": "09:50", "class": "Class 222" },
+  "W70861": { "origin": "St Pancras International", "originTime": "09:35", "class": ""          }
 }
