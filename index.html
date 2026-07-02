@@ -226,6 +226,44 @@
   let cachedSouth = [];
   const svcCache  = new Map();   // uid → service detail (calling points + class)
 
+  // ── Service knowledge store ────────────────────────────────────────
+  // Seeded from service-knowledge.json at startup; grown by localStorage
+  // at runtime as services are enriched. Keyed by bare identity (no date).
+  // Workflow: page accumulates → user calls exportKnowledge() → paste to
+  // Claude → Claude updates service-knowledge.json and pushes.
+  const knowledge = {};
+
+  function kKey(uid) {
+    const m = (uid || '').match(/(?:gb-nr:)?([^:]+)/);
+    return m ? m[1] : uid;
+  }
+
+  function saveKnowledge(uid, data) {
+    const k = kKey(uid);
+    knowledge[k] = { ...(knowledge[k] || {}), ...data };
+    try { localStorage.setItem('emr-svc', JSON.stringify(knowledge)); } catch (_) {}
+  }
+
+  async function loadKnowledge() {
+    try {
+      const r = await fetch('service-knowledge.json');
+      if (r.ok) Object.assign(knowledge, await r.json());
+    } catch (_) {}
+    try {
+      const stored = JSON.parse(localStorage.getItem('emr-svc') || '{}');
+      // localStorage overrides JSON (more recently learned)
+      Object.assign(knowledge, stored);
+    } catch (_) {}
+  }
+
+  // Call from browser console to get data to paste to Claude
+  window.exportKnowledge = () => {
+    const out = JSON.stringify(knowledge, null, 2);
+    console.log(out);
+    try { navigator.clipboard.writeText(out).then(() => console.log('Copied to clipboard')); } catch (_) {}
+    return out;
+  };
+
 
   // ── Helpers ────────────────────────────────────────────────────────
   function isoToHHMM(iso) {
@@ -364,10 +402,15 @@
       ? addMins(wboTime, -HOUSE_OFFSET)
       : addMins(wboTime,  HOUSE_OFFSET);
 
+    const k           = kKey(uid);
+    const known       = knowledge[k] || {};
     const rawCalling  = detail ? callingAfterWEL(detail, staCrs) : '';
-    const origin      = detail ? extractOrigin(detail) : null;
-    const callingStr  = origin ? (rawCalling ? `${origin}   ·   ${rawCalling}` : origin) : rawCalling;
-    const trainClass  = detail ? extractClass(detail) : boardClass(svc);
+    const originLabel = detail ? extractOrigin(detail)
+                               : (known.originTime && known.origin
+                                    ? `${known.originTime} ex ${known.origin}`
+                                    : known.origin ? `ex ${known.origin}` : null);
+    const callingStr  = originLabel ? (rawCalling ? `${originLabel}   ·   ${rawCalling}` : originLabel) : rawCalling;
+    const trainClass  = detail ? extractClass(detail) : (known.class || boardClass(svc));
 
     return { uid, svc, welEntry, wboLive, stopsAtWBO, stationTime, wboTime: houseTime, callingStr, trainClass, dest, deptTime, isCancelled, offsetMins, staCrs, northward };
   }
@@ -517,6 +560,14 @@ ${badge}${classTag}
       const trainClass = extractClass(detail);
       const origin     = extractOrigin(detail);
       const welTimes   = welTimesFromDetail(detail);
+      // Persist what we learned about this service
+      const originLocs = detail?.service?.locations || [];
+      const firstLoc   = originLocs.find(l => l.temporalData?.displayAs === 'CALL' || l.temporalData?.displayAs === 'ORIGINATES');
+      saveKnowledge(e.uid, {
+        origin:     firstLoc?.location?.description || null,
+        originTime: isoToHHMM(firstLoc?.temporalData?.departure?.scheduleAdvertised) || null,
+        class:      trainClass || null,
+      });
       for (const list of [cachedNorth, cachedSouth]) {
         const idx = list.findIndex(x => x.uid === e.uid);
         if (idx === -1) continue;
@@ -659,7 +710,7 @@ ${badge}${classTag}
   setInterval(tick, 1000);
   setInterval(updateDisplay, DISPLAY_MS);
   tick();
-  refresh();
+  loadKnowledge().then(refresh);
   setInterval(refresh, REFRESH_MS);
 </script>
 </body>
