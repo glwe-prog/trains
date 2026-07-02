@@ -99,7 +99,6 @@
     }
     .stop-badge.stops   { background: var(--y); color: #000; }
     .train-class { display: inline-block; font-size: clamp(0.6rem, 1.8vw, 0.8rem); letter-spacing: 2px; padding: 2px 8px; border-radius: 2px; margin-bottom: 8px; margin-left: 6px; border: 1px solid var(--ydim); color: var(--ydim); }
-    .origin-line { font-size: clamp(0.6rem, 1.8vw, 0.75rem); color: #888; letter-spacing: 1px; margin-bottom: 6px; }
     .stop-badge.passes  { border: 1px solid var(--ydim); color: var(--ydim); }
 
     /* ── Calling at (scrolling) ───────────── */
@@ -439,10 +438,8 @@
     const badge = e.stopsAtWBO
       ? '<span class="stop-badge stops">● STOPS</span>'
       : '<span class="stop-badge passes">○ PASSES THROUGH</span>';
-    const classTag  = e.trainClass
+    const classTag = e.trainClass
       ? `<span class="train-class">${e.trainClass}</span>` : '';
-    const originTag = e.origin
-      ? `<div class="origin-line">${e.origin}</div>` : '';
     const key = `${e.wboTime}|${e.dest}`;
     const changed = _shown[elId] !== key;
     _shown[elId] = key;
@@ -452,7 +449,7 @@
   <span class="r1-dest">${e.dest}</span>
   <span class="r1-exp ${exp.cls}">${exp.text}</span>
 </div>
-${badge}${classTag}${originTag}
+${badge}${classTag}
 <div class="calling-wrap">
   <span class="calling-label">Calling at:</span>
   <div class="calling-ticker">
@@ -485,7 +482,7 @@ ${badge}${classTag}${originTag}
     if (!first) return null;
     const name = first.location?.description;
     const dep  = isoToHHMM(first.temporalData?.departure?.scheduleAdvertised);
-    return name && dep ? `${dep} from ${name}` : (name || null);
+    return name && dep ? `${dep} ex ${name}` : (name || null);
   }
 
   // Extract exact WEL scheduled/live time from service detail locations
@@ -522,7 +519,10 @@ ${badge}${classTag}${originTag}
         const idx = list.findIndex(x => x.uid === e.uid);
         if (idx === -1) continue;
         const entry = list[idx];
-        let patch = { ...entry, callingStr: calling, trainClass, origin };
+        const callingWithOrigin = origin
+          ? (calling ? `${origin}   ·   ${calling}` : origin)
+          : calling;
+        let patch = { ...entry, callingStr: callingWithOrigin, trainClass };
         if (welTimes) {
           // Replace estimated time with exact WEL time from service detail
           const house = list === cachedNorth
