@@ -329,10 +329,17 @@
   }
 
   // ── Enrich a BDM/KET service with WEL stop data ───────────────────
-  function buildEnriched(svc, offsetMins, staCrs, welEntry, detail) {
-    const uid        = svc.scheduleMetadata?.uniqueIdentity;
-    const deptTime   = isoToHHMM(svc.temporalData?.departure?.scheduleAdvertised
-                     || svc.temporalData?.arrival?.scheduleAdvertised) || '??:??';
+  // northward = true  → train heading north; house is 3 min BEFORE WEL
+  // northward = false → train heading south; house is 3 min AFTER WEL
+  // For KET northbound, use arrival time (KET is north of WEL so train arrives at KET
+  // after passing WEL; departure from KET is further away in time and less accurate).
+  function buildEnriched(svc, offsetMins, staCrs, northward, welEntry, detail) {
+    const uid = svc.scheduleMetadata?.uniqueIdentity;
+    // KET northbound: use arrival (train came from WEL direction); everything else: departure with arrival fallback
+    const deptTime = (northward && staCrs === SOUTH_STA.crs)
+      ? (isoToHHMM(svc.temporalData?.arrival?.scheduleAdvertised) || '??:??')
+      : (isoToHHMM(svc.temporalData?.departure?.scheduleAdvertised
+           || svc.temporalData?.arrival?.scheduleAdvertised) || '??:??');
     const isCancelled = !!svc.temporalData?.departure?.isCancelled;
     const dest       = (svc.destination?.[0]?.location?.description || 'Unknown').toUpperCase();
     const stopsAtWBO = !!welEntry && welEntry.temporalData?.displayAs !== 'PASS';
@@ -353,14 +360,14 @@
     // stationTime: used for filtering/sorting (actual WEL time)
     // wboTime: house-adjusted display time (3 mins south of station)
     const stationTime = wboTime;
-    const houseTime = staCrs === NORTH_STA.crs
+    const houseTime   = northward
       ? addMins(wboTime, -HOUSE_OFFSET)
       : addMins(wboTime,  HOUSE_OFFSET);
 
     const callingStr  = detail ? callingAfterWEL(detail, staCrs) : '';
     const trainClass  = detail ? extractClass(detail) : boardClass(svc);
 
-    return { uid, svc, welEntry, wboLive, stopsAtWBO, stationTime, wboTime: houseTime, callingStr, trainClass, dest, deptTime, isCancelled, offsetMins, staCrs };
+    return { uid, svc, welEntry, wboLive, stopsAtWBO, stationTime, wboTime: houseTime, callingStr, trainClass, dest, deptTime, isCancelled, offsetMins, staCrs, northward };
   }
 
   // ── Status / timing labels ─────────────────────────────────────────
@@ -553,19 +560,48 @@ ${badge}${classTag}
         return !/(london|pancras|bedford|luton|flitwick|harlington|leagrave|st albans)/.test(dest);
       }
 
-      cachedNorth = (bdmData.services || [])
+      // BDM northbound: slow trains that stop at / pass through Bedford
+      const bdmNorthUids = new Set();
+      const northFromBDM = (bdmData.services || [])
         .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isNorthboundFromBDM(s))
-        .map(s => buildEnriched(s, NORTH_STA.offsetMins, NORTH_STA.crs,
-              welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
-              svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
-        .filter(e => toMins(e.stationTime) >= nowMins - 20)
+        .map(s => {
+          const uid = s.scheduleMetadata?.uniqueIdentity;
+          if (uid) bdmNorthUids.add(uid);
+          return buildEnriched(s, NORTH_STA.offsetMins, NORTH_STA.crs, true,
+            welByUid.get(uid) || null, svcCache.get(uid) || null);
+        })
+        .filter(e => toMins(e.stationTime) >= nowMins - 20);
+
+      // KET northbound: express trains that skip Bedford (Nottingham, Sheffield, etc.)
+      // These appear at KET after passing through WEL, so WEL ≈ KET arrival − 6 min.
+      function isNorthboundFromKET(s) {
+        const dest = (s.destination?.[0]?.location?.description || '').toLowerCase();
+        return !/london|pancras|bedford|luton|flitwick|harlington|leagrave|st albans/.test(dest);
+      }
+      const northFromKET = (ketData.services || [])
+        .filter(s => {
+          const uid = s.scheduleMetadata?.uniqueIdentity;
+          return s.scheduleMetadata?.operator?.code === EMR_CODE
+              && isNorthboundFromKET(s)
+              && !bdmNorthUids.has(uid);   // skip trains already covered by BDM board
+        })
+        .map(s => {
+          const uid = s.scheduleMetadata?.uniqueIdentity;
+          return buildEnriched(s, -SOUTH_STA.offsetMins, SOUTH_STA.crs, true,
+            welByUid.get(uid) || null, svcCache.get(uid) || null);
+        })
+        .filter(e => toMins(e.stationTime) >= nowMins - 20);
+
+      cachedNorth = [...northFromBDM, ...northFromKET]
         .sort((a, b) => toMins(a.stationTime) - toMins(b.stationTime));
 
       cachedSouth = (ketData.services || [])
         .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isSouthbound(s))
-        .map(s => buildEnriched(s, SOUTH_STA.offsetMins, SOUTH_STA.crs,
-              welByUid.get(s.scheduleMetadata?.uniqueIdentity) || null,
-              svcCache.get(s.scheduleMetadata?.uniqueIdentity) || null))
+        .map(s => {
+          const uid = s.scheduleMetadata?.uniqueIdentity;
+          return buildEnriched(s, SOUTH_STA.offsetMins, SOUTH_STA.crs, false,
+            welByUid.get(uid) || null, svcCache.get(uid) || null);
+        })
         .filter(e => toMins(e.stationTime) >= nowMins - 20)
         .sort((a, b) => toMins(a.stationTime) - toMins(b.stationTime));
 
