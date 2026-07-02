@@ -619,6 +619,24 @@ ${badge}${classTag}
         .filter(e => toMins(e.stationTime) >= nowMins - 20)
         .sort((a, b) => toMins(a.stationTime) - toMins(b.stationTime));
 
+      // Plug the gap: stopping trains that have already left KET/BDM but haven't
+      // reached WEL yet will have dropped off those boards. The WEL board still
+      // shows them (they stop here). Add any not already in cachedNorth/South.
+      const coveredUids = new Set([...cachedNorth, ...cachedSouth].map(e => e.uid));
+      for (const s of (welData.services || [])) {
+        const uid = s.scheduleMetadata?.uniqueIdentity;
+        if (!uid || s.scheduleMetadata?.operator?.code !== EMR_CODE) continue;
+        if (coveredUids.has(uid)) continue;
+        const dest = (s.destination?.[0]?.location?.description || '').toLowerCase();
+        const north = !/london|pancras|bedford|luton|flitwick|harlington|leagrave|st albans/.test(dest);
+        const e = buildEnriched(s, 0, 'WEL', north, s, svcCache.get(uid) || null);
+        if (toMins(e.stationTime) >= nowMins - 20) {
+          if (north) cachedNorth.push(e); else cachedSouth.push(e);
+        }
+      }
+      cachedNorth.sort((a, b) => toMins(a.stationTime) - toMins(b.stationTime));
+      cachedSouth.sort((a, b) => toMins(a.stationTime) - toMins(b.stationTime));
+
       updateDisplay();
       enrichDisplayed();   // fetch calling points in background
 
