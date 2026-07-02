@@ -364,7 +364,9 @@
       ? addMins(wboTime, -HOUSE_OFFSET)
       : addMins(wboTime,  HOUSE_OFFSET);
 
-    const callingStr  = detail ? callingAfterWEL(detail, staCrs) : '';
+    const rawCalling  = detail ? callingAfterWEL(detail, staCrs) : '';
+    const origin      = detail ? extractOrigin(detail) : null;
+    const callingStr  = origin ? (rawCalling ? `${origin}   ·   ${rawCalling}` : origin) : rawCalling;
     const trainClass  = detail ? extractClass(detail) : boardClass(svc);
 
     return { uid, svc, welEntry, wboLive, stopsAtWBO, stationTime, wboTime: houseTime, callingStr, trainClass, dest, deptTime, isCancelled, offsetMins, staCrs, northward };
