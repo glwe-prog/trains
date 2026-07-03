@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stations Quiz — Wellingborough Line</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --y:    #FFE100;
+      --ydim: #C09000;
+      --bg:   #07070A;
+      --div:  #2A2A2A;
+      --grn:  #44EE44;
+      --red:  #FF3030;
+      --ora:  #FF9900;
+    }
+    body {
+      background: var(--bg);
+      color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      min-height: 100vh;
+      padding: 14px;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(to bottom,
+        transparent 0, transparent 3px,
+        rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
+      pointer-events: none;
+      z-index: 9999;
+    }
+    .page-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid var(--ydim);
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .page-title { font-size: clamp(0.55rem, 2vw, 0.82rem); letter-spacing: 3px; }
+    .page-clock  { font-size: clamp(1.4rem, 5vw, 2rem); letter-spacing: 5px; }
+    .container   { max-width: 700px; margin: 0 auto; }
+
+    #quiz-panel { border: 1px solid var(--ydim); padding: clamp(12px, 4vw, 22px); }
+
+    .progress {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      color: var(--ydim);
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .dots { display: flex; gap: 5px; }
+    .dot  { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--ydim); }
+    .dot.current { background: var(--y); border-color: var(--y); box-shadow: 0 0 5px var(--y); }
+    .dot.correct { background: var(--grn); border-color: var(--grn); }
+    .dot.wrong   { background: var(--red); border-color: var(--red); }
+
+    .map-wrap {
+      width: 100%;
+      margin-bottom: 14px;
+      border: 1px solid var(--div);
+      padding: 12px 8px 8px;
+      background: #0D0D11;
+    }
+    .line-badge {
+      font-size: 0.62rem;
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+      padding: 2px 8px;
+      display: inline-block;
+      border-left: 4px solid;
+    }
+    .route-svg { width: 100%; display: block; overflow: visible; }
+
+    .question {
+      font-size: clamp(0.78rem, 2.4vw, 0.96rem);
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+      line-height: 1.7;
+    }
+    .question strong { color: #ffffff; }
+    .question em     { font-style: normal; color: var(--ydim); }
+
+    .diff-tag {
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      padding: 1px 5px;
+      margin-left: 8px;
+      vertical-align: middle;
+      border: 1px solid;
+    }
+    .diff-easy   { border-color: var(--grn); color: var(--grn); }
+    .diff-medium { border-color: var(--y);   color: var(--y); }
+    .diff-hard   { border-color: var(--ora); color: var(--ora); }
+
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 460px) { .choices { grid-template-columns: 1fr; } }
+
+    .choice-btn {
+      background: transparent;
+      border: 1px solid var(--ydim);
+      color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      font-size: clamp(0.6rem, 1.8vw, 0.8rem);
+      letter-spacing: 1px;
+      padding: 9px 12px;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.4;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .choice-btn:hover:not(:disabled) { border-color: var(--y); background: rgba(255,225,0,0.07); }
+    .choice-btn.correct { border-color: var(--grn) !important; background: rgba(68,238,68,0.12) !important; color: var(--grn) !important; }
+    .choice-btn.wrong   { border-color: var(--red) !important; background: rgba(255,48,48,0.10) !important; color: var(--red) !important; }
+    .choice-btn:disabled { cursor: default; }
+    .ltr { color: var(--ydim); flex-shrink: 0; }
+    .choice-btn.correct .ltr { color: var(--grn); }
+    .choice-btn.wrong   .ltr { color: var(--red); }
+
+    #feedback { min-height: 1.5em; font-size: 0.82rem; letter-spacing: 2px; margin-bottom: 10px; }
+    .fb-ok  { color: var(--grn); }
+    .fb-err { color: var(--red); }
+
+    #next-btn {
+      background: transparent;
+      border: 1px solid var(--y);
+      color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      font-size: 0.82rem;
+      letter-spacing: 3px;
+      padding: 9px 22px;
+      cursor: pointer;
+      display: none;
+    }
+    #next-btn:hover { background: rgba(255,225,0,0.10); }
+
+    #results {
+      border: 1px solid var(--ydim);
+      padding: clamp(20px, 6vw, 44px);
+      text-align: center;
+      display: none;
+    }
+    .res-score { font-size: clamp(3rem, 10vw, 5rem); letter-spacing: 6px; margin-bottom: 10px; }
+    .res-msg   { font-size: clamp(0.85rem, 2.5vw, 1.1rem); letter-spacing: 2px; margin-bottom: 8px; }
+    .res-sub   { font-size: 0.7rem; letter-spacing: 2px; color: var(--ydim); margin-bottom: 26px; line-height: 1.8; }
+    .play-again {
+      background: transparent;
+      border: 1px solid var(--y);
+      color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      font-size: 0.88rem;
+      letter-spacing: 3px;
+      padding: 11px 28px;
+      cursor: pointer;
+    }
+    .play-again:hover { background: rgba(255,225,0,0.10); }
+
+    .back-links {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .back-link {
+      font-size: 0.63rem;
+      letter-spacing: 2px;
+      color: var(--ydim);
+      text-decoration: none;
+    }
+    .back-link:hover { color: var(--y); }
+  </style>
+</head>
+<body>
+
+<div class="page-hdr">
+  <div class="page-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; STATIONS QUIZ &nbsp;·&nbsp; LOUIE LINE</div>
+  <div class="page-clock" id="clock">--:--:--</div>
+</div>
+
+<div class="container">
+
+  <div id="quiz-panel">
+    <div class="progress">
+      <span id="q-label">QUESTION 1 OF 10</span>
+      <div class="dots" id="dots"></div>
+      <span id="q-score">SCORE: 0/0</span>
+    </div>
+
+    <div class="map-wrap" id="map-wrap"></div>
+
+    <div class="question" id="q-text"></div>
+    <div class="choices"  id="choices"></div>
+    <div id="feedback"></div>
+    <button id="next-btn" onclick="nextQuestion()">NEXT →</button>
+  </div>
+
+  <div id="results">
+    <div class="res-score" id="res-score"></div>
+    <div class="res-msg"   id="res-msg"></div>
+    <div class="res-sub"   id="res-sub"></div>
+    <button class="play-again" onclick="resetQuiz()">▶ PLAY AGAIN</button>
+  </div>
+
+  <div class="back-links">
+    <a href="quizzes.html" class="back-link">◄ QUIZ MENU</a>
+    <a href="index.html"   class="back-link">LIVE TRAIN BOARD ►</a>
+  </div>
+
+</div>
+
+<script>
+// ── Route data ───────────────────────────────────────────────────────────────
+const LINES = [
+  {
+    key: 'mml', abbr: 'MML',
+    name: 'Midland Main Line',
+    colour: '#AA1F2E',
+    southEnd: 'St Pancras',
+    northEnd: 'Nottingham',
+    stations: [
+      'St Pancras International',
+      'Luton',
+      'Luton Airport Parkway',
+      'Bedford',
+      'Wellingborough',
+      'Kettering',
+      'Market Harborough',
+      'Leicester',
+      'Loughborough',
+      'Nottingham'
+    ]
+  },
+  {
+    key: 'ecml', abbr: 'ECML',
+    name: 'East Coast Main Line',
+    colour: '#C8102E',
+    southEnd: "King's Cross",
+    northEnd: 'Edinburgh',
+    stations: [
+      "London King's Cross",
+      'Stevenage',
+      'Peterborough',
+      'Grantham',
+      'Newark North Gate',
+      'Doncaster',
+      'York',
+      'Darlington',
+      'Durham',
+      'Newcastle',
+      'Edinburgh Waverley'
+    ]
+  },
+  {
+    key: 'wcml', abbr: 'WCML',
+    name: 'West Coast Main Line',
+    colour: '#003087',
+    southEnd: 'Euston',
+    northEnd: 'Glasgow',
+    stations: [
+      'London Euston',
+      'Milton Keynes Central',
+      'Rugby',
+      'Coventry',
+      'Birmingham New Street',
+      'Crewe',
+      'Wigan North Western',
+      'Preston',
+      'Lancaster',
+      'Carlisle',
+      'Glasgow Central'
+    ]
+  }
+];
+
+const QUIZ_SIZE = 10;
+const LETTERS   = ['A','B','C','D'];
+
+let questions = [];
+let current   = 0;
+let score     = 0;
+let answered  = false;
+let dotStates = [];
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+function ri(min, max) { return min + Math.floor(Math.random()*(max-min+1)); }
+function ord(n) { return ['1st','2nd','3rd','4th'][n-1] || n+'th'; }
+function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+function wrongs(line, correct, n) {
+  return shuffle(line.stations.filter(s => s !== correct)).slice(0, n);
+}
+
+// ── SVG route strip ──────────────────────────────────────────────────────────
+// anchorIdx = starting station (★ yellow)
+// revealIdx = answer station (shown green after answering, -1 while unanswered)
+function makeRouteSVG(line, anchorIdx, revealIdx) {
+  const s  = line.stations;
+  const n  = s.length;
+  const W  = 620, trackY = 36;
+  const ml = 28, mr = 28;
+  const sp = (W - ml - mr) / (n - 1);
+  const R  = 5;
+
+  let o = `<svg viewBox="0 0 ${W} 80" xmlns="http://www.w3.org/2000/svg" class="route-svg">`;
+
+  // Direction labels
+  o += `<text x="${ml}" y="74" text-anchor="middle" font-size="8" fill="#666" font-family="monospace">← ${line.southEnd.toUpperCase()}</text>`;
+  o += `<text x="${W-mr}" y="74" text-anchor="middle" font-size="8" fill="#666" font-family="monospace">${line.northEnd.toUpperCase()} →</text>`;
+
+  // Track line
+  o += `<line x1="${ml}" y1="${trackY}" x2="${W-mr}" y2="${trackY}" stroke="${line.colour}" stroke-width="3" stroke-linecap="round"/>`;
+
+  for (let i = 0; i < n; i++) {
+    const x = ml + i * sp;
+    const isAnchor  = i === anchorIdx;
+    const isReveal  = revealIdx >= 0 && i === revealIdx;
+    const isTerm    = i === 0 || i === n-1;
+
+    // Dot
+    if (isAnchor) {
+      o += `<circle cx="${x}" cy="${trackY}" r="${R+3}" fill="#FFE100" stroke="#07070A" stroke-width="1.5"/>`;
+      o += `<text x="${x}" y="${trackY+1}" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="#07070A" font-weight="bold" font-family="monospace">★</text>`;
+    } else if (isReveal) {
+      o += `<circle cx="${x}" cy="${trackY}" r="${R+3}" fill="#44EE44" stroke="#07070A" stroke-width="1.5"/>`;
+      o += `<text x="${x}" y="${trackY+1}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#07070A" font-weight="bold" font-family="monospace">✓</text>`;
+    } else if (isTerm) {
+      o += `<circle cx="${x}" cy="${trackY}" r="${R}" fill="${line.colour}" stroke="#07070A" stroke-width="1"/>`;
+    } else {
+      o += `<circle cx="${x}" cy="${trackY}" r="${R-1}" fill="#222" stroke="${line.colour}" stroke-width="1.5"/>`;
+    }
+
+    // Labels — anchor above, terminus below, reveal above (green)
+    const shortName = s[i]
+      .replace('International','Intl').replace(' North Gate','').replace(' New Street','')
+      .replace('London ','').replace(' Central','').replace(' Parkway','Pkwy');
+
+    if (isAnchor) {
+      o += `<text x="${x}" y="${trackY-13}" text-anchor="middle" font-size="8.5" fill="#FFE100" font-family="monospace">${shortName}</text>`;
+    } else if (isReveal) {
+      o += `<text x="${x}" y="${trackY-13}" text-anchor="middle" font-size="8.5" fill="#44EE44" font-family="monospace">${shortName}</text>`;
+    } else if (isTerm) {
+      o += `<text x="${x}" y="${trackY+17}" text-anchor="middle" font-size="8" fill="#666" font-family="monospace">${shortName}</text>`;
+    }
+  }
+
+  o += `</svg>`;
+  return o;
+}
+
+// ── Question builders ────────────────────────────────────────────────────────
+function makeEasy() {
+  const line = pick(LINES);
+  const s    = line.stations;
+  const n    = s.length;
+  // Step = 1 only, either direction
+  const dir  = Math.random() < 0.55 ? 1 : -1;
+  const aIdx = dir === 1 ? ri(0, n-2) : ri(1, n-1);
+  const ansIdx = aIdx + dir;
+  const anchor = s[aIdx];
+  const answer = s[ansIdx];
+  const towards = dir === 1 ? `towards <strong>${line.northEnd}</strong>` : `towards <strong>${line.southEnd}</strong>`;
+  const qText = `On the <em>${line.abbr}</em>, what is the <strong>next station</strong> from <strong>${anchor}</strong> ${towards}?`;
+  return { line, aIdx, ansIdx, difficulty: 'easy', qText, answer,
+           choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
+}
+
+function makeMedium() {
+  const line = pick(LINES);
+  const s    = line.stations;
+  const n    = s.length;
+  const step = ri(2, 3);
+  const dir  = Math.random() < 0.6 ? 1 : -1;
+  let aIdx;
+  if (dir === 1) { aIdx = ri(0, n-1-step); }
+  else           { aIdx = ri(step, n-1); }
+  const ansIdx = aIdx + dir * step;
+  if (ansIdx < 0 || ansIdx >= n) return makeMedium();
+  const anchor = s[aIdx];
+  const answer = s[ansIdx];
+  const towards = dir === 1 ? `towards <strong>${line.northEnd}</strong>` : `towards <strong>${line.southEnd}</strong>`;
+  const qText = `On the <em>${line.abbr}</em>, what is the <strong>${ord(step)} station</strong> from <strong>${anchor}</strong> ${towards}?`;
+  return { line, aIdx, ansIdx, difficulty: 'medium', qText, answer,
+           choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
+}
+
+function makeHard() {
+  const line  = pick(LINES);
+  const s     = line.stations;
+  const n     = s.length;
+  const step1 = ri(2, 3);
+  const step2 = ri(1, 2);
+  const total = step1 + step2;
+  if (n - 1 < total + 1) return makeHard();
+  // Both steps going north (away from London) for clarity
+  const aIdx   = ri(0, n-1-total);
+  const midIdx = aIdx + step1;
+  const ansIdx = midIdx + step2;
+  if (ansIdx >= n) return makeHard();
+  const anchor = s[aIdx];
+  const answer = s[ansIdx];
+  const qText = `On the <em>${line.abbr}</em>, what is the <strong>${ord(step2)} station</strong> after the <strong>${ord(step1)} station</strong> after <strong>${anchor}</strong>?`;
+  return { line, aIdx, ansIdx, difficulty: 'hard', qText, answer,
+           choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
+}
+
+// ── Build quiz — fixed mix: 4 easy, 3 medium, 3 hard ────────────────────────
+function buildQuiz() {
+  questions = shuffle([
+    ...Array.from({length:4}, makeEasy),
+    ...Array.from({length:3}, makeMedium),
+    ...Array.from({length:3}, makeHard)
+  ]);
+  dotStates = Array(QUIZ_SIZE).fill('pending');
+  current   = 0;
+  score     = 0;
+  answered  = false;
+  document.getElementById('results').style.display    = 'none';
+  document.getElementById('quiz-panel').style.display = 'block';
+  showQuestion();
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function renderDots() {
+  document.getElementById('dots').innerHTML =
+    dotStates.map((s,i) => {
+      const cls = i===current ? 'dot current'
+                : s==='correct' ? 'dot correct'
+                : s==='wrong'   ? 'dot wrong'
+                : 'dot';
+      return `<div class="${cls}"></div>`;
+    }).join('');
+}
+
+function renderMap(revealIdx) {
+  const q = questions[current];
+  document.getElementById('map-wrap').innerHTML =
+    `<div class="line-badge" style="border-color:${q.line.colour};color:${q.line.colour}">${q.line.abbr} &nbsp;—&nbsp; ${q.line.name}</div>`
+    + makeRouteSVG(q.line, q.aIdx, revealIdx != null ? revealIdx : -1);
+}
+
+function showQuestion() {
+  answered = false;
+  const q  = questions[current];
+
+  document.getElementById('q-label').textContent  = `QUESTION ${current+1} OF ${QUIZ_SIZE}`;
+  document.getElementById('q-score').textContent  = `SCORE: ${score}/${current}`;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className   = '';
+  document.getElementById('next-btn').style.display = 'none';
+  renderDots();
+  renderMap(-1);
+
+  const diffHtml = `<span class="diff-tag diff-${q.difficulty}">${q.difficulty.toUpperCase()}</span>`;
+  document.getElementById('q-text').innerHTML = q.qText + diffHtml;
+
+  document.getElementById('choices').innerHTML =
+    q.choices.map((c,i) =>
+      `<button class="choice-btn" data-choice="${escAttr(c)}" onclick="handleAnswer(this)">
+        <span class="ltr">${LETTERS[i]}.</span><span>${c}</span>
+       </button>`
+    ).join('');
+}
+
+function handleAnswer(btn) {
+  if (answered) return;
+  answered = true;
+
+  const q       = questions[current];
+  const chosen  = btn.dataset.choice;
+  const correct = q.answer;
+  const fb      = document.getElementById('feedback');
+
+  document.querySelectorAll('.choice-btn').forEach(b => {
+    b.disabled = true;
+    if (b.dataset.choice === correct) b.classList.add('correct');
+  });
+
+  if (chosen === correct) {
+    score++;
+    dotStates[current] = 'correct';
+    fb.textContent = '✓  CORRECT!';
+    fb.className   = 'fb-ok';
+  } else {
+    btn.classList.add('wrong');
+    dotStates[current] = 'wrong';
+    fb.textContent = `✗  WRONG — It was ${correct}`;
+    fb.className   = 'fb-err';
+  }
+
+  renderDots();
+  renderMap(q.ansIdx); // reveal answer station on the route strip
+
+  const nb = document.getElementById('next-btn');
+  nb.textContent   = current+1 < QUIZ_SIZE ? 'NEXT QUESTION →' : 'SEE RESULTS →';
+  nb.style.display = 'inline-block';
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= QUIZ_SIZE) { showResults(); return; }
+  showQuestion();
+}
+
+// ── Results ──────────────────────────────────────────────────────────────────
+function showResults() {
+  document.getElementById('quiz-panel').style.display = 'none';
+  document.getElementById('results').style.display    = 'block';
+
+  const pct = score / QUIZ_SIZE;
+  let msg, colour;
+  if (pct === 1)       { msg = '★  PERFECT — True route master!';              colour = 'var(--grn)'; }
+  else if (pct >= 0.8) { msg = 'EXCELLENT — You know these lines!';             colour = 'var(--grn)'; }
+  else if (pct >= 0.6) { msg = 'GOOD EFFORT — Keep studying the route!';        colour = 'var(--y)';   }
+  else if (pct >= 0.4) { msg = 'NOT BAD — More map time needed!';               colour = 'var(--ora)'; }
+  else                 { msg = 'KEEP PRACTISING — Study the map!';              colour = 'var(--red)'; }
+
+  document.getElementById('res-score').textContent = `${score}/${QUIZ_SIZE}`;
+  document.getElementById('res-score').style.color = colour;
+  document.getElementById('res-msg').textContent   = msg;
+  document.getElementById('res-sub').innerHTML     =
+    `${score} correct out of ${QUIZ_SIZE} questions<br>`
+    + `Midland · East Coast · West Coast Main Lines`;
+}
+
+function resetQuiz() { buildQuiz(); }
+
+// ── Clock ────────────────────────────────────────────────────────────────────
+function tick() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
+}
+setInterval(tick, 1000);
+tick();
+
+buildQuiz();
+</script>
+</body>
+</html>
