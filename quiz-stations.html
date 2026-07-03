@@ -211,6 +211,7 @@
     <div class="question" id="q-text"></div>
     <div class="choices"  id="choices"></div>
     <div id="feedback"></div>
+    <div id="line-note" style="font-size:0.68rem;letter-spacing:1px;color:var(--ydim);margin-bottom:8px;"></div>
     <button id="next-btn" onclick="nextQuestion()">NEXT →</button>
   </div>
 
@@ -294,6 +295,16 @@ const LINES = [
 
 const QUIZ_SIZE = 10;
 const LETTERS   = ['A','B','C','D'];
+
+const LINE_DISTRACTORS = ['Great Western Main Line', 'Great Northern Line', 'Chiltern Main Line'];
+const LINE_EXCL        = new Set(['Luton Airport Parkway', 'Stevenage', 'Newark North Gate', 'Wigan North Western']);
+const SECONDARY_NOTES  = {
+  'Leicester':             'Leicester is also served by CrossCountry trains to Birmingham via Nuneaton.',
+  'Birmingham New Street': 'Birmingham New Street is also a major hub for CrossCountry, Chiltern, and many regional routes.',
+  'Crewe':                 'Crewe is also a junction for Manchester, North Wales, and Stoke-on-Trent lines.',
+  'York':                  'York is also served by TransPennine Express routes to Leeds and Manchester.',
+  'Doncaster':             'Doncaster is also served by East Midlands Railway services from Nottingham.',
+};
 
 let questions = [];
 let current   = 0;
@@ -432,12 +443,33 @@ function makeHard() {
            choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
 }
 
-// ── Build quiz — fixed mix: 4 easy, 3 medium, 3 hard ────────────────────────
+function makeLineQuestion() {
+  const line     = pick(LINES);
+  const eligible = line.stations.filter(s => !LINE_EXCL.has(s));
+  if (!eligible.length) return makeLineQuestion();
+  const station  = pick(eligible);
+  const stIdx    = line.stations.indexOf(station);
+  const answer   = line.name;
+  const wrongLines = LINES.filter(l => l.key !== line.key).map(l => l.name);
+  const distractor = pick(LINE_DISTRACTORS);
+  return {
+    line, aIdx: stIdx, ansIdx: stIdx,
+    difficulty: 'medium', qType: 'line',
+    station,
+    qText: `Which main line serves <strong>${station}</strong>?`,
+    answer,
+    choices: shuffle([answer, ...wrongLines, distractor]),
+    note: SECONDARY_NOTES[station] || null
+  };
+}
+
+// ── Build quiz — mix: 3 easy, 2 medium, 2 hard, 3 line ──────────────────────
 function buildQuiz() {
   questions = shuffle([
-    ...Array.from({length:4}, makeEasy),
-    ...Array.from({length:3}, makeMedium),
-    ...Array.from({length:3}, makeHard)
+    ...Array.from({length:3}, makeEasy),
+    ...Array.from({length:2}, makeMedium),
+    ...Array.from({length:2}, makeHard),
+    ...Array.from({length:3}, makeLineQuestion)
   ]);
   dotStates = Array(QUIZ_SIZE).fill('pending');
   current   = 0;
@@ -473,11 +505,19 @@ function showQuestion() {
 
   document.getElementById('q-label').textContent  = `QUESTION ${current+1} OF ${QUIZ_SIZE}`;
   document.getElementById('q-score').textContent  = `SCORE: ${score}/${current}`;
-  document.getElementById('feedback').textContent = '';
-  document.getElementById('feedback').className   = '';
+  document.getElementById('feedback').textContent  = '';
+  document.getElementById('feedback').className    = '';
+  document.getElementById('line-note').textContent = '';
   document.getElementById('next-btn').style.display = 'none';
   renderDots();
-  renderMap(-1);
+
+  if (q.qType === 'line') {
+    document.getElementById('map-wrap').innerHTML =
+      '<div class="line-badge" style="border-color:var(--ydim);color:var(--ydim)">? &nbsp;—&nbsp; IDENTIFY THE LINE</div>'
+      + `<div style="text-align:center;padding:16px 0 10px;font-size:1.1rem;letter-spacing:4px;color:#fff">${q.station.toUpperCase()}</div>`;
+  } else {
+    renderMap(-1);
+  }
 
   const diffHtml = `<span class="diff-tag diff-${q.difficulty}">${q.difficulty.toUpperCase()}</span>`;
   document.getElementById('q-text').innerHTML = q.qText + diffHtml;
@@ -517,7 +557,14 @@ function handleAnswer(btn) {
   }
 
   renderDots();
-  renderMap(q.ansIdx); // reveal answer station on the route strip
+  if (q.qType === 'line') {
+    renderMap(null); // reveal the correct line's route with station as anchor
+    if (q.note) {
+      document.getElementById('line-note').textContent = '→ ' + q.note;
+    }
+  } else {
+    renderMap(q.ansIdx);
+  }
 
   const nb = document.getElementById('next-btn');
   nb.textContent   = current+1 < QUIZ_SIZE ? 'NEXT QUESTION →' : 'SEE RESULTS →';
