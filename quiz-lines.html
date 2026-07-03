@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stations Quiz — Wellingborough Line</title>
+  <title>Which Line? Quiz — Wellingborough Line</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -66,12 +66,33 @@
     .dot.correct { background: var(--grn); border-color: var(--grn); }
     .dot.wrong   { background: var(--red); border-color: var(--red); }
 
+    .station-display {
+      width: 100%;
+      border: 1px solid var(--div);
+      background: #0D0D11;
+      padding: 28px 12px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .station-name {
+      font-size: clamp(1.1rem, 4vw, 1.6rem);
+      letter-spacing: 4px;
+      color: #fff;
+    }
+    .station-label {
+      font-size: 0.6rem;
+      letter-spacing: 3px;
+      color: var(--ydim);
+      margin-top: 8px;
+    }
+
     .map-wrap {
       width: 100%;
       margin-bottom: 14px;
       border: 1px solid var(--div);
       padding: 12px 8px 8px;
       background: #0D0D11;
+      display: none;
     }
     .line-badge {
       font-size: 0.62rem;
@@ -90,19 +111,6 @@
       line-height: 1.7;
     }
     .question strong { color: #ffffff; }
-    .question em     { font-style: normal; color: var(--ydim); }
-
-    .diff-tag {
-      font-size: 0.6rem;
-      letter-spacing: 2px;
-      padding: 1px 5px;
-      margin-left: 8px;
-      vertical-align: middle;
-      border: 1px solid;
-    }
-    .diff-easy   { border-color: var(--grn); color: var(--grn); }
-    .diff-medium { border-color: var(--y);   color: var(--y); }
-    .diff-hard   { border-color: var(--ora); color: var(--ora); }
 
     .choices {
       display: grid;
@@ -136,9 +144,17 @@
     .choice-btn.correct .ltr { color: var(--grn); }
     .choice-btn.wrong   .ltr { color: var(--red); }
 
-    #feedback { min-height: 1.5em; font-size: 0.82rem; letter-spacing: 2px; margin-bottom: 10px; }
+    #feedback { min-height: 1.5em; font-size: 0.82rem; letter-spacing: 2px; margin-bottom: 6px; }
     .fb-ok  { color: var(--grn); }
     .fb-err { color: var(--red); }
+
+    #line-note {
+      font-size: 0.68rem;
+      letter-spacing: 1px;
+      color: var(--ydim);
+      margin-bottom: 10px;
+      min-height: 1em;
+    }
 
     #next-btn {
       background: transparent;
@@ -193,7 +209,7 @@
 <body>
 
 <div class="page-hdr">
-  <div class="page-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; STATIONS QUIZ &nbsp;·&nbsp; LOUIE LINE</div>
+  <div class="page-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; WHICH LINE? QUIZ &nbsp;·&nbsp; LOUIE LINE</div>
   <div class="page-clock" id="clock">--:--:--</div>
 </div>
 
@@ -206,11 +222,17 @@
       <span id="q-score">SCORE: 0/0</span>
     </div>
 
+    <div class="station-display" id="station-display">
+      <div class="station-name" id="station-name"></div>
+      <div class="station-label">IDENTIFY THE MAIN LINE</div>
+    </div>
+
     <div class="map-wrap" id="map-wrap"></div>
 
     <div class="question" id="q-text"></div>
     <div class="choices"  id="choices"></div>
     <div id="feedback"></div>
+    <div id="line-note"></div>
     <button id="next-btn" onclick="nextQuestion()">NEXT →</button>
   </div>
 
@@ -229,7 +251,6 @@
 </div>
 
 <script>
-// ── Route data ───────────────────────────────────────────────────────────────
 const LINES = [
   {
     key: 'mml', abbr: 'MML',
@@ -238,16 +259,9 @@ const LINES = [
     southEnd: 'St Pancras',
     northEnd: 'Nottingham',
     stations: [
-      'St Pancras International',
-      'Luton',
-      'Luton Airport Parkway',
-      'Bedford',
-      'Wellingborough',
-      'Kettering',
-      'Market Harborough',
-      'Leicester',
-      'Loughborough',
-      'Nottingham'
+      'St Pancras International','Luton','Luton Airport Parkway','Bedford',
+      'Wellingborough','Kettering','Market Harborough','Leicester',
+      'Loughborough','Nottingham'
     ]
   },
   {
@@ -257,17 +271,9 @@ const LINES = [
     southEnd: "King's Cross",
     northEnd: 'Edinburgh',
     stations: [
-      "London King's Cross",
-      'Stevenage',
-      'Peterborough',
-      'Grantham',
-      'Newark North Gate',
-      'Doncaster',
-      'York',
-      'Darlington',
-      'Durham',
-      'Newcastle',
-      'Edinburgh Waverley'
+      "London King's Cross",'Stevenage','Peterborough','Grantham',
+      'Newark North Gate','Doncaster','York','Darlington',
+      'Durham','Newcastle','Edinburgh Waverley'
     ]
   },
   {
@@ -277,17 +283,9 @@ const LINES = [
     southEnd: 'Euston',
     northEnd: 'Glasgow',
     stations: [
-      'London Euston',
-      'Milton Keynes Central',
-      'Rugby',
-      'Coventry',
-      'Birmingham New Street',
-      'Crewe',
-      'Wigan North Western',
-      'Preston',
-      'Lancaster',
-      'Carlisle',
-      'Glasgow Central'
+      'London Euston','Milton Keynes Central','Rugby','Coventry',
+      'Birmingham New Street','Crewe','Wigan North Western','Preston',
+      'Lancaster','Carlisle','Glasgow Central'
     ]
   }
 ];
@@ -295,6 +293,15 @@ const LINES = [
 const QUIZ_SIZE = 10;
 const LETTERS   = ['A','B','C','D'];
 
+const LINE_DISTRACTORS = ['Great Western Main Line', 'Great Northern Line', 'Chiltern Main Line'];
+const LINE_EXCL        = new Set(['Luton Airport Parkway', 'Stevenage', 'Newark North Gate', 'Wigan North Western']);
+const SECONDARY_NOTES  = {
+  'Leicester':             'Leicester is also served by CrossCountry trains to Birmingham via Nuneaton.',
+  'Birmingham New Street': 'Birmingham New Street is also a major hub for CrossCountry, Chiltern, and many regional routes.',
+  'Crewe':                 'Crewe is also a junction for Manchester, North Wales, and Stoke-on-Trent lines.',
+  'York':                  'York is also served by TransPennine Express routes to Leeds and Manchester.',
+  'Doncaster':             'Doncaster is also served by East Midlands Railway services from Nottingham.',
+};
 
 let questions = [];
 let current   = 0;
@@ -302,7 +309,6 @@ let score     = 0;
 let answered  = false;
 let dotStates = [];
 
-// ── Utilities ────────────────────────────────────────────────────────────────
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length-1; i > 0; i--) {
@@ -312,134 +318,38 @@ function shuffle(arr) {
   return a;
 }
 function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
-function ri(min, max) { return min + Math.floor(Math.random()*(max-min+1)); }
-function ord(n) { return ['1st','2nd','3rd','4th'][n-1] || n+'th'; }
 function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
-function wrongs(line, correct, n) {
-  return shuffle(line.stations.filter(s => s !== correct)).slice(0, n);
+function makeQuestion() {
+  const line     = pick(LINES);
+  const eligible = line.stations.filter(s => !LINE_EXCL.has(s));
+  if (!eligible.length) return makeQuestion();
+  const station    = pick(eligible);
+  const stIdx      = line.stations.indexOf(station);
+  const answer     = line.name;
+  const wrongLines = LINES.filter(l => l.key !== line.key).map(l => l.name);
+  const distractor = pick(LINE_DISTRACTORS);
+  return {
+    line, stIdx,
+    station, answer,
+    choices: shuffle([answer, ...wrongLines, distractor]),
+    note: SECONDARY_NOTES[station] || null
+  };
 }
 
-// ── SVG route strip ──────────────────────────────────────────────────────────
-// anchorIdx = starting station (★ yellow)
-// revealIdx = answer station (shown green after answering, -1 while unanswered)
-function makeRouteSVG(line, anchorIdx, revealIdx) {
-  const s  = line.stations;
-  const n  = s.length;
-  const W  = 620, trackY = 36;
-  const ml = 28, mr = 28;
-  const sp = (W - ml - mr) / (n - 1);
-  const R  = 5;
-
-  let o = `<svg viewBox="0 0 ${W} 80" xmlns="http://www.w3.org/2000/svg" class="route-svg">`;
-
-  // Direction labels
-  o += `<text x="${ml}" y="74" text-anchor="middle" font-size="8" fill="#666" font-family="monospace">← ${line.southEnd.toUpperCase()}</text>`;
-  o += `<text x="${W-mr}" y="74" text-anchor="middle" font-size="8" fill="#666" font-family="monospace">${line.northEnd.toUpperCase()} →</text>`;
-
-  // Track line
-  o += `<line x1="${ml}" y1="${trackY}" x2="${W-mr}" y2="${trackY}" stroke="${line.colour}" stroke-width="3" stroke-linecap="round"/>`;
-
-  for (let i = 0; i < n; i++) {
-    const x = ml + i * sp;
-    const isAnchor  = i === anchorIdx;
-    const isReveal  = revealIdx >= 0 && i === revealIdx;
-    const isTerm    = i === 0 || i === n-1;
-
-    // Dot
-    if (isAnchor) {
-      o += `<circle cx="${x}" cy="${trackY}" r="${R+3}" fill="#FFE100" stroke="#07070A" stroke-width="1.5"/>`;
-      o += `<text x="${x}" y="${trackY+1}" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="#07070A" font-weight="bold" font-family="monospace">★</text>`;
-    } else if (isReveal) {
-      o += `<circle cx="${x}" cy="${trackY}" r="${R+3}" fill="#44EE44" stroke="#07070A" stroke-width="1.5"/>`;
-      o += `<text x="${x}" y="${trackY+1}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#07070A" font-weight="bold" font-family="monospace">✓</text>`;
-    } else if (isTerm) {
-      o += `<circle cx="${x}" cy="${trackY}" r="${R}" fill="${line.colour}" stroke="#07070A" stroke-width="1"/>`;
-    } else {
-      o += `<circle cx="${x}" cy="${trackY}" r="${R-1}" fill="#222" stroke="${line.colour}" stroke-width="1.5"/>`;
-    }
-
-    // Labels — anchor above, terminus below, reveal above (green)
-    const shortName = s[i]
-      .replace('International','Intl').replace(' North Gate','').replace(' New Street','')
-      .replace('London ','').replace(' Central','').replace(' Parkway','Pkwy');
-
-    if (isAnchor) {
-      o += `<text x="${x}" y="${trackY-13}" text-anchor="middle" font-size="8.5" fill="#FFE100" font-family="monospace">${shortName}</text>`;
-    } else if (isReveal) {
-      o += `<text x="${x}" y="${trackY-13}" text-anchor="middle" font-size="8.5" fill="#44EE44" font-family="monospace">${shortName}</text>`;
-    } else if (isTerm) {
-      o += `<text x="${x}" y="${trackY+17}" text-anchor="middle" font-size="8" fill="#666" font-family="monospace">${shortName}</text>`;
+function buildQuiz() {
+  // Generate 10 questions, avoiding the same station twice
+  const used = new Set();
+  questions = [];
+  let attempts = 0;
+  while (questions.length < QUIZ_SIZE && attempts < 200) {
+    attempts++;
+    const q = makeQuestion();
+    if (!used.has(q.station)) {
+      used.add(q.station);
+      questions.push(q);
     }
   }
-
-  o += `</svg>`;
-  return o;
-}
-
-// ── Question builders ────────────────────────────────────────────────────────
-function makeEasy() {
-  const line = pick(LINES);
-  const s    = line.stations;
-  const n    = s.length;
-  // Step = 1 only, either direction
-  const dir  = Math.random() < 0.55 ? 1 : -1;
-  const aIdx = dir === 1 ? ri(0, n-2) : ri(1, n-1);
-  const ansIdx = aIdx + dir;
-  const anchor = s[aIdx];
-  const answer = s[ansIdx];
-  const towards = dir === 1 ? `towards <strong>${line.northEnd}</strong>` : `towards <strong>${line.southEnd}</strong>`;
-  const qText = `On the <em>${line.abbr}</em>, what is the <strong>next station</strong> from <strong>${anchor}</strong> ${towards}?`;
-  return { line, aIdx, ansIdx, difficulty: 'easy', qText, answer,
-           choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
-}
-
-function makeMedium() {
-  const line = pick(LINES);
-  const s    = line.stations;
-  const n    = s.length;
-  const step = ri(2, 3);
-  const dir  = Math.random() < 0.6 ? 1 : -1;
-  let aIdx;
-  if (dir === 1) { aIdx = ri(0, n-1-step); }
-  else           { aIdx = ri(step, n-1); }
-  const ansIdx = aIdx + dir * step;
-  if (ansIdx < 0 || ansIdx >= n) return makeMedium();
-  const anchor = s[aIdx];
-  const answer = s[ansIdx];
-  const towards = dir === 1 ? `towards <strong>${line.northEnd}</strong>` : `towards <strong>${line.southEnd}</strong>`;
-  const qText = `On the <em>${line.abbr}</em>, what is the <strong>${ord(step)} station</strong> from <strong>${anchor}</strong> ${towards}?`;
-  return { line, aIdx, ansIdx, difficulty: 'medium', qText, answer,
-           choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
-}
-
-function makeHard() {
-  const line  = pick(LINES);
-  const s     = line.stations;
-  const n     = s.length;
-  const step1 = ri(2, 3);
-  const step2 = ri(1, 2);
-  const total = step1 + step2;
-  if (n - 1 < total + 1) return makeHard();
-  // Both steps going north (away from London) for clarity
-  const aIdx   = ri(0, n-1-total);
-  const midIdx = aIdx + step1;
-  const ansIdx = midIdx + step2;
-  if (ansIdx >= n) return makeHard();
-  const anchor = s[aIdx];
-  const answer = s[ansIdx];
-  const qText = `On the <em>${line.abbr}</em>, what is the <strong>${ord(step2)} station</strong> after the <strong>${ord(step1)} station</strong> after <strong>${anchor}</strong>?`;
-  return { line, aIdx, ansIdx, difficulty: 'hard', qText, answer,
-           choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
-}
-
-// ── Build quiz — mix: 4 easy, 3 medium, 3 hard ──────────────────────────────
-function buildQuiz() {
-  questions = shuffle([
-    ...Array.from({length:4}, makeEasy),
-    ...Array.from({length:3}, makeMedium),
-    ...Array.from({length:3}, makeHard),
-  ]);
   dotStates = Array(QUIZ_SIZE).fill('pending');
   current   = 0;
   score     = 0;
@@ -449,7 +359,6 @@ function buildQuiz() {
   showQuestion();
 }
 
-// ── Render ───────────────────────────────────────────────────────────────────
 function renderDots() {
   document.getElementById('dots').innerHTML =
     dotStates.map((s,i) => {
@@ -461,27 +370,59 @@ function renderDots() {
     }).join('');
 }
 
-function renderMap(revealIdx) {
-  const q = questions[current];
-  document.getElementById('map-wrap').innerHTML =
-    `<div class="line-badge" style="border-color:${q.line.colour};color:${q.line.colour}">${q.line.abbr} &nbsp;—&nbsp; ${q.line.name}</div>`
-    + makeRouteSVG(q.line, q.aIdx, revealIdx != null ? revealIdx : -1);
+function makeRouteSVG(line, anchorIdx) {
+  const s = line.stations;
+  const n = s.length;
+  const W = 620, trackY = 36;
+  const ml = 28, mr = 28;
+  const sp = (W - ml - mr) / (n - 1);
+  const R  = 5;
+
+  let o = `<svg viewBox="0 0 ${W} 80" xmlns="http://www.w3.org/2000/svg" class="route-svg">`;
+  o += `<text x="${ml}" y="74" text-anchor="middle" font-size="8" fill="#666" font-family="monospace">← ${line.southEnd.toUpperCase()}</text>`;
+  o += `<text x="${W-mr}" y="74" text-anchor="middle" font-size="8" fill="#666" font-family="monospace">${line.northEnd.toUpperCase()} →</text>`;
+  o += `<line x1="${ml}" y1="${trackY}" x2="${W-mr}" y2="${trackY}" stroke="${line.colour}" stroke-width="3" stroke-linecap="round"/>`;
+
+  for (let i = 0; i < n; i++) {
+    const x        = ml + i * sp;
+    const isAnchor = i === anchorIdx;
+    const isTerm   = i === 0 || i === n-1;
+    const shortName = s[i]
+      .replace('International','Intl').replace(' North Gate','').replace(' New Street','')
+      .replace('London ','').replace(' Central','').replace(' Parkway','Pkwy');
+
+    if (isAnchor) {
+      o += `<circle cx="${x}" cy="${trackY}" r="${R+3}" fill="#FFE100" stroke="#07070A" stroke-width="1.5"/>`;
+      o += `<text x="${x}" y="${trackY+1}" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="#07070A" font-weight="bold" font-family="monospace">★</text>`;
+      o += `<text x="${x}" y="${trackY-13}" text-anchor="middle" font-size="8.5" fill="#FFE100" font-family="monospace">${shortName}</text>`;
+    } else if (isTerm) {
+      o += `<circle cx="${x}" cy="${trackY}" r="${R}" fill="${line.colour}" stroke="#07070A" stroke-width="1"/>`;
+      o += `<text x="${x}" y="${trackY+17}" text-anchor="middle" font-size="8" fill="#666" font-family="monospace">${shortName}</text>`;
+    } else {
+      o += `<circle cx="${x}" cy="${trackY}" r="${R-1}" fill="#222" stroke="${line.colour}" stroke-width="1.5"/>`;
+    }
+  }
+  o += `</svg>`;
+  return o;
 }
 
 function showQuestion() {
   answered = false;
   const q  = questions[current];
 
-  document.getElementById('q-label').textContent  = `QUESTION ${current+1} OF ${QUIZ_SIZE}`;
-  document.getElementById('q-score').textContent  = `SCORE: ${score}/${current}`;
+  document.getElementById('q-label').textContent   = `QUESTION ${current+1} OF ${QUIZ_SIZE}`;
+  document.getElementById('q-score').textContent   = `SCORE: ${score}/${current}`;
   document.getElementById('feedback').textContent  = '';
   document.getElementById('feedback').className    = '';
+  document.getElementById('line-note').textContent = '';
   document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('map-wrap').style.display = 'none';
+  document.getElementById('station-display').style.display = 'block';
+  document.getElementById('station-name').textContent = q.station.toUpperCase();
   renderDots();
-  renderMap(-1);
 
-  const diffHtml = `<span class="diff-tag diff-${q.difficulty}">${q.difficulty.toUpperCase()}</span>`;
-  document.getElementById('q-text').innerHTML = q.qText + diffHtml;
+  document.getElementById('q-text').innerHTML =
+    `Which <strong>main line</strong> serves <strong>${q.station}</strong>?`;
 
   document.getElementById('choices').innerHTML =
     q.choices.map((c,i) =>
@@ -518,7 +459,18 @@ function handleAnswer(btn) {
   }
 
   renderDots();
-  renderMap(q.ansIdx);
+
+  // Reveal route map with station highlighted
+  document.getElementById('station-display').style.display = 'none';
+  const mapWrap = document.getElementById('map-wrap');
+  mapWrap.style.display = 'block';
+  mapWrap.innerHTML =
+    `<div class="line-badge" style="border-color:${q.line.colour};color:${q.line.colour}">${q.line.abbr} &nbsp;—&nbsp; ${q.line.name}</div>`
+    + makeRouteSVG(q.line, q.stIdx);
+
+  if (q.note) {
+    document.getElementById('line-note').textContent = '→ ' + q.note;
+  }
 
   const nb = document.getElementById('next-btn');
   nb.textContent   = current+1 < QUIZ_SIZE ? 'NEXT QUESTION →' : 'SEE RESULTS →';
@@ -531,18 +483,17 @@ function nextQuestion() {
   showQuestion();
 }
 
-// ── Results ──────────────────────────────────────────────────────────────────
 function showResults() {
   document.getElementById('quiz-panel').style.display = 'none';
   document.getElementById('results').style.display    = 'block';
 
   const pct = score / QUIZ_SIZE;
   let msg, colour;
-  if (pct === 1)       { msg = '★  PERFECT — True route master!';              colour = 'var(--grn)'; }
-  else if (pct >= 0.8) { msg = 'EXCELLENT — You know these lines!';             colour = 'var(--grn)'; }
-  else if (pct >= 0.6) { msg = 'GOOD EFFORT — Keep studying the route!';        colour = 'var(--y)';   }
-  else if (pct >= 0.4) { msg = 'NOT BAD — More map time needed!';               colour = 'var(--ora)'; }
-  else                 { msg = 'KEEP PRACTISING — Study the map!';              colour = 'var(--red)'; }
+  if (pct === 1)       { msg = '★  PERFECT — True line expert!';              colour = 'var(--grn)'; }
+  else if (pct >= 0.8) { msg = 'EXCELLENT — You know your main lines!';        colour = 'var(--grn)'; }
+  else if (pct >= 0.6) { msg = 'GOOD EFFORT — Study the network map!';         colour = 'var(--y)';   }
+  else if (pct >= 0.4) { msg = 'NOT BAD — More geography needed!';             colour = 'var(--ora)'; }
+  else                 { msg = 'KEEP PRACTISING — Hit the timetables!';        colour = 'var(--red)'; }
 
   document.getElementById('res-score').textContent = `${score}/${QUIZ_SIZE}`;
   document.getElementById('res-score').style.color = colour;
@@ -554,7 +505,6 @@ function showResults() {
 
 function resetQuiz() { buildQuiz(); }
 
-// ── Clock ────────────────────────────────────────────────────────────────────
 function tick() {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
 }
