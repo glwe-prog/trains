@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wellingborough Line — Quizzes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --y:    #FFE100;
+      --ydim: #C09000;
+      --bg:   #07070A;
+      --div:  #2A2A2A;
+      --grn:  #44EE44;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      min-height: 100vh;
+      padding: 14px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0, transparent 3px,
+        rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .page-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid var(--ydim);
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .page-title { font-size: clamp(0.6rem, 2vw, 0.85rem); letter-spacing: 3px; color: var(--y); }
+    .back-link  { font-size: clamp(0.6rem, 1.8vw, 0.8rem); letter-spacing: 2px; color: var(--ydim); text-decoration: none; }
+    .back-link:hover { color: var(--y); }
+
+    .intro {
+      max-width: 900px;
+      margin: 0 auto 24px;
+      font-size: clamp(0.7rem, 2vw, 0.9rem);
+      letter-spacing: 2px;
+      color: var(--ydim);
+      line-height: 1.7;
+    }
+
+    .quiz-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .quiz-tile {
+      border: 1px solid var(--ydim);
+      padding: 20px;
+      text-decoration: none;
+      color: var(--y);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.15s, background 0.15s;
+      cursor: pointer;
+    }
+    .quiz-tile:hover {
+      border-color: var(--y);
+      background: rgba(255,225,0,0.04);
+    }
+
+    .tile-icon  { font-size: 1.8rem; }
+    .tile-title { font-size: clamp(0.85rem, 2.5vw, 1.1rem); letter-spacing: 2px; }
+    .tile-desc  { font-size: clamp(0.6rem, 1.8vw, 0.75rem); letter-spacing: 1px; color: var(--ydim); line-height: 1.6; }
+    .tile-cta   { font-size: clamp(0.6rem, 1.6vw, 0.7rem); letter-spacing: 2px; color: var(--grn); margin-top: auto; }
+
+    .footer {
+      max-width: 900px;
+      margin: 24px auto 0;
+      font-size: clamp(0.55rem, 1.5vw, 0.7rem);
+      letter-spacing: 2px;
+      color: var(--ydim);
+      border-top: 1px solid var(--div);
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-hdr">
+  <span class="page-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; QUIZZES</span>
+  <a class="back-link" href="index.html">◄ LIVE TRAINS</a>
+</div>
+
+<div class="intro">
+  THINK YOU KNOW YOUR TRAINS? PUT YOURSELF TO THE TEST.
+</div>
+
+<div class="quiz-grid">
+
+  <a class="quiz-tile" href="quiz.html">
+    <div class="tile-icon">🚆</div>
+    <div class="tile-title">SPOT THE CLASS</div>
+    <div class="tile-desc">
+      Can you identify a train class from a single photograph?
+      From Class 37 diesels to Class 810 Auroras — how many can you name?
+    </div>
+    <div class="tile-cta">► START QUIZ</div>
+  </a>
+
+</div>
+
+<div class="footer">
+  MORE QUIZZES COMING SOON
+</div>
+
+</body>
+</html>
