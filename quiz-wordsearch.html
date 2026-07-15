@@ -216,7 +216,10 @@
       <div id="win-msg">★ ALL WORDS FOUND — WELL DONE! ★</div>
       <div class="status">
         <span id="found-count">0 / 10 FOUND</span>
-        <button id="new-btn" onclick="newPuzzle()">▶ NEW PUZZLE</button>
+        <div style="display:flex;gap:8px;">
+          <button id="new-btn" onclick="newPuzzle()">▶ NEW PUZZLE</button>
+          <button id="new-btn" onclick="printPuzzle()">⎙ PRINT</button>
+        </div>
       </div>
       <div class="hint">WORDS RUN IN ALL 8 DIRECTIONS &nbsp;·&nbsp; CLICK AND DRAG TO SELECT</div>
     </div>
@@ -417,6 +420,50 @@ gridEl.addEventListener('touchmove', e=>{
   moveSel(+t.dataset.r,+t.dataset.c);
 },{passive:false});
 document.addEventListener('touchend', endSel);
+
+// ── Print ─────────────────────────────────────────────────────────────────────
+function printPuzzle() {
+  const words = puzzle.placed.map(p => p.word);
+  const rows  = puzzle.grid.map(row => row.join('')).join('|');
+
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Railway Word Search</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; padding: 28px; color: #000; background: #fff; }
+  h1 { font-size: 1.1rem; letter-spacing: 4px; text-align: center; margin-bottom: 4px; }
+  .sub { font-size: 0.62rem; letter-spacing: 3px; text-align: center; color: #555; margin-bottom: 22px; }
+  .grid { display: grid; grid-template-columns: repeat(15, 34px); grid-template-rows: repeat(15, 34px);
+          border: 2px solid #000; width: fit-content; margin: 0 auto 26px; }
+  .cell { width: 34px; height: 34px; border: 1px solid #bbb;
+          display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: bold; }
+  .words { max-width: 510px; margin: 0 auto; }
+  .words h2 { font-size: 0.68rem; letter-spacing: 3px; border-bottom: 1px solid #000;
+              padding-bottom: 5px; margin-bottom: 12px; }
+  .word-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 36px; }
+  .word-item { font-size: 0.78rem; letter-spacing: 2px; border-bottom: 1px solid #ccc;
+               padding: 4px 0; display: flex; gap: 8px; }
+  .wnum { color: #999; flex-shrink: 0; }
+  @media print { @page { margin: 1cm; } }
+</style></head><body>
+<h1>RAILWAY WORD SEARCH</h1>
+<div class="sub">WORDS RUN IN ALL 8 DIRECTIONS &nbsp;·&nbsp; FIND ALL ${words.length} WORDS</div>
+<div class="grid">${
+  rows.split('|').map(row =>
+    row.split('').map(ch => `<div class="cell">${ch}</div>`).join('')
+  ).join('')
+}</div>
+<div class="words">
+  <h2>WORDS TO FIND</h2>
+  <div class="word-grid">${
+    words.map((w,i) => `<div class="word-item"><span class="wnum">${i+1}.</span>${w}</div>`).join('')
+  }</div>
+</div>
+<script>window.onload=()=>{window.print();}<\/script>
+</body></html>`);
+  w.document.close();
+}
 
 // ── New puzzle ────────────────────────────────────────────────────────────────
 function newPuzzle() {
