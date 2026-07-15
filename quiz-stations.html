@@ -236,7 +236,7 @@ const LINES = [
     name: 'Midland Main Line',
     colour: '#AA1F2E',
     southEnd: 'St Pancras',
-    northEnd: 'Nottingham',
+    northEnd: 'Sheffield',
     stations: [
       'St Pancras International',
       'Luton',
@@ -247,7 +247,15 @@ const LINES = [
       'Market Harborough',
       'Leicester',
       'Loughborough',
-      'Nottingham'
+      'Nottingham',
+      'Derby',
+      'Chesterfield',
+      'Sheffield'
+    ],
+    eligible: [
+      'Luton','Luton Airport Parkway','Bedford','Wellingborough','Kettering',
+      'Market Harborough','Leicester','Loughborough','Nottingham',
+      'Derby','Chesterfield','Sheffield'
     ]
   },
   {
@@ -268,6 +276,10 @@ const LINES = [
       'Durham',
       'Newcastle',
       'Edinburgh Waverley'
+    ],
+    eligible: [
+      'Stevenage','Peterborough','Grantham','Newark North Gate',
+      'Doncaster','York','Darlington','Edinburgh Waverley'
     ]
   },
   {
@@ -278,15 +290,23 @@ const LINES = [
     northEnd: 'Glasgow',
     stations: [
       'London Euston',
+      'Watford Junction',
       'Milton Keynes Central',
       'Rugby',
       'Coventry',
       'Birmingham New Street',
       'Crewe',
+      'Liverpool Lime Street',
+      'Manchester Piccadilly',
       'Wigan North Western',
       'Preston',
       'Lancaster',
       'Carlisle',
+      'Glasgow Central'
+    ],
+    eligible: [
+      'London Euston','Watford Junction','Milton Keynes Central','Rugby','Coventry',
+      'Birmingham New Street','Crewe','Liverpool Lime Street','Manchester Piccadilly',
       'Glasgow Central'
     ]
   }
@@ -317,7 +337,7 @@ function ord(n) { return ['1st','2nd','3rd','4th'][n-1] || n+'th'; }
 function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
 function wrongs(line, correct, n) {
-  return shuffle(line.stations.filter(s => s !== correct)).slice(0, n);
+  return shuffle(line.eligible.filter(s => s !== correct)).slice(0, n);
 }
 
 // ── SVG route strip ──────────────────────────────────────────────────────────
@@ -380,57 +400,52 @@ function makeRouteSVG(line, anchorIdx, revealIdx) {
 // ── Question builders ────────────────────────────────────────────────────────
 function makeEasy() {
   const line = pick(LINES);
-  const s    = line.stations;
-  const n    = s.length;
-  // Step = 1 only, either direction
+  const el   = line.eligible;
+  const n    = el.length;
   const dir  = Math.random() < 0.55 ? 1 : -1;
-  const aIdx = dir === 1 ? ri(0, n-2) : ri(1, n-1);
-  const ansIdx = aIdx + dir;
-  const anchor = s[aIdx];
-  const answer = s[ansIdx];
+  const eA   = dir === 1 ? ri(0, n-2) : ri(1, n-1);
+  const eAns = eA + dir;
+  const anchor = el[eA];
+  const answer = el[eAns];
   const towards = dir === 1 ? `towards <strong>${line.northEnd}</strong>` : `towards <strong>${line.southEnd}</strong>`;
   const qText = `On the <em>${line.abbr}</em>, what is the <strong>next station</strong> from <strong>${anchor}</strong> ${towards}?`;
-  return { line, aIdx, ansIdx, difficulty: 'easy', qText, answer,
-           choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
+  return { line, aIdx: line.stations.indexOf(anchor), ansIdx: line.stations.indexOf(answer),
+           difficulty: 'easy', qText, answer, choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
 }
 
 function makeMedium() {
   const line = pick(LINES);
-  const s    = line.stations;
-  const n    = s.length;
+  const el   = line.eligible;
+  const n    = el.length;
   const step = ri(2, 3);
   const dir  = Math.random() < 0.6 ? 1 : -1;
-  let aIdx;
-  if (dir === 1) { aIdx = ri(0, n-1-step); }
-  else           { aIdx = ri(step, n-1); }
-  const ansIdx = aIdx + dir * step;
-  if (ansIdx < 0 || ansIdx >= n) return makeMedium();
-  const anchor = s[aIdx];
-  const answer = s[ansIdx];
+  const eA   = dir === 1 ? ri(0, n-1-step) : ri(step, n-1);
+  const eAns = eA + dir * step;
+  if (eAns < 0 || eAns >= n) return makeMedium();
+  const anchor = el[eA];
+  const answer = el[eAns];
   const towards = dir === 1 ? `towards <strong>${line.northEnd}</strong>` : `towards <strong>${line.southEnd}</strong>`;
   const qText = `On the <em>${line.abbr}</em>, what is the <strong>${ord(step)} station</strong> from <strong>${anchor}</strong> ${towards}?`;
-  return { line, aIdx, ansIdx, difficulty: 'medium', qText, answer,
-           choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
+  return { line, aIdx: line.stations.indexOf(anchor), ansIdx: line.stations.indexOf(answer),
+           difficulty: 'medium', qText, answer, choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
 }
 
 function makeHard() {
   const line  = pick(LINES);
-  const s     = line.stations;
-  const n     = s.length;
+  const el    = line.eligible;
+  const n     = el.length;
   const step1 = ri(2, 3);
   const step2 = ri(1, 2);
   const total = step1 + step2;
-  if (n - 1 < total + 1) return makeHard();
-  // Both steps going north (away from London) for clarity
-  const aIdx   = ri(0, n-1-total);
-  const midIdx = aIdx + step1;
-  const ansIdx = midIdx + step2;
-  if (ansIdx >= n) return makeHard();
-  const anchor = s[aIdx];
-  const answer = s[ansIdx];
+  if (n < total + 2) return makeHard();
+  const eA   = ri(0, n-1-total);
+  const eAns = eA + total;
+  if (eAns >= n) return makeHard();
+  const anchor = el[eA];
+  const answer = el[eAns];
   const qText = `On the <em>${line.abbr}</em>, what is the <strong>${ord(step2)} station</strong> after the <strong>${ord(step1)} station</strong> after <strong>${anchor}</strong>?`;
-  return { line, aIdx, ansIdx, difficulty: 'hard', qText, answer,
-           choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
+  return { line, aIdx: line.stations.indexOf(anchor), ansIdx: line.stations.indexOf(answer),
+           difficulty: 'hard', qText, answer, choices: shuffle([answer, ...wrongs(line, answer, 3)]) };
 }
 
 // ── Build quiz — mix: 4 easy, 3 medium, 3 hard ──────────────────────────────

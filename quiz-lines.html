@@ -257,11 +257,16 @@ const LINES = [
     name: 'Midland Main Line',
     colour: '#AA1F2E',
     southEnd: 'St Pancras',
-    northEnd: 'Nottingham',
+    northEnd: 'Sheffield',
     stations: [
       'St Pancras International','Luton','Luton Airport Parkway','Bedford',
       'Wellingborough','Kettering','Market Harborough','Leicester',
-      'Loughborough','Nottingham'
+      'Loughborough','Nottingham','Derby','Chesterfield','Sheffield'
+    ],
+    eligible: [
+      'Luton','Luton Airport Parkway','Bedford','Wellingborough','Kettering',
+      'Market Harborough','Leicester','Loughborough','Nottingham',
+      'Derby','Chesterfield','Sheffield'
     ]
   },
   {
@@ -274,6 +279,12 @@ const LINES = [
       "London King's Cross",'Stevenage','Peterborough','Grantham',
       'Newark North Gate','Doncaster','York','Darlington',
       'Durham','Newcastle','Edinburgh Waverley'
+    ],
+    // Below Crewe (~53.1°N): Stevenage, Peterborough, Grantham, Newark North Gate
+    // Terminal kept: Edinburgh Waverley
+    eligible: [
+      'Stevenage','Peterborough','Grantham','Newark North Gate',
+      'Doncaster','York','Darlington','Edinburgh Waverley'
     ]
   },
   {
@@ -283,9 +294,14 @@ const LINES = [
     southEnd: 'Euston',
     northEnd: 'Glasgow',
     stations: [
-      'London Euston','Milton Keynes Central','Rugby','Coventry',
-      'Birmingham New Street','Crewe','Wigan North Western','Preston',
-      'Lancaster','Carlisle','Glasgow Central'
+      'London Euston','Watford Junction','Milton Keynes Central','Rugby','Coventry',
+      'Birmingham New Street','Crewe','Liverpool Lime Street','Manchester Piccadilly',
+      'Wigan North Western','Preston','Lancaster','Carlisle','Glasgow Central'
+    ],
+    eligible: [
+      'London Euston','Watford Junction','Milton Keynes Central','Rugby','Coventry',
+      'Birmingham New Street','Crewe','Liverpool Lime Street','Manchester Piccadilly',
+      'Glasgow Central'
     ]
   }
 ];
@@ -294,13 +310,13 @@ const QUIZ_SIZE = 10;
 const LETTERS   = ['A','B','C','D'];
 
 const LINE_DISTRACTORS = ['Great Western Main Line', 'Great Northern Line', 'Chiltern Main Line'];
-const LINE_EXCL        = new Set(['Luton Airport Parkway', 'Stevenage', 'Newark North Gate', 'Wigan North Western']);
 const SECONDARY_NOTES  = {
   'Leicester':             'Leicester is also served by CrossCountry trains to Birmingham via Nuneaton.',
   'Birmingham New Street': 'Birmingham New Street is also a major hub for CrossCountry, Chiltern, and many regional routes.',
   'Crewe':                 'Crewe is also a junction for Manchester, North Wales, and Stoke-on-Trent lines.',
-  'York':                  'York is also served by TransPennine Express routes to Leeds and Manchester.',
-  'Doncaster':             'Doncaster is also served by East Midlands Railway services from Nottingham.',
+  'Stevenage':             'Stevenage is the first major stop north of London on the East Coast Main Line.',
+  'Edinburgh Waverley':    'Edinburgh Waverley is also the southern terminus of the Caledonian Sleeper and ScotRail services to Glasgow.',
+  'Glasgow Central':       'Glasgow Central is also served by ScotRail routes across west and central Scotland.',
 };
 
 let questions = [];
@@ -322,9 +338,7 @@ function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
 function makeQuestion() {
   const line     = pick(LINES);
-  const eligible = line.stations.filter(s => !LINE_EXCL.has(s));
-  if (!eligible.length) return makeQuestion();
-  const station    = pick(eligible);
+  const station  = pick(line.eligible);
   const stIdx      = line.stations.indexOf(station);
   const answer     = line.name;
   const wrongLines = LINES.filter(l => l.key !== line.key).map(l => l.name);
