@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Word Search Template</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #fff;
+      color: #000;
+      padding: 30px;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      letter-spacing: 4px;
+      text-align: center;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      text-align: center;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(15, 36px);
+      grid-template-rows: repeat(15, 36px);
+      gap: 0;
+      border: 2px solid #000;
+      width: fit-content;
+      margin: 0 auto 32px;
+    }
+
+    .cell {
+      width: 36px;
+      height: 36px;
+      border: 1px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .word-section {
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    .word-section h2 {
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #000;
+      padding-bottom: 6px;
+    }
+
+    .word-lines {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 40px;
+    }
+
+    .word-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+    }
+
+    .line-num {
+      color: #999;
+      flex-shrink: 0;
+      width: 18px;
+      text-align: right;
+    }
+
+    .line-blank {
+      flex: 1;
+      border-bottom: 1px solid #000;
+      height: 24px;
+    }
+
+    @media print {
+      body { padding: 15px; }
+      @page { margin: 1cm; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Word Search</h1>
+<div class="subtitle">FIND THE HIDDEN WORDS — WORDS RUN IN ALL 8 DIRECTIONS</div>
+
+<div class="grid">
+  <!-- 225 cells: 15 rows × 15 cols -->
+  <script>
+    for (let i = 0; i < 225; i++) document.write('<div class="cell"></div>');
+  </script>
+</div>
+
+<div class="word-section">
+  <h2>Words to Find</h2>
+  <div class="word-lines">
+    <div class="word-line"><span class="line-num">1.</span><div class="line-blank"></div></div>
+    <div class="word-line"><span class="line-num">2.</span><div class="line-blank"></div></div>
+    <div class="word-line"><span class="line-num">3.</span><div class="line-blank"></div></div>
+    <div class="word-line"><span class="line-num">4.</span><div class="line-blank"></div></div>
+    <div class="word-line"><span class="line-num">5.</span><div class="line-blank"></div></div>
+    <div class="word-line"><span class="line-num">6.</span><div class="line-blank"></div></div>
+    <div class="word-line"><span class="line-num">7.</span><div class="line-blank"></div></div>
+    <div class="word-line"><span class="line-num">8.</span><div class="line-blank"></div></div>
+    <div class="word-line"><span class="line-num">9.</span><div class="line-blank"></div></div>
+    <div class="word-line"><span class="line-num">10.</span><div class="line-blank"></div></div>
+  </div>
+</div>
+
+</body>
+</html>
