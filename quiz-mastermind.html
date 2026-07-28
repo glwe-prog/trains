@@ -137,7 +137,7 @@
     }
 
     .tray-tile {
-      width: 68px; height: 80px; border-radius: 3px;
+      width: 84px; height: 100px; border-radius: 3px;
       border: 1px solid var(--div); background: var(--surf);
       display: flex; flex-direction: column; overflow: hidden;
       cursor: grab; flex-shrink: 0; user-select: none;
@@ -237,15 +237,27 @@
 </div>
 
 <script>
-const POOL = [
-  { slug: 'class_43_hst', name: 'Class 43 HST', label: 'CL.43'  },
-  { slug: 'class_66',     name: 'Class 66',     label: 'CL.66'  },
-  { slug: 'class_91',     name: 'Class 91',     label: 'CL.91'  },
-  { slug: 'class_222',    name: 'Class 222',    label: 'CL.222' },
-  { slug: 'class_360',    name: 'Class 360',    label: 'CL.360' },
-  { slug: 'class_373',    name: 'Class 373',    label: 'CL.373' },
-  { slug: 'class_390',    name: 'Class 390',    label: 'CL.390' },
-  { slug: 'class_810',    name: 'Class 810',    label: 'CL.810' },
+const ELIGIBLE = [
+  { slug: 'class_43_hst', name: 'Class 43 HST',    label: 'CL.43'  },
+  { slug: 'class_37',     name: 'Class 37',         label: 'CL.37'  },
+  { slug: 'class_47',     name: 'Class 47',         label: 'CL.47'  },
+  { slug: 'class_57',     name: 'Class 57',         label: 'CL.57'  },
+  { slug: 'class_66',     name: 'Class 66',         label: 'CL.66'  },
+  { slug: 'class_67',     name: 'Class 67',         label: 'CL.67'  },
+  { slug: 'class_68',     name: 'Class 68',         label: 'CL.68'  },
+  { slug: 'class_91',     name: 'Class 91',         label: 'CL.91'  },
+  { slug: 'class_185',    name: 'Class 185',        label: 'CL.185' },
+  { slug: 'class_195',    name: 'Class 195',        label: 'CL.195' },
+  { slug: 'class_222',    name: 'Class 222',        label: 'CL.222' },
+  { slug: 'class_350',    name: 'Class 350',        label: 'CL.350' },
+  { slug: 'class_360',    name: 'Class 360',        label: 'CL.360' },
+  { slug: 'class_373',    name: 'Class 373',        label: 'CL.373' },
+  { slug: 'class_387',    name: 'Class 387',        label: 'CL.387' },
+  { slug: 'class_390',    name: 'Class 390',        label: 'CL.390' },
+  { slug: 'class_444',    name: 'Class 444',        label: 'CL.444' },
+  { slug: 'class_700',    name: 'Class 700',        label: 'CL.700' },
+  { slug: 'class_800',    name: 'Class 800',        label: 'CL.800' },
+  { slug: 'class_810',    name: 'Class 810',        label: 'CL.810' },
 ];
 
 function shuffle(a) {
@@ -257,8 +269,9 @@ function shuffle(a) {
   return b;
 }
 
-function bySlug(slug) { return POOL.find(p => p.slug === slug); }
+function bySlug(slug) { return ELIGIBLE.find(p => p.slug === slug); }
 
+let currentPool = [];            // 8 classes chosen randomly each game
 let secret   = [];               // 4 slugs (no repeats)
 let history  = [];               // [{guess:[slug×4], exact:N, close:N}]
 let current  = [null,null,null,null];
@@ -267,7 +280,8 @@ let dragSlug = null;
 let gameOver = false;
 
 function newGame() {
-  secret   = shuffle([...POOL]).slice(0, 4).map(p => p.slug);
+  currentPool = shuffle([...ELIGIBLE]).slice(0, 8);
+  secret      = shuffle([...currentPool]).slice(0, 4).map(p => p.slug);
   history  = [];
   current  = [null,null,null,null];
   selected = null;
@@ -385,7 +399,7 @@ function renderActiveRow() {
 /* ── Render tray ── */
 function renderTray() {
   const el = document.getElementById('tray');
-  el.innerHTML = POOL.map(p => `
+  el.innerHTML = currentPool.map(p => `
     <div class="tray-tile${selected === p.slug ? ' selected' : ''}" data-slug="${p.slug}" draggable="true">
       <img src="images/${p.slug}.jpg" alt="${p.name}" draggable="false" loading="lazy">
       <div class="tile-lbl">${p.label}</div>
