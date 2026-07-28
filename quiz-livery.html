@@ -227,7 +227,7 @@ const CATALOGUE = [
   { slug: 'livery_greater_anglia',   name: 'Greater Anglia'          },
   { slug: 'livery_c2c',              name: 'c2c'                     },
   { slug: 'livery_scotrail',         name: 'ScotRail'                },
-  { slug: 'livery_transpennine',     name: 'TransPennine Express'    },
+  { slug: 'livery_transpennine',     name: 'TransPennine Express',    pos: 'right center' },
   { slug: 'livery_northern',         name: 'Northern'                },
   { slug: 'livery_merseyrail',       name: 'Merseyrail'              },
   { slug: 'livery_west_midlands',    name: 'West Midlands Railway'   },
@@ -300,8 +300,9 @@ function showQuestion() {
   const wrap = document.getElementById('img-wrap');
   wrap.innerHTML = '';
   const img  = document.createElement('img');
-  img.src    = `images/${q.op.slug}.jpg`;
-  img.alt    = 'Train livery';
+  img.src   = `images/${q.op.slug}.jpg`;
+  img.alt   = 'Train livery';
+  img.style.objectPosition = q.op.pos || 'center center';
   img.onerror = () => { wrap.innerHTML = '<div class="no-img">NO PHOTO AVAILABLE</div>'; };
   wrap.appendChild(img);
 
