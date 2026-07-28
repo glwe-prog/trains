@@ -64,7 +64,7 @@
       width: 76px; height: 90px; border-radius: 3px;
       border: 2px solid var(--div); background: var(--surf);
       display: flex; flex-direction: column; overflow: hidden;
-      flex-shrink: 0; position: relative;
+      flex-shrink: 0; position: relative; user-select: none;
     }
     .slot img { width: 100%; flex: 1; object-fit: cover; display: block; min-height: 0; }
     .slot .slot-lbl {
@@ -95,6 +95,7 @@
     .slot.active-filled { border-color: var(--ydim); cursor: pointer; }
     .slot.active-filled:hover { border-color: var(--red); }
     .slot.active-filled:hover .slot-lbl { color: var(--red); }
+    .slot.drag-over { border-color: var(--y) !important; background: rgba(255,225,0,.07) !important; }
 
     /* ── Pegs ── */
     .pegs {
@@ -122,7 +123,7 @@
       border: 1px solid var(--ydim); background: transparent; color: var(--ydim);
     }
     .btn:hover:not(:disabled) { border-color: var(--y); color: var(--y); }
-    .btn:disabled { opacity: .35; cursor: not-allowed; }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
     .btn.submit { border-color: var(--y); color: var(--y); }
     .btn.submit:hover:not(:disabled) { background: var(--y); color: #000; }
     .btn.primary { border-color: var(--y); background: var(--y); color: #000; }
@@ -139,7 +140,7 @@
       width: 68px; height: 80px; border-radius: 3px;
       border: 1px solid var(--div); background: var(--surf);
       display: flex; flex-direction: column; overflow: hidden;
-      cursor: pointer; flex-shrink: 0;
+      cursor: grab; flex-shrink: 0; user-select: none;
       transition: border-color .12s, transform .12s, box-shadow .12s;
     }
     .tray-tile img { width: 100%; flex: 1; object-fit: cover; display: block; min-height: 0; }
@@ -226,7 +227,7 @@
 
 <!-- Tray -->
 <div class="tray-section">
-  <div class="tray-lbl">SELECT A CLASS &nbsp;·&nbsp; CLICK TO PLACE IN A SLOT</div>
+  <div class="tray-lbl">DRAG OR CLICK A CLASS TO PLACE IN A SLOT</div>
   <div class="tray" id="tray"></div>
 </div>
 
@@ -262,6 +263,7 @@ let secret   = [];               // 4 slugs (no repeats)
 let history  = [];               // [{guess:[slug×4], exact:N, close:N}]
 let current  = [null,null,null,null];
 let selected = null;             // tray tile slug currently lifted
+let dragSlug = null;
 let gameOver = false;
 
 function newGame() {
@@ -303,9 +305,10 @@ function pegGrid(exact, close) {
 /* ── Slot HTML (history or active) ── */
 function slotHTML(slug, mode, idx) {
   const p = slug ? bySlug(slug) : null;
+  const img = p => `<img src="images/${p.slug}.jpg" alt="${p.name}" draggable="false">`;
   if (mode === 'history') {
     return `<div class="slot">
-      ${p ? `<img src="images/${p.slug}.jpg" alt="${p.name}"><div class="slot-lbl">${p.label}</div>` : ''}
+      ${p ? `${img(p)}<div class="slot-lbl">${p.label}</div>` : ''}
     </div>`;
   }
   if (mode === 'secret-covered') {
@@ -313,7 +316,7 @@ function slotHTML(slug, mode, idx) {
   }
   if (mode === 'secret-revealed') {
     return `<div class="slot revealed">
-      ${p ? `<img src="images/${p.slug}.jpg" alt="${p.name}"><div class="slot-lbl">${p.label}</div>` : ''}
+      ${p ? `${img(p)}<div class="slot-lbl">${p.label}</div>` : ''}
     </div>`;
   }
   if (mode === 'active') {
@@ -321,8 +324,7 @@ function slotHTML(slug, mode, idx) {
       return `<div class="slot active-empty" data-slot="${idx}"></div>`;
     }
     return `<div class="slot active-filled" data-slot="${idx}">
-      <img src="images/${p.slug}.jpg" alt="${p.name}">
-      <div class="slot-lbl">${p.label}</div>
+      ${img(p)}<div class="slot-lbl">${p.label}</div>
     </div>`;
   }
   return '';
@@ -362,7 +364,19 @@ function renderActiveRow() {
     ${pegGrid(0, 0).replace('<div class="pegs">', '<div class="pegs" style="visibility:hidden">')}
   `;
   el.querySelectorAll('.slot').forEach(slot => {
-    slot.addEventListener('click', () => clickSlot(+slot.dataset.slot));
+    const idx = +slot.dataset.slot;
+    slot.addEventListener('click', () => clickSlot(idx));
+    slot.addEventListener('dragover',  e => { e.preventDefault(); slot.classList.add('drag-over'); });
+    slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+    slot.addEventListener('drop', e => {
+      e.preventDefault();
+      slot.classList.remove('drag-over');
+      const slug = e.dataTransfer.getData('text/plain') || dragSlug;
+      if (!slug || gameOver) return;
+      current[idx] = slug;
+      dragSlug = null; selected = null;
+      renderActiveRow(); renderTray();
+    });
   });
   document.getElementById('btn-submit').disabled = current.some(s => !s);
   document.getElementById('btn-clear').disabled  = !current.some(Boolean);
@@ -372,12 +386,20 @@ function renderActiveRow() {
 function renderTray() {
   const el = document.getElementById('tray');
   el.innerHTML = POOL.map(p => `
-    <div class="tray-tile${selected === p.slug ? ' selected' : ''}" data-slug="${p.slug}">
-      <img src="images/${p.slug}.jpg" alt="${p.name}" loading="lazy">
+    <div class="tray-tile${selected === p.slug ? ' selected' : ''}" data-slug="${p.slug}" draggable="true">
+      <img src="images/${p.slug}.jpg" alt="${p.name}" draggable="false" loading="lazy">
       <div class="tile-lbl">${p.label}</div>
     </div>`).join('');
   el.querySelectorAll('.tray-tile').forEach(tile => {
-    tile.addEventListener('click', () => clickTile(tile.dataset.slug));
+    const slug = tile.dataset.slug;
+    tile.addEventListener('click', () => clickTile(slug));
+    tile.addEventListener('contextmenu', e => e.preventDefault());
+    tile.addEventListener('dragstart', e => {
+      dragSlug = slug;
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('text/plain', slug);
+    });
+    tile.addEventListener('dragend', () => { dragSlug = null; });
   });
 }
 
