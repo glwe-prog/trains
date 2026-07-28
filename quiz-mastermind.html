@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wellingborough Line — Mastermind</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --y: #FFE100; --ydim: #C09000; --bg: #07070A;
+      --div: #2A2A2A; --grn: #44EE44; --red: #FF3030; --surf: #0F0F16;
+    }
+    body {
+      background: var(--bg); color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      min-height: 100vh; padding: 14px;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background: repeating-linear-gradient(to bottom,
+        transparent 0, transparent 3px,
+        rgba(0,0,0,.08) 3px, rgba(0,0,0,.08) 4px);
+      pointer-events: none; z-index: 9999;
+    }
+
+    /* ── Header ── */
+    .page-hdr {
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-bottom: 1px solid var(--ydim); padding-bottom: 8px;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 6px;
+    }
+    .page-title { font-size: clamp(.6rem, 2vw, .85rem); letter-spacing: 3px; }
+    .back-link { font-size: clamp(.6rem, 1.8vw, .8rem); letter-spacing: 2px; color: var(--ydim); text-decoration: none; }
+    .back-link:hover { color: var(--y); }
+
+    /* ── Board container ── */
+    .board-wrap { max-width: 560px; margin: 0 auto; }
+
+    /* ── Secret row ── */
+    .secret-section {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    }
+    .secret-label {
+      font-size: .58rem; letter-spacing: 2px; color: var(--ydim);
+      white-space: nowrap; min-width: 54px;
+    }
+    .secret-slots { display: flex; gap: 7px; }
+
+    /* ── Guess rows ── */
+    .history { margin-bottom: 8px; }
+    .guess-row {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+    }
+    .row-num {
+      font-size: .54rem; letter-spacing: 1px; color: var(--ydim);
+      width: 22px; text-align: right; flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .row-slots { display: flex; gap: 7px; }
+
+    /* ── Slot (shared) ── */
+    .slot {
+      width: 76px; height: 90px; border-radius: 3px;
+      border: 2px solid var(--div); background: var(--surf);
+      display: flex; flex-direction: column; overflow: hidden;
+      flex-shrink: 0; position: relative;
+    }
+    .slot img { width: 100%; flex: 1; object-fit: cover; display: block; min-height: 0; }
+    .slot .slot-lbl {
+      font-size: .38rem; letter-spacing: .6px; color: #888;
+      background: rgba(0,0,0,.65); text-align: center; padding: 2px;
+      white-space: nowrap; overflow: hidden;
+    }
+
+    /* Secret covered */
+    .slot.covered {
+      border-color: #3A1A1A; background: #0E0505;
+      align-items: center; justify-content: center;
+    }
+    .slot.covered::after { content: '?'; font-size: 1.6rem; color: #3A1A1A; }
+
+    /* Secret revealed */
+    .slot.revealed { border-color: var(--grn); }
+
+    /* Active slot — empty */
+    .slot.active-empty {
+      border: 2px dashed #444; cursor: pointer;
+      align-items: center; justify-content: center;
+    }
+    .slot.active-empty:hover { border-color: var(--ydim); background: rgba(255,225,0,.03); }
+    .slot.active-empty::after { content: '+'; font-size: 1.4rem; color: #333; }
+
+    /* Active slot — filled */
+    .slot.active-filled { border-color: var(--ydim); cursor: pointer; }
+    .slot.active-filled:hover { border-color: var(--red); }
+    .slot.active-filled:hover .slot-lbl { color: var(--red); }
+
+    /* ── Pegs ── */
+    .pegs {
+      display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+      gap: 5px; padding: 7px;
+      background: rgba(0,0,0,.4); border: 1px solid var(--div); border-radius: 3px;
+      width: 46px; height: 46px; flex-shrink: 0; align-self: center;
+    }
+    .peg { border-radius: 50%; background: #141414; border: 1px solid #1E1E1E; }
+    .peg.exact { background: var(--y); border-color: var(--y); }
+    .peg.close { background: transparent; border: 2px solid rgba(255,225,0,.45); }
+
+    /* ── Sep ── */
+    .sep { height: 1px; background: var(--div); margin: 12px 0; }
+
+    /* ── Active row ── */
+    .active-row { display: flex; align-items: center; gap: 8px; }
+    .active-row .row-num { color: var(--y); }
+
+    /* ── Controls ── */
+    .controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .btn {
+      font-family: inherit; font-size: .62rem; letter-spacing: 2px;
+      padding: 8px 16px; cursor: pointer;
+      border: 1px solid var(--ydim); background: transparent; color: var(--ydim);
+    }
+    .btn:hover:not(:disabled) { border-color: var(--y); color: var(--y); }
+    .btn:disabled { opacity: .35; cursor: not-allowed; }
+    .btn.submit { border-color: var(--y); color: var(--y); }
+    .btn.submit:hover:not(:disabled) { background: var(--y); color: #000; }
+    .btn.primary { border-color: var(--y); background: var(--y); color: #000; }
+
+    /* ── Tray ── */
+    .tray-section { max-width: 560px; margin: 18px auto 0; }
+    .tray-lbl { font-size: .58rem; letter-spacing: 3px; color: var(--ydim); margin-bottom: 10px; }
+    .tray {
+      display: flex; gap: 7px; overflow-x: auto; padding-bottom: 8px;
+      scrollbar-width: thin; scrollbar-color: var(--div) transparent;
+    }
+
+    .tray-tile {
+      width: 68px; height: 80px; border-radius: 3px;
+      border: 1px solid var(--div); background: var(--surf);
+      display: flex; flex-direction: column; overflow: hidden;
+      cursor: pointer; flex-shrink: 0;
+      transition: border-color .12s, transform .12s, box-shadow .12s;
+    }
+    .tray-tile img { width: 100%; flex: 1; object-fit: cover; display: block; min-height: 0; }
+    .tray-tile .tile-lbl {
+      font-size: .38rem; letter-spacing: .6px; color: var(--ydim);
+      background: rgba(0,0,0,.6); text-align: center; padding: 2px;
+      white-space: nowrap; overflow: hidden;
+    }
+    .tray-tile:hover { border-color: var(--ydim); }
+    .tray-tile.selected {
+      border: 2px solid var(--y); transform: translateY(-6px);
+      box-shadow: 0 6px 16px rgba(255,225,0,.2);
+    }
+    .tray-tile.selected .tile-lbl { color: var(--y); }
+
+    /* ── Attempt counter ── */
+    .attempt-bar {
+      font-size: .62rem; letter-spacing: 2px; color: var(--ydim);
+      margin-bottom: 14px; max-width: 560px; margin-left: auto; margin-right: auto;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .attempt-bar .val { color: var(--y); }
+
+    /* ── Result banner ── */
+    .result-banner {
+      display: none; max-width: 560px; margin: 12px auto 0;
+      border: 1px solid var(--y); padding: 18px 24px; text-align: center;
+    }
+    .result-banner.show { display: block; }
+    .result-banner .r-title { font-size: 1rem; letter-spacing: 4px; margin-bottom: 8px; }
+    .result-banner .r-sub { font-size: .62rem; letter-spacing: 2px; color: var(--ydim); }
+    .result-banner .r-sub span { color: var(--y); }
+
+    /* ── Footer ── */
+    .footer {
+      max-width: 560px; margin: 20px auto 0;
+      font-size: .56rem; color: var(--ydim); letter-spacing: 2px;
+      display: flex; justify-content: space-between;
+      border-top: 1px solid var(--div); padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-hdr">
+  <span class="page-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; MASTERMIND</span>
+  <a class="back-link" href="quizzes.html">◄ QUIZZES</a>
+</div>
+
+<div class="attempt-bar">
+  <span>ATTEMPT &nbsp;<span class="val" id="attempt-num">1</span> / 10</span>
+  <button class="btn" onclick="newGame()">NEW GAME</button>
+</div>
+
+<div class="board-wrap">
+
+  <!-- Secret code row -->
+  <div class="secret-section">
+    <span class="secret-label">SECRET</span>
+    <div class="secret-slots" id="secret-slots"></div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- History of guesses -->
+  <div class="history" id="history"></div>
+
+  <!-- Active row -->
+  <div class="active-row" id="active-row"></div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn submit" id="btn-submit" onclick="submit()" disabled>SUBMIT</button>
+    <button class="btn" id="btn-clear" onclick="clearRow()">CLEAR</button>
+  </div>
+
+</div>
+
+<!-- Result banner -->
+<div class="result-banner" id="result-banner">
+  <div class="r-title" id="r-title"></div>
+  <div class="r-sub" id="r-sub"></div>
+</div>
+
+<!-- Tray -->
+<div class="tray-section">
+  <div class="tray-lbl">SELECT A CLASS &nbsp;·&nbsp; CLICK TO PLACE IN A SLOT</div>
+  <div class="tray" id="tray"></div>
+</div>
+
+<div class="footer">
+  <span>&#9632; EXACT &nbsp; ○ RIGHT CLASS WRONG POSITION</span>
+  <a href="quizzes.html" class="back-link">ALL QUIZZES ►</a>
+</div>
+
+<script>
+const POOL = [
+  { slug: 'class_43_hst', name: 'Class 43 HST', label: 'CL.43'  },
+  { slug: 'class_66',     name: 'Class 66',     label: 'CL.66'  },
+  { slug: 'class_91',     name: 'Class 91',     label: 'CL.91'  },
+  { slug: 'class_222',    name: 'Class 222',    label: 'CL.222' },
+  { slug: 'class_360',    name: 'Class 360',    label: 'CL.360' },
+  { slug: 'class_373',    name: 'Class 373',    label: 'CL.373' },
+  { slug: 'class_390',    name: 'Class 390',    label: 'CL.390' },
+  { slug: 'class_810',    name: 'Class 810',    label: 'CL.810' },
+];
+
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+
+function bySlug(slug) { return POOL.find(p => p.slug === slug); }
+
+let secret   = [];               // 4 slugs (no repeats)
+let history  = [];               // [{guess:[slug×4], exact:N, close:N}]
+let current  = [null,null,null,null];
+let selected = null;             // tray tile slug currently lifted
+let gameOver = false;
+
+function newGame() {
+  secret   = shuffle([...POOL]).slice(0, 4).map(p => p.slug);
+  history  = [];
+  current  = [null,null,null,null];
+  selected = null;
+  gameOver = false;
+  render();
+}
+
+/* ── Evaluate a guess against secret ── */
+function evaluate(guess) {
+  let exact = 0, close = 0;
+  const sec = [...secret];
+  const gu  = [...guess];
+  for (let i = 0; i < 4; i++) {
+    if (gu[i] === sec[i]) { exact++; sec[i] = null; gu[i] = null; }
+  }
+  for (let i = 0; i < 4; i++) {
+    if (!gu[i]) continue;
+    const j = sec.indexOf(gu[i]);
+    if (j !== -1) { close++; sec[j] = null; }
+  }
+  return { exact, close };
+}
+
+/* ── Peg HTML ── */
+function pegGrid(exact, close) {
+  const miss = 4 - exact - close;
+  const types = [
+    ...Array(exact).fill('exact'),
+    ...Array(close).fill('close'),
+    ...Array(miss).fill(''),
+  ];
+  return `<div class="pegs">${types.map(t => `<div class="peg ${t}"></div>`).join('')}</div>`;
+}
+
+/* ── Slot HTML (history or active) ── */
+function slotHTML(slug, mode, idx) {
+  const p = slug ? bySlug(slug) : null;
+  if (mode === 'history') {
+    return `<div class="slot">
+      ${p ? `<img src="images/${p.slug}.jpg" alt="${p.name}"><div class="slot-lbl">${p.label}</div>` : ''}
+    </div>`;
+  }
+  if (mode === 'secret-covered') {
+    return `<div class="slot covered"></div>`;
+  }
+  if (mode === 'secret-revealed') {
+    return `<div class="slot revealed">
+      ${p ? `<img src="images/${p.slug}.jpg" alt="${p.name}"><div class="slot-lbl">${p.label}</div>` : ''}
+    </div>`;
+  }
+  if (mode === 'active') {
+    if (!slug) {
+      return `<div class="slot active-empty" data-slot="${idx}"></div>`;
+    }
+    return `<div class="slot active-filled" data-slot="${idx}">
+      <img src="images/${p.slug}.jpg" alt="${p.name}">
+      <div class="slot-lbl">${p.label}</div>
+    </div>`;
+  }
+  return '';
+}
+
+/* ── Render secret ── */
+function renderSecret(reveal) {
+  const el = document.getElementById('secret-slots');
+  if (reveal) {
+    el.innerHTML = secret.map(s => slotHTML(s, 'secret-revealed')).join('');
+  } else {
+    el.innerHTML = secret.map(() => slotHTML(null, 'secret-covered')).join('');
+  }
+}
+
+/* ── Render history ── */
+function renderHistory() {
+  const el = document.getElementById('history');
+  if (history.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = history.map((h, i) => `
+    <div class="guess-row">
+      <div class="row-num">${i + 1}</div>
+      <div class="row-slots">${h.guess.map(s => slotHTML(s, 'history')).join('')}</div>
+      ${pegGrid(h.exact, h.close)}
+    </div>`).join('');
+}
+
+/* ── Render active row ── */
+function renderActiveRow() {
+  const el = document.getElementById('active-row');
+  if (gameOver) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="row-num">${history.length + 1}</div>
+    <div class="row-slots" id="active-slots">
+      ${current.map((s, i) => slotHTML(s, 'active', i)).join('')}
+    </div>
+    ${pegGrid(0, 0).replace('<div class="pegs">', '<div class="pegs" style="visibility:hidden">')}
+  `;
+  el.querySelectorAll('.slot').forEach(slot => {
+    slot.addEventListener('click', () => clickSlot(+slot.dataset.slot));
+  });
+  document.getElementById('btn-submit').disabled = current.some(s => !s);
+  document.getElementById('btn-clear').disabled  = !current.some(Boolean);
+}
+
+/* ── Render tray ── */
+function renderTray() {
+  const el = document.getElementById('tray');
+  el.innerHTML = POOL.map(p => `
+    <div class="tray-tile${selected === p.slug ? ' selected' : ''}" data-slug="${p.slug}">
+      <img src="images/${p.slug}.jpg" alt="${p.name}" loading="lazy">
+      <div class="tile-lbl">${p.label}</div>
+    </div>`).join('');
+  el.querySelectorAll('.tray-tile').forEach(tile => {
+    tile.addEventListener('click', () => clickTile(tile.dataset.slug));
+  });
+}
+
+/* ── Render attempt counter ── */
+function renderAttempt() {
+  document.getElementById('attempt-num').textContent =
+    gameOver ? history.length : history.length + 1;
+}
+
+/* ── Full render ── */
+function render() {
+  renderSecret(gameOver);
+  renderHistory();
+  renderActiveRow();
+  renderTray();
+  renderAttempt();
+}
+
+/* ── Interactions ── */
+function clickTile(slug) {
+  if (gameOver) return;
+  selected = (selected === slug) ? null : slug;
+  renderTray();
+}
+
+function clickSlot(idx) {
+  if (gameOver) return;
+  if (selected) {
+    current[idx] = selected;
+    selected = null;
+    renderActiveRow();
+    renderTray();
+  } else {
+    current[idx] = null;
+    renderActiveRow();
+  }
+}
+
+function clearRow() {
+  if (gameOver) return;
+  current = [null,null,null,null];
+  selected = null;
+  renderActiveRow();
+  renderTray();
+}
+
+function submit() {
+  if (gameOver || current.some(s => !s)) return;
+  const { exact, close } = evaluate(current);
+  history.push({ guess: [...current], exact, close });
+  current = [null,null,null,null];
+  selected = null;
+
+  if (exact === 4) {
+    gameOver = true;
+    render();
+    showResult('win', exact);
+  } else if (history.length >= 10) {
+    gameOver = true;
+    render();
+    showResult('loss', exact);
+  } else {
+    render();
+  }
+}
+
+/* ── Result banner ── */
+function showResult(outcome, exact) {
+  const banner = document.getElementById('result-banner');
+  const title  = document.getElementById('r-title');
+  const sub    = document.getElementById('r-sub');
+
+  if (outcome === 'win') {
+    title.textContent = 'CORRECT';
+    sub.innerHTML = `Cracked in <span>${history.length}</span> attempt${history.length === 1 ? '' : 's'}`;
+  } else {
+    title.textContent = 'OUT OF ATTEMPTS';
+    sub.innerHTML = `Closest guess had <span>${exact}</span> in the right position — secret revealed above`;
+  }
+  banner.classList.add('show');
+}
+
+newGame();
+</script>
+</body>
+</html>

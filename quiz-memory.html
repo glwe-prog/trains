@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wellingborough Line — Memory</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --y:   #FFE100; --ydim: #C09000; --bg: #07070A;
+      --div: #2A2A2A; --grn:  #44EE44; --surf: #0F0F16;
+    }
+    body {
+      background: var(--bg); color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      min-height: 100vh; padding: 14px;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background: repeating-linear-gradient(to bottom,
+        transparent 0, transparent 3px,
+        rgba(0,0,0,.08) 3px, rgba(0,0,0,.08) 4px);
+      pointer-events: none; z-index: 9999;
+    }
+
+    /* ── Header ── */
+    .page-hdr {
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-bottom: 1px solid var(--ydim); padding-bottom: 8px;
+      margin-bottom: 14px; flex-wrap: wrap; gap: 6px;
+    }
+    .page-title { font-size: clamp(.6rem, 2vw, .85rem); letter-spacing: 3px; }
+    .back-link  { font-size: clamp(.6rem, 1.8vw, .8rem); letter-spacing: 2px; color: var(--ydim); text-decoration: none; }
+    .back-link:hover { color: var(--y); }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex; gap: 20px; align-items: center;
+      font-size: .65rem; letter-spacing: 2px; color: var(--ydim);
+      margin-bottom: 14px; max-width: 900px; margin-left: auto; margin-right: auto;
+    }
+    .stats-bar .val { color: var(--y); font-size: .9rem; font-variant-numeric: tabular-nums; }
+    .stats-bar .spacer { flex: 1; }
+    .btn {
+      font-family: inherit; font-size: .62rem; letter-spacing: 2px;
+      padding: 7px 16px; cursor: pointer;
+      border: 1px solid var(--ydim); background: transparent; color: var(--ydim);
+    }
+    .btn:hover { border-color: var(--y); color: var(--y); }
+    .btn.primary { border-color: var(--y); background: var(--y); color: #000; }
+
+    /* ── Card grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      max-width: 900px; margin: 0 auto 18px;
+    }
+
+    /* ── Card flip ── */
+    .card { aspect-ratio: 3/2; cursor: pointer; perspective: 700px; }
+    .card-inner {
+      position: relative; width: 100%; height: 100%;
+      transform-style: preserve-3d;
+      transition: transform .42s ease;
+    }
+    .card.flipped .card-inner { transform: rotateY(180deg); }
+
+    .card-back, .card-front {
+      position: absolute; inset: 0; border-radius: 4px;
+      backface-visibility: hidden; -webkit-backface-visibility: hidden;
+      overflow: hidden;
+    }
+
+    /* Face-down */
+    .card-back {
+      background: var(--surf); border: 2px solid var(--div);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-back::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        repeating-linear-gradient(45deg,
+          rgba(255,225,0,.04) 0, rgba(255,225,0,.04) 1px,
+          transparent 1px, transparent 12px),
+        repeating-linear-gradient(-45deg,
+          rgba(255,225,0,.04) 0, rgba(255,225,0,.04) 1px,
+          transparent 1px, transparent 12px);
+    }
+    .card-back .qmark { font-size: clamp(1rem, 4vw, 1.8rem); color: #1E1E28; position: relative; z-index: 1; }
+
+    /* Face-up */
+    .card-front { transform: rotateY(180deg); border: 2px solid var(--y); }
+    .card-front img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .card-front .card-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,.78); color: var(--y);
+      font-size: clamp(.4rem, 1.1vw, .58rem); letter-spacing: 1px;
+      text-align: center; padding: 3px 2px;
+    }
+
+    /* Matched */
+    .card.matched { pointer-events: none; }
+    .card.matched .card-inner { opacity: .28; }
+    .card.matched .card-front { border-color: var(--grn); }
+
+    /* ── Footer ── */
+    .footer {
+      max-width: 900px; margin: 14px auto 0;
+      font-size: .58rem; color: var(--ydim); letter-spacing: 2px;
+      display: flex; justify-content: space-between;
+      border-top: 1px solid var(--div); padding-top: 10px;
+    }
+
+    /* ── Win modal ── */
+    .modal-wrap {
+      position: fixed; inset: 0; background: rgba(0,0,0,.82);
+      display: none; align-items: center; justify-content: center; z-index: 200;
+    }
+    .modal-wrap.show { display: flex; }
+    .modal {
+      border: 1px solid var(--y); background: var(--bg);
+      padding: 36px 48px; text-align: center; max-width: 380px; width: 90%;
+    }
+    .modal-title { font-size: 1.1rem; letter-spacing: 4px; margin-bottom: 20px; }
+    .modal-stat  { font-size: .7rem; letter-spacing: 2px; color: var(--ydim); line-height: 2.1; }
+    .modal-stat span { color: var(--y); }
+    .modal-actions { margin-top: 24px; display: flex; gap: 10px; justify-content: center; }
+  </style>
+</head>
+<body>
+
+<div class="page-hdr">
+  <span class="page-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; MEMORY</span>
+  <a class="back-link" href="quizzes.html">◄ QUIZZES</a>
+</div>
+
+<div class="stats-bar">
+  <span>MOVES &nbsp;<span class="val" id="s-moves">0</span></span>
+  <span>PAIRS &nbsp;<span class="val" id="s-pairs">0 / 10</span></span>
+  <span>TIME &nbsp;&nbsp;<span class="val" id="s-time">0:00</span></span>
+  <span class="spacer"></span>
+  <button class="btn" onclick="newGame()">NEW GAME</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="footer">
+  <span>MATCH ALL 10 PAIRS TO WIN &nbsp;·&nbsp; CLICK A CARD TO REVEAL</span>
+  <a href="quizzes.html" class="back-link">ALL QUIZZES ►</a>
+</div>
+
+<div class="modal-wrap" id="modal">
+  <div class="modal">
+    <div class="modal-title">ALL PAIRS FOUND</div>
+    <div class="modal-stat" id="modal-stat"></div>
+    <div class="modal-actions">
+      <button class="btn primary" onclick="newGame(); closeModal()">PLAY AGAIN</button>
+      <button class="btn" onclick="closeModal()">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATALOGUE = [
+  { slug:'class_43_hst', name:'Class 43 HST (IC125)'   },
+  { slug:'class_220',    name:'Class 220 Voyager'       },
+  { slug:'class_221',    name:'Class 221 Super Voyager' },
+  { slug:'class_222',    name:'Class 222 Meridian'      },
+  { slug:'class_180',    name:'Class 180 Adelante'      },
+  { slug:'class_91',     name:'Class 91 (IC225)'        },
+  { slug:'class_373',    name:'Class 373 Eurostar'      },
+  { slug:'class_390',    name:'Class 390 Pendolino'     },
+  { slug:'class_395',    name:'Class 395 Javelin'       },
+  { slug:'class_800',    name:'Class 800 Azuma'         },
+  { slug:'class_802',    name:'Class 802'               },
+  { slug:'class_810',    name:'Class 810 Aurora'        },
+  { slug:'class_153',    name:'Class 153'               },
+  { slug:'class_155',    name:'Class 155'               },
+  { slug:'class_156',    name:'Class 156'               },
+  { slug:'class_158',    name:'Class 158'               },
+  { slug:'class_159',    name:'Class 159'               },
+  { slug:'class_170',    name:'Class 170 Turbostar'     },
+  { slug:'class_171',    name:'Class 171 Turbostar'     },
+  { slug:'class_175',    name:'Class 175 Coradia'       },
+  { slug:'class_185',    name:'Class 185 Desiro'        },
+  { slug:'class_195',    name:'Class 195 Civity'        },
+  { slug:'class_197',    name:'Class 197 Civity'        },
+  { slug:'class_313',    name:'Class 313'               },
+  { slug:'class_315',    name:'Class 315'               },
+  { slug:'class_317',    name:'Class 317'               },
+  { slug:'class_319',    name:'Class 319'               },
+  { slug:'class_321',    name:'Class 321'               },
+  { slug:'class_323',    name:'Class 323'               },
+  { slug:'class_331',    name:'Class 331 Civity'        },
+  { slug:'class_333',    name:'Class 333'               },
+  { slug:'class_350',    name:'Class 350 Desiro'        },
+  { slug:'class_357',    name:'Class 357'               },
+  { slug:'class_360',    name:'Class 360 Desiro'        },
+  { slug:'class_365',    name:'Class 365 Networker'     },
+  { slug:'class_375',    name:'Class 375 Electrostar'   },
+  { slug:'class_377',    name:'Class 377 Electrostar'   },
+  { slug:'class_380',    name:'Class 380 Desiro'        },
+  { slug:'class_385',    name:'Class 385 AT200'         },
+  { slug:'class_387',    name:'Class 387 Electrostar'   },
+  { slug:'class_444',    name:'Class 444 Desiro'        },
+  { slug:'class_450',    name:'Class 450 Desiro'        },
+  { slug:'class_455',    name:'Class 455'               },
+  { slug:'class_465',    name:'Class 465 Networker'     },
+  { slug:'class_700',    name:'Class 700 Desiro City'   },
+  { slug:'class_707',    name:'Class 707'               },
+  { slug:'class_710',    name:'Class 710 Aventra'       },
+  { slug:'class_720',    name:'Class 720 Aventra'       },
+  { slug:'class_745',    name:'Class 745'               },
+  { slug:'class_755',    name:'Class 755 Flirt'         },
+  { slug:'class_37',     name:'Class 37'                },
+  { slug:'class_47',     name:'Class 47'                },
+  { slug:'class_57',     name:'Class 57'                },
+  { slug:'class_66',     name:'Class 66'                },
+  { slug:'class_67',     name:'Class 67'                },
+  { slug:'class_68',     name:'Class 68'                },
+];
+
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+
+function fmtTime(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+let cards    = [];
+let cardEls  = [];
+let moves    = 0;
+let pairs    = 0;
+let firstIdx = null;
+let locked   = false;
+let timerMs  = 0;
+let timerInt = null;
+
+function updateStats() {
+  document.getElementById('s-moves').textContent = moves;
+  document.getElementById('s-pairs').textContent = `${pairs} / 10`;
+  document.getElementById('s-time').textContent  = fmtTime(timerMs);
+}
+
+function newGame() {
+  clearInterval(timerInt);
+  moves = 0; pairs = 0; firstIdx = null; locked = false; timerMs = 0;
+
+  const pick = shuffle([...CATALOGUE]).slice(0, 10);
+  cards = shuffle([...pick, ...pick].map((p, i) => ({
+    i, slug: p.slug, name: p.name, faceUp: false, matched: false,
+  })));
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  cardEls = cards.map((card, idx) => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.innerHTML = `
+      <div class="card-inner">
+        <div class="card-back"><span class="qmark">?</span></div>
+        <div class="card-front">
+          <img src="images/${card.slug}.jpg" alt="${card.name}" loading="lazy">
+          <div class="card-label">${card.name}</div>
+        </div>
+      </div>`;
+    el.addEventListener('click', () => flip(idx));
+    grid.appendChild(el);
+    return el;
+  });
+
+  timerInt = setInterval(() => { timerMs += 1000; updateStats(); }, 1000);
+  updateStats();
+}
+
+function applyCard(idx) {
+  const c = cards[idx], el = cardEls[idx];
+  el.classList.toggle('flipped',  c.faceUp || c.matched);
+  el.classList.toggle('matched',  c.matched);
+}
+
+function flip(idx) {
+  if (locked) return;
+  const c = cards[idx];
+  if (c.faceUp || c.matched) return;
+
+  c.faceUp = true;
+  applyCard(idx);
+
+  if (firstIdx === null) { firstIdx = idx; return; }
+
+  moves++;
+  const prev = firstIdx;
+  firstIdx = null;
+  updateStats();
+
+  if (cards[prev].slug === c.slug) {
+    cards[prev].matched = true;
+    c.matched = true;
+    pairs++;
+    applyCard(prev);
+    applyCard(idx);
+    updateStats();
+    if (pairs === 10) { clearInterval(timerInt); setTimeout(showWin, 600); }
+  } else {
+    locked = true;
+    setTimeout(() => {
+      cards[prev].faceUp = false;
+      c.faceUp = false;
+      applyCard(prev);
+      applyCard(idx);
+      locked = false;
+    }, 1100);
+  }
+}
+
+function showWin() {
+  document.getElementById('modal-stat').innerHTML =
+    `Completed in <span>${moves}</span> moves<br>Time: <span>${fmtTime(timerMs)}</span>`;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+
+newGame();
+</script>
+</body>
+</html>
