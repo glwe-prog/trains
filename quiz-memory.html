@@ -114,10 +114,20 @@
       border-top: 1px solid var(--div); padding-top: 10px;
     }
 
+    /* ── Match toast ── */
+    .match-toast {
+      position: fixed; top: 42%; left: 50%; transform: translate(-50%, -50%);
+      background: var(--y); color: #000;
+      font-size: 1.1rem; letter-spacing: 5px; padding: 10px 28px;
+      pointer-events: none; z-index: 10001;
+      opacity: 0; transition: opacity .1s;
+    }
+    .match-toast.show { opacity: 1; }
+
     /* ── Win modal ── */
     .modal-wrap {
       position: fixed; inset: 0; background: rgba(0,0,0,.82);
-      display: none; align-items: center; justify-content: center; z-index: 200;
+      display: none; align-items: center; justify-content: center; z-index: 10000;
     }
     .modal-wrap.show { display: flex; }
     .modal {
@@ -151,6 +161,8 @@
   <span>MATCH ALL 10 PAIRS TO WIN &nbsp;·&nbsp; CLICK A CARD TO REVEAL</span>
   <a href="quizzes.html" class="back-link">ALL QUIZZES ►</a>
 </div>
+
+<div class="match-toast" id="match-toast">MATCH</div>
 
 <div class="modal-wrap" id="modal">
   <div class="modal">
@@ -311,7 +323,8 @@ function flip(idx) {
     applyCard(prev);
     applyCard(idx);
     updateStats();
-    if (pairs === 10) { clearInterval(timerInt); setTimeout(showWin, 600); }
+    flashMatch();
+    if (pairs === 10) { clearInterval(timerInt); setTimeout(showWin, 900); }
   } else {
     locked = true;
     setTimeout(() => {
@@ -322,6 +335,14 @@ function flip(idx) {
       locked = false;
     }, 1100);
   }
+}
+
+let toastTimer = null;
+function flashMatch() {
+  const el = document.getElementById('match-toast');
+  clearTimeout(toastTimer);
+  el.classList.add('show');
+  toastTimer = setTimeout(() => el.classList.remove('show'), 700);
 }
 
 function showWin() {
