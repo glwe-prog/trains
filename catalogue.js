@@ -1246,5 +1246,29 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_803_lumo",
+    "quizzes": {
+      "class": {
+        "name": "Class 803",
+        "blur": [
+          [
+            571,
+            315,
+            601,
+            336
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Lumo",
+        "blur": [],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
