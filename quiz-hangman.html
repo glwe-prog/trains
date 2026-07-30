@@ -33,16 +33,18 @@
     .back-link { font-size: clamp(.6rem, 1.8vw, .8rem); letter-spacing: 2px; color: var(--ydim); text-decoration: none; }
     .back-link:hover { color: var(--y); }
 
-    .game-wrap {
-      max-width: 680px; margin: 0 auto;
-      display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: start;
+    .outer { max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Top row: gallows + word panel */
+    .top-row {
+      display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: start;
     }
 
     /* Gallows */
     .gallows-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     svg.gallows {
-      width: 200px; height: 230px;
-      stroke: var(--ydim); stroke-linecap: round; fill: none;
+      width: 180px; height: 210px;
+      stroke-linecap: round; fill: none;
     }
     svg.gallows .structure { stroke: var(--div); stroke-width: 3; }
     svg.gallows .body-part { stroke: var(--y); stroke-width: 3; transition: opacity .2s; }
@@ -50,69 +52,64 @@
     .wrong-count { font-size: .55rem; letter-spacing: 2px; color: var(--ydim); }
     .wrong-count span { color: var(--red); }
 
-    /* Right panel */
-    .right-panel { display: flex; flex-direction: column; gap: 18px; }
+    /* Word panel */
+    .word-panel { display: flex; flex-direction: column; gap: 16px; }
 
     .category-label {
       font-size: .52rem; letter-spacing: 3px; color: var(--ydim);
       border: 1px solid var(--div); display: inline-block; padding: 4px 10px;
     }
 
-    /* Word display */
     .word-display { display: flex; gap: 10px; flex-wrap: wrap; }
-    .letter-box {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-    }
+    .letter-box { display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .letter-char {
-      font-size: 1.6rem; letter-spacing: 1px; line-height: 1;
+      font-size: 1.7rem; line-height: 1;
       min-width: 28px; text-align: center; color: var(--y);
     }
     .letter-line { width: 28px; height: 2px; background: var(--ydim); }
 
-    /* Keyboard */
-    .keyboard { display: flex; flex-direction: column; gap: 6px; }
-    .key-row { display: flex; gap: 5px; }
+    .result-banner {
+      display: none; border: 1px solid var(--y); padding: 14px 18px; text-align: center;
+    }
+    .result-banner.show { display: block; }
+    .result-banner .r-title { font-size: .9rem; letter-spacing: 4px; margin-bottom: 6px; }
+    .result-banner .r-sub { font-size: .58rem; letter-spacing: 2px; color: var(--ydim); }
+    .result-banner .r-sub span { color: var(--y); }
+
+    /* Full-width keyboard */
+    .keyboard { display: flex; flex-direction: column; gap: 7px; align-items: center; }
+    .key-row { display: flex; gap: 6px; }
     .key {
-      font-family: inherit; font-size: .8rem; letter-spacing: 1px;
-      width: 42px; height: 42px; border: 1px solid var(--div);
+      font-family: inherit; font-size: 1rem; letter-spacing: 1px;
+      width: 58px; height: 54px; border: 1px solid var(--div);
       background: var(--surf); color: var(--ydim); cursor: pointer;
       transition: border-color .1s, color .1s, background .1s;
       display: flex; align-items: center; justify-content: center;
     }
     .key:hover:not(:disabled) { border-color: var(--y); color: var(--y); }
     .key.hit  { border-color: var(--grn); color: var(--grn); background: rgba(68,238,68,.08); }
-    .key.miss { border-color: #333; color: #333; cursor: not-allowed; }
+    .key.miss { border-color: #1E1E1E; color: #2A2A2A; cursor: not-allowed; background: transparent; }
     .key:disabled { cursor: not-allowed; }
 
-    /* Result */
-    .result-banner {
-      display: none; border: 1px solid var(--y); padding: 16px 20px; text-align: center;
-    }
-    .result-banner.show { display: block; }
-    .result-banner .r-title { font-size: .9rem; letter-spacing: 4px; margin-bottom: 8px; }
-    .result-banner .r-sub { font-size: .58rem; letter-spacing: 2px; color: var(--ydim); }
-    .result-banner .r-sub span { color: var(--y); }
-
-    /* Controls */
-    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .controls { display: flex; gap: 10px; align-items: center; }
     .btn {
       font-family: inherit; font-size: .62rem; letter-spacing: 2px;
       padding: 8px 16px; cursor: pointer;
       border: 1px solid var(--ydim); background: transparent; color: var(--ydim);
     }
     .btn:hover { border-color: var(--y); color: var(--y); }
-    .hint-text { font-size: .5rem; letter-spacing: 1px; color: var(--div); }
 
     .footer {
-      max-width: 680px; margin: 24px auto 0;
+      max-width: 680px; margin: 20px auto 0;
       font-size: .54rem; color: var(--ydim); letter-spacing: 2px;
       display: flex; justify-content: flex-end;
       border-top: 1px solid var(--div); padding-top: 10px;
     }
 
     @media (max-width: 520px) {
-      .game-wrap { grid-template-columns: 1fr; }
-      svg.gallows { width: 150px; height: 175px; }
+      .top-row { grid-template-columns: 1fr; }
+      .key { width: 44px; height: 44px; font-size: .85rem; }
+      .key-row { gap: 4px; }
     }
   </style>
 </head>
@@ -123,49 +120,45 @@
   <a class="back-link" href="quizzes.html">◄ QUIZZES</a>
 </div>
 
-<div class="game-wrap">
+<div class="outer">
 
-  <!-- Left: gallows -->
-  <div class="gallows-wrap">
-    <svg class="gallows" viewBox="0 0 200 230">
-      <!-- Structure (always shown) -->
-      <line class="structure" x1="20" y1="218" x2="180" y2="218"/>
-      <line class="structure" x1="50"  y1="218" x2="50"  y2="18"/>
-      <line class="structure" x1="50"  y1="18"  x2="130" y2="18"/>
-      <line class="structure" x1="130" y1="18"  x2="130" y2="48"/>
-      <!-- Body parts (shown one by one) -->
-      <circle class="body-part hidden" id="p0" cx="130" cy="65" r="17"/>
-      <line   class="body-part hidden" id="p1" x1="130" y1="82"  x2="130" y2="142"/>
-      <line   class="body-part hidden" id="p2" x1="130" y1="100" x2="98"  y2="128"/>
-      <line   class="body-part hidden" id="p3" x1="130" y1="100" x2="162" y2="128"/>
-      <line   class="body-part hidden" id="p4" x1="130" y1="142" x2="104" y2="178"/>
-      <line   class="body-part hidden" id="p5" x1="130" y1="142" x2="156" y2="178"/>
-    </svg>
-    <div class="wrong-count">WRONG: <span id="wrong-num">0</span> / 6</div>
-  </div>
+  <div class="top-row">
 
-  <!-- Right: game -->
-  <div class="right-panel">
+    <!-- Gallows -->
+    <div class="gallows-wrap">
+      <svg class="gallows" viewBox="0 0 200 230">
+        <line class="structure" x1="20" y1="218" x2="180" y2="218"/>
+        <line class="structure" x1="50"  y1="218" x2="50"  y2="18"/>
+        <line class="structure" x1="50"  y1="18"  x2="130" y2="18"/>
+        <line class="structure" x1="130" y1="18"  x2="130" y2="48"/>
+        <circle class="body-part hidden" id="p0" cx="130" cy="65" r="17"/>
+        <line   class="body-part hidden" id="p1" x1="130" y1="82"  x2="130" y2="142"/>
+        <line   class="body-part hidden" id="p2" x1="130" y1="100" x2="98"  y2="128"/>
+        <line   class="body-part hidden" id="p3" x1="130" y1="100" x2="162" y2="128"/>
+        <line   class="body-part hidden" id="p4" x1="130" y1="142" x2="104" y2="178"/>
+        <line   class="body-part hidden" id="p5" x1="130" y1="142" x2="156" y2="178"/>
+      </svg>
+      <div class="wrong-count">WRONG: <span id="wrong-num">0</span> / 6</div>
+    </div>
 
-    <div>
+    <!-- Word panel -->
+    <div class="word-panel">
       <div class="category-label" id="category-label">CATEGORY</div>
-    </div>
-
-    <div class="word-display" id="word-display"></div>
-
-    <div class="result-banner" id="result-banner">
-      <div class="r-title" id="r-title"></div>
-      <div class="r-sub" id="r-sub"></div>
-    </div>
-
-    <div class="keyboard" id="keyboard"></div>
-
-    <div class="controls">
-      <button class="btn" onclick="newGame()">NEW WORD</button>
-      <span class="hint-text" id="hint-text"></span>
+      <div class="word-display" id="word-display"></div>
+      <div class="result-banner" id="result-banner">
+        <div class="r-title" id="r-title"></div>
+        <div class="r-sub" id="r-sub"></div>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="newGame()">NEW WORD</button>
+      </div>
     </div>
 
   </div>
+
+  <!-- Full-width keyboard -->
+  <div class="keyboard" id="keyboard"></div>
+
 </div>
 
 <div class="footer">
@@ -208,41 +201,29 @@ const WORDS = [
   { word: 'SEMAPHORE',      cat: 'RAILWAY WORD'  },
 ];
 
-const KEY_ROWS = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 const MAX_WRONG = 6;
 
-let word = '';
-let category = '';
+let word = '', category = '';
 let guessed = new Set();
-let wrongCount = 0;
-let gameOver = false;
-
-function pick() {
-  return WORDS[Math.floor(Math.random() * WORDS.length)];
-}
+let wrongCount = 0, gameOver = false;
 
 function newGame() {
-  const entry = pick();
-  word = entry.word;
-  category = entry.cat;
-  guessed = new Set();
-  wrongCount = 0;
-  gameOver = false;
+  const entry = WORDS[Math.floor(Math.random() * WORDS.length)];
+  word = entry.word; category = entry.cat;
+  guessed = new Set(); wrongCount = 0; gameOver = false;
   document.getElementById('result-banner').classList.remove('show');
-  document.getElementById('hint-text').textContent = '';
   renderAll();
 }
 
 function renderGallows() {
-  for (let i = 0; i < MAX_WRONG; i++) {
+  for (let i = 0; i < MAX_WRONG; i++)
     document.getElementById('p' + i).classList.toggle('hidden', i >= wrongCount);
-  }
   document.getElementById('wrong-num').textContent = wrongCount;
 }
 
 function renderWord() {
-  const el = document.getElementById('word-display');
-  el.innerHTML = word.split('').map(ch => `
+  document.getElementById('word-display').innerHTML = word.split('').map(ch => `
     <div class="letter-box">
       <div class="letter-char">${guessed.has(ch) || gameOver ? ch : ' '}</div>
       <div class="letter-line"></div>
@@ -250,8 +231,7 @@ function renderWord() {
 }
 
 function renderKeyboard() {
-  const el = document.getElementById('keyboard');
-  el.innerHTML = KEY_ROWS.map(row =>
+  document.getElementById('keyboard').innerHTML = KEY_ROWS.map(row =>
     `<div class="key-row">${row.split('').map(ch => {
       const hit  = guessed.has(ch) && word.includes(ch);
       const miss = guessed.has(ch) && !word.includes(ch);
@@ -261,38 +241,26 @@ function renderKeyboard() {
   ).join('');
 }
 
-function renderCategory() {
-  document.getElementById('category-label').textContent = category;
-}
-
 function renderAll() {
-  renderCategory();
-  renderGallows();
-  renderWord();
-  renderKeyboard();
+  document.getElementById('category-label').textContent = category;
+  renderGallows(); renderWord(); renderKeyboard();
 }
 
 function guess(ch) {
   if (gameOver || guessed.has(ch)) return;
   guessed.add(ch);
   if (!word.includes(ch)) wrongCount++;
-
   const won  = word.split('').every(c => guessed.has(c));
   const lost = wrongCount >= MAX_WRONG;
-
   if (won || lost) {
-    gameOver = true;
-    renderAll();
-    const banner = document.getElementById('result-banner');
+    gameOver = true; renderAll();
     document.getElementById('r-title').textContent = won ? 'WELL DONE!' : 'GAME OVER';
     document.getElementById('r-sub').innerHTML = won
       ? `You got it with <span>${wrongCount}</span> wrong guess${wrongCount===1?'':'es'}`
       : `The word was <span>${word}</span>`;
-    banner.classList.add('show');
-    if (!won) renderWord(); // reveal full word
-  } else {
-    renderAll();
-  }
+    document.getElementById('result-banner').classList.add('show');
+    if (!won) renderWord();
+  } else { renderAll(); }
 }
 
 newGame();
