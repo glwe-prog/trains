@@ -882,7 +882,20 @@ const CATALOGUE = [
     "quizzes": {
       "livery": {
         "name": "Colas Rail",
-        "blur": [],
+        "blur": [
+          [
+            412,
+            352,
+            478,
+            389
+          ],
+          [
+            718,
+            313,
+            739,
+            357
+          ]
+        ],
         "blurR": 10
       }
     }
