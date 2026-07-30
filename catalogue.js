@@ -77,16 +77,28 @@ const CATALOGUE = [
     "pos": "50% 50%",
     "quizzes": {
       "class": {
-        "name": "Avanti West Coast",
+        "name": "Class 390 Pendolino",
         "blur": [
           [
-            352,
+            348,
             330,
-            382,
-            353
+            388,
+            355
           ]
         ],
         "blurR": 12
+      },
+      "livery": {
+        "name": "Class 390 Pendolino",
+        "blur": [
+          [
+            405,
+            300,
+            452,
+            345
+          ]
+        ],
+        "blurR": 10
       }
     }
   },
