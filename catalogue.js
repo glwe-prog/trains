@@ -456,18 +456,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "class_700",
-    "zoom": 1.0,
-    "pos": "50% 50%",
-    "quizzes": {
-      "class": {
-        "name": "Class 700 Desiro City",
-        "blur": [],
-        "blurR": 12
-      }
-    }
-  },
-  {
     "id": "class_707",
     "zoom": 1.0,
     "pos": "50% 50%",
