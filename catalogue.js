@@ -723,6 +723,11 @@ const CATALOGUE = [
         "name": "East Midlands Railway",
         "blur": [],
         "blurR": 10
+      },
+      "class": {
+        "name": "Class 810 Aurora",
+        "blur": [],
+        "blurR": 12
       }
     }
   },
