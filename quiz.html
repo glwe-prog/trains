@@ -266,7 +266,7 @@ function buildQuiz() {
   const picks = shuffle(classPool).slice(0, QUIZ_SIZE);
   questions = picks.map(entry => {
     const cfg    = entry.quizzes.class;
-    const wrongs = shuffle(classPool.filter(e => e.id !== entry.id))
+    const wrongs = shuffle(classPool.filter(e => e.id !== entry.id && e.quizzes.class.name !== cfg.name))
                      .slice(0, 3).map(e => e.quizzes.class.name);
     return { entry, cfg, choices: shuffle([cfg.name, ...wrongs]) };
   });
