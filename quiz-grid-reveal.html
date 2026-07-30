@@ -87,7 +87,7 @@
 
     /* ── Options ── */
     .options {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px;
     }
     .opt-btn {
       background: transparent; border: 1px solid var(--ydim);
@@ -230,8 +230,9 @@ const LIVERIES = [
 ];
 
 const COLS = 4, ROWS = 4, TOTAL = COLS * ROWS;
-const MAX_ATTEMPTS = 3;
-const LABELS = ['A','B','C','D'];
+const MAX_ATTEMPTS = 5;
+const MIN_REVEALS = 3;
+const LABELS = ['A','B','C','D','E','F'];
 
 let current = null, pool = [], revealOrder = [];
 let revealedCount = 0, attemptsLeft = MAX_ATTEMPTS, locked = false;
@@ -276,14 +277,17 @@ function newRound() {
   document.getElementById('question').textContent =
     useClass ? 'WHAT CLASS IS THIS?' : 'WHOSE LIVERY IS THIS?';
 
-  // Options: correct + 3 wrong from same pool
-  const wrong = shuffle(pool.filter(p => p.slug !== current.slug)).slice(0, 3).map(p => p.name);
+  // Options: correct + 5 wrong from same pool, locked until MIN_REVEALS cells uncovered
+  const wrong = shuffle(pool.filter(p => p.slug !== current.slug)).slice(0, 5).map(p => p.name);
   const opts  = shuffle([current.name, ...wrong]);
   document.getElementById('options').innerHTML = opts.map((n, i) =>
-    `<button class="opt-btn" data-name="${n}" onclick="handleAnswer(this)">
+    `<button class="opt-btn" data-name="${n}" onclick="handleAnswer(this)" disabled>
       <span class="ltr">${LABELS[i]}.</span><span>${n}</span>
     </button>`
   ).join('');
+  document.getElementById('question').innerHTML =
+    (useClass ? 'WHAT CLASS IS THIS?' : 'WHOSE LIVERY IS THIS?') +
+    ` <span id="reveal-hint" style="font-size:.55rem;color:var(--ydim);letter-spacing:1px"> — REVEAL ${MIN_REVEALS} CELLS TO GUESS</span>`;
 
   // Pips
   renderPips();
@@ -306,6 +310,11 @@ function revealCell(idx) {
   }, { once: true });
   revealedCount++;
   document.getElementById('revealed-count').textContent = revealedCount;
+  if (revealedCount >= MIN_REVEALS) {
+    document.querySelectorAll('.opt-btn:not(.eliminated)').forEach(b => b.disabled = false);
+    const hint = document.getElementById('reveal-hint');
+    if (hint) hint.remove();
+  }
 }
 
 function revealAll(delay) {
@@ -324,7 +333,7 @@ function revealAll(delay) {
 function renderPips() {
   document.getElementById('attempts-row').innerHTML =
     Array.from({length: MAX_ATTEMPTS}, (_, i) =>
-      `<div class="attempt-pip${i >= attemptsLeft ? ' used' : ''}"></div>`
+      `<div class="attempt-pip${i < (MAX_ATTEMPTS - attemptsLeft) ? ' used' : ''}"></div>`
     ).join('');
 }
 
@@ -344,11 +353,13 @@ function handleAnswer(btn) {
   } else {
     attemptsLeft--;
     btn.classList.add('wrong');
-    btn.addEventListener('animationend', () => {
+    btn.disabled = true;
+    const cleanup = () => {
       btn.classList.remove('wrong');
       btn.classList.add('eliminated');
-      btn.disabled = true;
-    }, { once: true });
+    };
+    btn.addEventListener('animationend', cleanup, { once: true });
+    setTimeout(cleanup, 400);
     renderPips();
 
     if (attemptsLeft <= 0) {
