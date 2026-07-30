@@ -129,6 +129,14 @@
     .btn:hover { background: rgba(255,225,0,.08); }
     #btn-next { display: none; }
 
+    .mode-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .mode-btn {
+      font-family: inherit; font-size: .55rem; letter-spacing: 2px;
+      padding: 5px 14px; border: 1px solid var(--div); background: transparent;
+      color: var(--ydim); cursor: pointer;
+    }
+    .mode-btn.active { border-color: var(--y); color: var(--y); }
+
     .back-links {
       display: flex; justify-content: space-between; margin-top: 16px; flex-wrap: wrap; gap: 6px;
     }
@@ -142,6 +150,12 @@
 </div>
 
 <div class="container">
+
+  <div class="mode-row">
+    <button class="mode-btn active" id="mode-random" onclick="setMode('random',this)">RANDOM</button>
+    <button class="mode-btn" id="mode-class"  onclick="setMode('class',this)">CLASS</button>
+    <button class="mode-btn" id="mode-livery" onclick="setMode('livery',this)">LIVERY</button>
+  </div>
 
   <div class="img-wrap">
     <img id="quiz-img" src="" alt="">
@@ -236,6 +250,14 @@ const LABELS = ['A','B','C','D','E','F'];
 
 let current = null, pool = [], revealOrder = [];
 let revealedCount = 0, attemptsLeft = MAX_ATTEMPTS, locked = false;
+let quizMode = 'random'; // 'random' | 'class' | 'livery'
+
+function setMode(mode, btn) {
+  quizMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  newRound();
+}
 
 function shuffle(a) {
   const b = [...a];
@@ -247,8 +269,8 @@ function shuffle(a) {
 }
 
 function newRound() {
-  // Pick a type
-  const useClass = Math.random() < 0.5;
+  // Pick a type based on mode
+  const useClass = quizMode === 'class' ? true : quizMode === 'livery' ? false : Math.random() < 0.5;
   pool = useClass ? CLASSES : LIVERIES;
   if (!pool.length) return;
 
