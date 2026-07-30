@@ -624,18 +624,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "livery_gwr",
-    "zoom": 1.95,
-    "pos": "85% 86%",
-    "quizzes": {
-      "livery": {
-        "name": "Great Western Railway",
-        "blur": [],
-        "blurR": 10
-      }
-    }
-  },
-  {
     "id": "livery_emr",
     "zoom": 1.6,
     "pos": "59% 74%",
