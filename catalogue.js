@@ -1296,5 +1296,42 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_387_heathrow_express",
+    "quizzes": {
+      "class": {
+        "name": "Class 387",
+        "blur": [
+          [
+            125,
+            396,
+            182,
+            425
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Heathrow Express",
+        "blur": [
+          [
+            715,
+            385,
+            777,
+            423
+          ],
+          [
+            801,
+            368,
+            845,
+            406
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
