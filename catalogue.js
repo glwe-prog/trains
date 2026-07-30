@@ -1246,5 +1246,36 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_158_east_midland_trains",
+    "quizzes": {
+      "class": {
+        "name": "Class 158 Express Sprinter",
+        "blur": [
+          [
+            57,
+            325,
+            104,
+            351
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "East Midland Trains",
+        "blur": [
+          [
+            609,
+            345,
+            677,
+            362
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 31%"
   }
 ];
