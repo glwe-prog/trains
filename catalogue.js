@@ -641,18 +641,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "livery_hull_trains",
-    "zoom": 1.0,
-    "pos": "50% 50%",
-    "quizzes": {
-      "livery": {
-        "name": "Hull Trains",
-        "blur": [],
-        "blurR": 10
-      }
-    }
-  },
-  {
     "id": "livery_grand_central",
     "zoom": 1.7,
     "pos": "57% 50%",
