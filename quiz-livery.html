@@ -242,12 +242,8 @@ function renderEntryImage(wrap, entry, cfg, alt) {
   img.onerror = () => { wrap.innerHTML = '<div class="no-img">NO PHOTO AVAILABLE</div>'; };
   const z   = entry.zoom || 1;
   const pos = entry.pos  || '50% 50%';
-  if (z > 1.01) {
-    img.style.transform       = `scale(${z})`;
-    img.style.transformOrigin = pos;
-  } else if (pos !== '50% 50%') {
-    img.style.objectPosition = pos;
-  }
+  img.style.transform       = `scale(${z})`;
+  img.style.transformOrigin = pos;
   container.appendChild(img);
   if (cfg.blur && cfg.blur.length > 0) {
     const [ox, oy] = parsePosF(pos);
