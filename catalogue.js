@@ -812,13 +812,38 @@ const CATALOGUE = [
   },
   {
     "id": "livery_northern",
-    "zoom": 1.25,
-    "pos": "99% 29%",
+    "zoom": 1.0,
+    "pos": "50% 50%",
     "quizzes": {
       "livery": {
         "name": "Northern",
-        "blur": [],
+        "blur": [
+          [
+            467,
+            345,
+            535,
+            398
+          ],
+          [
+            881,
+            362,
+            913,
+            383
+          ]
+        ],
         "blurR": 10
+      },
+      "class": {
+        "name": "Northern",
+        "blur": [
+          [
+            182,
+            308,
+            233,
+            325
+          ]
+        ],
+        "blurR": 12
       }
     }
   },
