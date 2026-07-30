@@ -744,18 +744,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "livery_transpennine",
-    "zoom": 1.0,
-    "pos": "100% 50%",
-    "quizzes": {
-      "livery": {
-        "name": "TransPennine Express",
-        "blur": [],
-        "blurR": 10
-      }
-    }
-  },
-  {
     "id": "livery_northern",
     "zoom": 1.0,
     "pos": "50% 50%",
