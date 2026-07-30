@@ -1430,5 +1430,36 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_700_thameslink",
+    "quizzes": {
+      "class": {
+        "name": "Class 700",
+        "blur": [
+          [
+            620,
+            362,
+            699,
+            398
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Thameslink",
+        "blur": [
+          [
+            289,
+            349,
+            340,
+            374
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
