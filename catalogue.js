@@ -689,18 +689,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "livery_heathrow_express",
-    "zoom": 2.2,
-    "pos": "50% 50%",
-    "quizzes": {
-      "livery": {
-        "name": "Heathrow Express",
-        "blur": [],
-        "blurR": 10
-      }
-    }
-  },
-  {
     "id": "livery_caledonian_sleeper",
     "zoom": 1.0,
     "pos": "50% 50%",
