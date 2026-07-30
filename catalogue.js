@@ -695,7 +695,14 @@ const CATALOGUE = [
     "quizzes": {
       "livery": {
         "name": "Caledonian Sleeper",
-        "blur": [],
+        "blur": [
+          [
+            805,
+            239,
+            847,
+            374
+          ]
+        ],
         "blurR": 10
       }
     }
