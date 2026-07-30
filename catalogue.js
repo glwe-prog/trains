@@ -1509,5 +1509,36 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_66_colas",
+    "quizzes": {
+      "class": {
+        "name": "Class 66",
+        "blur": [
+          [
+            716,
+            308,
+            767,
+            332
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Colas Rail",
+        "blur": [
+          [
+            191,
+            251,
+            308,
+            300
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
