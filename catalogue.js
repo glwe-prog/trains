@@ -1484,5 +1484,42 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_802_hull_trains",
+    "quizzes": {
+      "class": {
+        "name": "Class 802",
+        "blur": [
+          [
+            543,
+            381,
+            580,
+            406
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Hull Trains",
+        "blur": [
+          [
+            535,
+            253,
+            624,
+            290
+          ],
+          [
+            208,
+            294,
+            252,
+            308
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
