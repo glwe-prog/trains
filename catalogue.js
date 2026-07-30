@@ -1436,5 +1436,36 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_67_db_schenker",
+    "quizzes": {
+      "class": {
+        "name": "Class 67",
+        "blur": [
+          [
+            794,
+            302,
+            875,
+            334
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "DB Schenker",
+        "blur": [
+          [
+            104,
+            224,
+            180,
+            338
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
