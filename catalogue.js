@@ -618,7 +618,14 @@ const CATALOGUE = [
     "quizzes": {
       "class": {
         "name": "Class 66",
-        "blur": [],
+        "blur": [
+          [
+            203,
+            287,
+            254,
+            345
+          ]
+        ],
         "blurR": 12
       }
     }
