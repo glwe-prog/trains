@@ -76,17 +76,17 @@ const CATALOGUE = [
     "zoom": 1.0,
     "pos": "50% 50%",
     "quizzes": {
-      "livery": {
+      "class": {
         "name": "Avanti West Coast",
         "blur": [
           [
-            407,
-            304,
-            452,
-            342
+            352,
+            330,
+            382,
+            353
           ]
         ],
-        "blurR": 10
+        "blurR": 12
       }
     }
   },
