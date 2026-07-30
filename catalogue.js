@@ -653,25 +653,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "livery_thameslink",
-    "zoom": 1.2,
-    "pos": "98% 4%",
-    "quizzes": {
-      "livery": {
-        "name": "Thameslink",
-        "blur": [
-          [
-            269,
-            336,
-            307,
-            354
-          ]
-        ],
-        "blurR": 10
-      }
-    }
-  },
-  {
     "id": "livery_southeastern",
     "zoom": 1.4,
     "pos": "19% 83%",
