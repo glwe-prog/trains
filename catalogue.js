@@ -72,37 +72,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "class_390",
-    "zoom": 1.0,
-    "pos": "50% 50%",
-    "quizzes": {
-      "class": {
-        "name": "Class 390 Pendolino",
-        "blur": [
-          [
-            348,
-            330,
-            388,
-            355
-          ]
-        ],
-        "blurR": 12
-      },
-      "livery": {
-        "name": "Class 390 Pendolino",
-        "blur": [
-          [
-            405,
-            300,
-            452,
-            345
-          ]
-        ],
-        "blurR": 10
-      }
-    }
-  },
-  {
     "id": "class_395",
     "zoom": 1.0,
     "pos": "50% 50%",
