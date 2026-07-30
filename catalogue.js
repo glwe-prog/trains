@@ -1418,5 +1418,42 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_153_transport_for_wales",
+    "quizzes": {
+      "class": {
+        "name": "Class 153",
+        "blur": [
+          [
+            174,
+            273,
+            220,
+            300
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Transport for Wales",
+        "blur": [
+          [
+            450,
+            198,
+            488,
+            251
+          ],
+          [
+            511,
+            287,
+            626,
+            300
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
