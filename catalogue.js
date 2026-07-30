@@ -994,5 +994,42 @@ const CATALOGUE = [
         "blurR": 10
       }
     }
+  },
+  {
+    "id": "class_390_virgin_trains",
+    "quizzes": {
+      "class": {
+        "name": "Class 390 Pendolino",
+        "blur": [
+          [
+            259,
+            484,
+            277,
+            501
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Virgin Trains",
+        "blur": [
+          [
+            282,
+            400,
+            341,
+            487
+          ],
+          [
+            125,
+            520,
+            136,
+            540
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.05,
+    "pos": "32% 94%"
   }
 ];
