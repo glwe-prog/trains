@@ -1416,5 +1416,36 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_92y_caledonian_sleeper",
+    "quizzes": {
+      "class": {
+        "name": "Class 92",
+        "blur": [
+          [
+            331,
+            294,
+            405,
+            332
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Caledonian Sleeper",
+        "blur": [
+          [
+            805,
+            239,
+            847,
+            374
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
