@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wellingborough Line — Code Cracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --y: #FFE100; --ydim: #C09000; --bg: #07070A;
+      --div: #2A2A2A; --grn: #44EE44; --red: #FF3030; --surf: #0F0F16;
+    }
+    body {
+      background: var(--bg); color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      min-height: 100vh; padding: 14px;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background: repeating-linear-gradient(to bottom,
+        transparent 0, transparent 3px,
+        rgba(0,0,0,.08) 3px, rgba(0,0,0,.08) 4px);
+      pointer-events: none; z-index: 9999;
+    }
+
+    .page-hdr {
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-bottom: 1px solid var(--ydim); padding-bottom: 8px;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 6px;
+    }
+    .page-title { font-size: clamp(.6rem, 2vw, .85rem); letter-spacing: 3px; }
+    .back-link { font-size: clamp(.6rem, 1.8vw, .8rem); letter-spacing: 2px; color: var(--ydim); text-decoration: none; }
+    .back-link:hover { color: var(--y); }
+
+    .board-wrap { max-width: 480px; margin: 0 auto; }
+
+    .secret-section { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .secret-label { font-size: .58rem; letter-spacing: 2px; color: var(--ydim); white-space: nowrap; min-width: 54px; }
+    .secret-slots { display: flex; gap: 7px; }
+
+    .history { margin-bottom: 8px; }
+    .guess-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+    .row-num {
+      font-size: .54rem; letter-spacing: 1px; color: var(--ydim);
+      width: 22px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums;
+    }
+    .row-slots { display: flex; gap: 7px; }
+
+    .slot {
+      width: 90px; height: 110px; border-radius: 3px;
+      border: 2px solid var(--div); background: var(--surf);
+      display: flex; flex-direction: column; overflow: hidden;
+      flex-shrink: 0; position: relative; user-select: none;
+    }
+    .slot img { width: 100%; flex: 1; object-fit: cover; display: block; min-height: 0; }
+    .slot .slot-lbl {
+      font-size: .42rem; letter-spacing: .6px; color: #888;
+      background: rgba(0,0,0,.65); text-align: center; padding: 2px;
+      white-space: nowrap; overflow: hidden;
+    }
+
+    .slot.covered { border-color: #3A1A1A; background: #0E0505; align-items: center; justify-content: center; }
+    .slot.covered::after { content: '?'; font-size: 1.8rem; color: #3A1A1A; }
+    .slot.revealed { border-color: var(--grn); }
+    .slot.active-empty { border: 2px dashed #444; cursor: pointer; align-items: center; justify-content: center; }
+    .slot.active-empty:hover { border-color: var(--ydim); background: rgba(255,225,0,.03); }
+    .slot.active-empty::after { content: '+'; font-size: 1.6rem; color: #333; }
+    .slot.active-filled { border-color: var(--ydim); cursor: pointer; }
+    .slot.active-filled:hover { border-color: var(--red); }
+    .slot.active-filled:hover .slot-lbl { color: var(--red); }
+    .slot.drag-over { border-color: var(--y) !important; background: rgba(255,225,0,.07) !important; }
+
+    /* 3-peg row */
+    .pegs {
+      display: flex; gap: 5px; padding: 7px;
+      background: rgba(0,0,0,.4); border: 1px solid var(--div); border-radius: 3px;
+      height: 36px; flex-shrink: 0; align-self: center; align-items: center;
+    }
+    .peg { width: 14px; height: 14px; border-radius: 50%; background: #141414; border: 1px solid #1E1E1E; flex-shrink: 0; }
+    .peg.exact { background: var(--y); border-color: var(--y); }
+    .peg.close { background: transparent; border: 2px solid rgba(255,225,0,.45); }
+
+    .sep { height: 1px; background: var(--div); margin: 12px 0; }
+    .active-row { display: flex; align-items: center; gap: 8px; }
+    .active-row .row-num { color: var(--y); }
+
+    .controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .btn {
+      font-family: inherit; font-size: .62rem; letter-spacing: 2px;
+      padding: 8px 16px; cursor: pointer;
+      border: 1px solid var(--ydim); background: transparent; color: var(--ydim);
+    }
+    .btn:hover:not(:disabled) { border-color: var(--y); color: var(--y); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+    .btn.submit { border-color: var(--y); color: var(--y); }
+    .btn.submit:hover:not(:disabled) { background: var(--y); color: #000; }
+
+    .tray-section { max-width: 480px; margin: 18px auto 0; }
+    .tray-lbl { font-size: .55rem; letter-spacing: 3px; color: var(--ydim); margin-bottom: 10px; }
+    .tray { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .tray-tile {
+      width: 96px; height: 116px; border-radius: 3px;
+      border: 1px solid var(--div); background: var(--surf);
+      display: flex; flex-direction: column; overflow: hidden;
+      cursor: grab; flex-shrink: 0; user-select: none;
+      transition: border-color .12s, transform .12s, box-shadow .12s;
+    }
+    .tray-tile img { width: 100%; flex: 1; object-fit: cover; display: block; min-height: 0; }
+    .tray-tile .tile-lbl {
+      font-size: .42rem; letter-spacing: .6px; color: var(--ydim);
+      background: rgba(0,0,0,.6); text-align: center; padding: 3px;
+      white-space: nowrap; overflow: hidden;
+    }
+    .tray-tile:hover { border-color: var(--ydim); }
+    .tray-tile.selected { border: 2px solid var(--y); transform: translateY(-6px); box-shadow: 0 6px 16px rgba(255,225,0,.2); }
+    .tray-tile.selected .tile-lbl { color: var(--y); }
+
+    .attempt-bar {
+      font-size: .62rem; letter-spacing: 2px; color: var(--ydim);
+      margin-bottom: 14px; max-width: 480px; margin-left: auto; margin-right: auto;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .attempt-bar .val { color: var(--y); }
+
+    .result-banner {
+      display: none; max-width: 480px; margin: 12px auto 0;
+      border: 1px solid var(--y); padding: 18px 24px; text-align: center;
+    }
+    .result-banner.show { display: block; }
+    .result-banner .r-title { font-size: 1rem; letter-spacing: 4px; margin-bottom: 8px; }
+    .result-banner .r-sub { font-size: .62rem; letter-spacing: 2px; color: var(--ydim); }
+    .result-banner .r-sub span { color: var(--y); }
+
+    .footer {
+      max-width: 480px; margin: 20px auto 0;
+      font-size: .54rem; color: var(--ydim); letter-spacing: 2px;
+      display: flex; justify-content: space-between;
+      border-top: 1px solid var(--div); padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-hdr">
+  <span class="page-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; CODE CRACKER</span>
+  <a class="back-link" href="quizzes.html">◄ QUIZZES</a>
+</div>
+
+<div class="attempt-bar">
+  <span>GUESS &nbsp;<span class="val" id="attempt-num">1</span> / 10</span>
+  <button class="btn" onclick="newGame()">NEW GAME</button>
+</div>
+
+<div class="board-wrap">
+
+  <div class="secret-section">
+    <span class="secret-label">SECRET</span>
+    <div class="secret-slots" id="secret-slots"></div>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="history" id="history"></div>
+  <div class="active-row" id="active-row"></div>
+
+  <div class="controls">
+    <button class="btn submit" id="btn-submit" onclick="submit()" disabled>SUBMIT</button>
+    <button class="btn" id="btn-clear" onclick="clearRow()">CLEAR</button>
+  </div>
+
+</div>
+
+<div class="result-banner" id="result-banner">
+  <div class="r-title" id="r-title"></div>
+  <div class="r-sub" id="r-sub"></div>
+</div>
+
+<div class="tray-section">
+  <div class="tray-lbl">PICK A TRAIN FOR EACH SLOT · CLICK A TILE THEN CLICK A SLOT</div>
+  <div class="tray" id="tray"></div>
+</div>
+
+<div class="footer">
+  <span>&#9632; RIGHT PLACE &nbsp; ○ RIGHT TRAIN WRONG PLACE</span>
+  <a href="quizzes.html" class="back-link">ALL QUIZZES ►</a>
+</div>
+
+<script>
+const SLOTS = 3;
+const MAX_GUESSES = 10;
+
+const ELIGIBLE = [
+  { slug: 'class_43_hst', name: 'Class 43 HST',    label: 'HST'   },
+  { slug: 'class_66',     name: 'Class 66',         label: 'CL.66' },
+  { slug: 'class_222',    name: 'Class 222',        label: 'CL.222'},
+  { slug: 'class_390',    name: 'Class 390',        label: 'CL.390'},
+  { slug: 'class_810',    name: 'Class 810 Aurora', label: 'CL.810'},
+];
+
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+
+function bySlug(slug) { return ELIGIBLE.find(p => p.slug === slug); }
+
+let secret   = [];
+let history  = [];
+let current  = Array(SLOTS).fill(null);
+let selected = null;
+let dragSlug = null;
+let gameOver = false;
+
+function newGame() {
+  secret   = shuffle([...ELIGIBLE]).slice(0, SLOTS).map(p => p.slug);
+  history  = [];
+  current  = Array(SLOTS).fill(null);
+  selected = null;
+  gameOver = false;
+  document.getElementById('result-banner').classList.remove('show');
+  render();
+}
+
+function evaluate(guess) {
+  let exact = 0, close = 0;
+  const sec = [...secret];
+  const gu  = [...guess];
+  for (let i = 0; i < SLOTS; i++) {
+    if (gu[i] === sec[i]) { exact++; sec[i] = null; gu[i] = null; }
+  }
+  for (let i = 0; i < SLOTS; i++) {
+    if (!gu[i]) continue;
+    const j = sec.indexOf(gu[i]);
+    if (j !== -1) { close++; sec[j] = null; }
+  }
+  return { exact, close };
+}
+
+function pegRow(exact, close) {
+  const miss = SLOTS - exact - close;
+  const types = [
+    ...Array(exact).fill('exact'),
+    ...Array(close).fill('close'),
+    ...Array(miss).fill(''),
+  ];
+  return `<div class="pegs">${types.map(t => `<div class="peg ${t}"></div>`).join('')}</div>`;
+}
+
+function slotHTML(slug, mode, idx) {
+  const p = slug ? bySlug(slug) : null;
+  const img = p => `<img src="images/${p.slug}.jpg" alt="${p.name}" draggable="false">`;
+  if (mode === 'history') {
+    return `<div class="slot">${p ? `${img(p)}<div class="slot-lbl">${p.label}</div>` : ''}</div>`;
+  }
+  if (mode === 'secret-covered') return `<div class="slot covered"></div>`;
+  if (mode === 'secret-revealed') {
+    return `<div class="slot revealed">${p ? `${img(p)}<div class="slot-lbl">${p.label}</div>` : ''}</div>`;
+  }
+  if (mode === 'active') {
+    if (!slug) return `<div class="slot active-empty" data-slot="${idx}"></div>`;
+    return `<div class="slot active-filled" data-slot="${idx}">${img(p)}<div class="slot-lbl">${p.label}</div></div>`;
+  }
+  return '';
+}
+
+function renderSecret(reveal) {
+  const el = document.getElementById('secret-slots');
+  el.innerHTML = reveal
+    ? secret.map(s => slotHTML(s, 'secret-revealed')).join('')
+    : secret.map(() => slotHTML(null, 'secret-covered')).join('');
+}
+
+function renderHistory() {
+  const el = document.getElementById('history');
+  if (!history.length) { el.innerHTML = ''; return; }
+  el.innerHTML = history.map((h, i) => `
+    <div class="guess-row">
+      <div class="row-num">${i + 1}</div>
+      <div class="row-slots">${h.guess.map(s => slotHTML(s, 'history')).join('')}</div>
+      ${pegRow(h.exact, h.close)}
+    </div>`).join('');
+}
+
+function renderActiveRow() {
+  const el = document.getElementById('active-row');
+  if (gameOver) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="row-num">${history.length + 1}</div>
+    <div class="row-slots" id="active-slots">
+      ${current.map((s, i) => slotHTML(s, 'active', i)).join('')}
+    </div>
+    ${pegRow(0, 0).replace('<div class="pegs">', '<div class="pegs" style="visibility:hidden">')}
+  `;
+  el.querySelectorAll('.slot').forEach(slot => {
+    const idx = +slot.dataset.slot;
+    slot.addEventListener('click', () => clickSlot(idx));
+    slot.addEventListener('dragover',  e => { e.preventDefault(); slot.classList.add('drag-over'); });
+    slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+    slot.addEventListener('drop', e => {
+      e.preventDefault(); slot.classList.remove('drag-over');
+      const slug = e.dataTransfer.getData('text/plain') || dragSlug;
+      if (!slug || gameOver) return;
+      current[idx] = slug; dragSlug = null; selected = null;
+      renderActiveRow(); renderTray();
+    });
+  });
+  document.getElementById('btn-submit').disabled = current.some(s => !s);
+  document.getElementById('btn-clear').disabled  = !current.some(Boolean);
+}
+
+function renderTray() {
+  const el = document.getElementById('tray');
+  el.innerHTML = ELIGIBLE.map(p => `
+    <div class="tray-tile${selected === p.slug ? ' selected' : ''}" data-slug="${p.slug}" draggable="true">
+      <img src="images/${p.slug}.jpg" alt="${p.name}" draggable="false" loading="lazy">
+      <div class="tile-lbl">${p.label}</div>
+    </div>`).join('');
+  el.querySelectorAll('.tray-tile').forEach(tile => {
+    const slug = tile.dataset.slug;
+    tile.addEventListener('click', () => clickTile(slug));
+    tile.addEventListener('contextmenu', e => e.preventDefault());
+    tile.addEventListener('dragstart', e => {
+      dragSlug = slug; e.dataTransfer.effectAllowed = 'copy'; e.dataTransfer.setData('text/plain', slug);
+    });
+    tile.addEventListener('dragend', () => { dragSlug = null; });
+  });
+}
+
+function renderAttempt() {
+  document.getElementById('attempt-num').textContent = gameOver ? history.length : history.length + 1;
+}
+
+function render() {
+  renderSecret(gameOver);
+  renderHistory();
+  renderActiveRow();
+  renderTray();
+  renderAttempt();
+}
+
+function clickTile(slug) {
+  if (gameOver) return;
+  selected = (selected === slug) ? null : slug;
+  renderTray();
+}
+
+function clickSlot(idx) {
+  if (gameOver) return;
+  if (selected) {
+    current[idx] = selected; selected = null;
+    renderActiveRow(); renderTray();
+  } else {
+    current[idx] = null; renderActiveRow();
+  }
+}
+
+function clearRow() {
+  if (gameOver) return;
+  current = Array(SLOTS).fill(null); selected = null;
+  renderActiveRow(); renderTray();
+}
+
+function submit() {
+  if (gameOver || current.some(s => !s)) return;
+  const { exact, close } = evaluate(current);
+  history.push({ guess: [...current], exact, close });
+  current = Array(SLOTS).fill(null); selected = null;
+  if (exact === SLOTS) {
+    gameOver = true; render(); showResult('win', exact);
+  } else if (history.length >= MAX_GUESSES) {
+    gameOver = true; render(); showResult('loss', exact);
+  } else {
+    render();
+  }
+}
+
+function showResult(outcome, exact) {
+  const banner = document.getElementById('result-banner');
+  document.getElementById('r-title').textContent = outcome === 'win' ? 'WELL DONE!' : 'OUT OF GUESSES';
+  document.getElementById('r-sub').innerHTML = outcome === 'win'
+    ? `Cracked in <span>${history.length}</span> guess${history.length === 1 ? '' : 'es'}`
+    : `Closest guess had <span>${exact}</span> in the right place — secret shown above`;
+  banner.classList.add('show');
+}
+
+newGame();
+</script>
+</body>
+</html>

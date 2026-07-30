@@ -16,88 +16,77 @@
       --grn:  #44EE44;
     }
 
-    body {
-      background: var(--bg);
-      color: var(--y);
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--y);
       font-family: 'Share Tech Mono', 'Courier New', monospace;
-      min-height: 100vh;
-      padding: 14px;
+    }
+
+    body {
+      display: flex; flex-direction: column;
+      padding: 12px 14px 10px;
     }
 
     body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
+      content: ''; position: fixed; inset: 0;
       background: repeating-linear-gradient(
-        to bottom,
-        transparent 0, transparent 3px,
+        to bottom, transparent 0, transparent 3px,
         rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px
       );
-      pointer-events: none;
-      z-index: 9999;
+      pointer-events: none; z-index: 9999;
     }
 
     .page-hdr {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      border-bottom: 1px solid var(--ydim);
-      padding-bottom: 8px;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-      gap: 6px;
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-bottom: 1px solid var(--ydim); padding-bottom: 8px; margin-bottom: 10px;
+      flex-shrink: 0;
     }
-    .page-title { font-size: clamp(0.6rem, 2vw, 0.85rem); letter-spacing: 3px; color: var(--y); }
-    .back-link  { font-size: clamp(0.6rem, 1.8vw, 0.8rem); letter-spacing: 2px; color: var(--ydim); text-decoration: none; }
+    .page-title { font-size: clamp(0.6rem, 2vw, 0.85rem); letter-spacing: 3px; }
+    .back-link  { font-size: clamp(0.55rem, 1.6vw, 0.75rem); letter-spacing: 2px; color: var(--ydim); text-decoration: none; }
     .back-link:hover { color: var(--y); }
-    .back-links { max-width: 900px; margin: 12px auto 0; display: flex; justify-content: flex-end; }
-
-    .intro {
-      max-width: 900px;
-      margin: 0 auto 24px;
-      font-size: clamp(0.7rem, 2vw, 0.9rem);
-      letter-spacing: 2px;
-      color: var(--ydim);
-      line-height: 1.7;
-    }
 
     .quiz-grid {
+      flex: 1;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 14px;
-      max-width: 900px;
-      margin: 0 auto;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 10px;
+      min-height: 0;
     }
 
     .quiz-tile {
       border: 1px solid var(--ydim);
-      padding: 20px;
+      padding: 14px 12px;
       text-decoration: none;
       color: var(--y);
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 6px;
       transition: border-color 0.15s, background 0.15s;
-      cursor: pointer;
+      overflow: hidden;
+      min-height: 0;
     }
     .quiz-tile:hover {
       border-color: var(--y);
       background: rgba(255,225,0,0.04);
     }
 
-    .tile-icon  { font-size: 1.8rem; }
-    .tile-title { font-size: clamp(0.85rem, 2.5vw, 1.1rem); letter-spacing: 2px; }
-    .tile-desc  { font-size: clamp(0.6rem, 1.8vw, 0.75rem); letter-spacing: 1px; color: var(--ydim); line-height: 1.6; }
-    .tile-cta   { font-size: clamp(0.6rem, 1.6vw, 0.7rem); letter-spacing: 2px; color: var(--grn); margin-top: auto; }
+    .tile-icon  { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
+    .tile-title { font-size: clamp(0.7rem, 1.4vw, 0.88rem); letter-spacing: 2px; flex-shrink: 0; }
+    .tile-desc  { font-size: clamp(0.52rem, 1vw, 0.65rem); letter-spacing: 1px; color: var(--ydim); line-height: 1.5; flex: 1; }
+    .tile-cta   { font-size: clamp(0.5rem, 0.9vw, 0.62rem); letter-spacing: 2px; color: var(--grn); flex-shrink: 0; }
 
     .footer {
-      max-width: 900px;
-      margin: 24px auto 0;
-      font-size: clamp(0.55rem, 1.5vw, 0.7rem);
+      flex-shrink: 0;
+      margin-top: 8px;
+      font-size: clamp(0.5rem, 1.2vw, 0.62rem);
       letter-spacing: 2px;
       color: var(--ydim);
       border-top: 1px solid var(--div);
-      padding-top: 10px;
+      padding-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
   </style>
 </head>
@@ -108,100 +97,83 @@
   <a class="back-link" href="index.html">◄ LIVE TRAINS</a>
 </div>
 
-<div class="intro">
-  THINK YOU KNOW YOUR TRAINS? PUT YOURSELF TO THE TEST.
-</div>
-
 <div class="quiz-grid">
 
   <a class="quiz-tile" href="quiz.html">
     <div class="tile-icon">🚆</div>
     <div class="tile-title">SPOT THE CLASS</div>
-    <div class="tile-desc">
-      Can you identify a train class from a single photograph?
-      From Class 37 diesels to Class 810 Auroras — how many can you name?
-    </div>
+    <div class="tile-desc">Identify a train class from a single photograph.</div>
     <div class="tile-cta">► START QUIZ</div>
   </a>
 
   <a class="quiz-tile" href="quiz-livery.html">
     <div class="tile-icon">🎨</div>
     <div class="tile-title">SPOT THE LIVERY</div>
-    <div class="tile-desc">
-      Can you name the operator from their livery alone?
-      Passenger and freight — 26 operators to master.
-    </div>
+    <div class="tile-desc">Name the operator from their livery. 26 to master.</div>
     <div class="tile-cta">► START QUIZ</div>
   </a>
 
   <a class="quiz-tile" href="quiz-stations.html">
     <div class="tile-icon">🗺️</div>
     <div class="tile-title">KNOW THE ROUTE</div>
-    <div class="tile-desc">
-      MML · ECML · WCML — can you name the stations in order?
-      Easy hops to tricky multi-step puzzles.
-    </div>
+    <div class="tile-desc">Name the stations in order along each main line.</div>
     <div class="tile-cta">► START QUIZ</div>
   </a>
 
   <a class="quiz-tile" href="quiz-year.html">
     <div class="tile-icon">📅</div>
     <div class="tile-title">WHEN DID IT ARRIVE?</div>
-    <div class="tile-desc">
-      Can you name the year each class entered service?
-      From the 1960s to 2025 — 55 classes to master.
-    </div>
+    <div class="tile-desc">Guess the year each class entered service.</div>
     <div class="tile-cta">► START QUIZ</div>
   </a>
 
   <a class="quiz-tile" href="quiz-lines.html">
     <div class="tile-icon">🗾</div>
     <div class="tile-title">WHICH LINE?</div>
-    <div class="tile-desc">
-      MML, ECML or WCML — can you name the main line
-      for each station? 10 stations to place correctly.
-    </div>
+    <div class="tile-desc">MML, ECML or WCML — place each station correctly.</div>
     <div class="tile-cta">► START QUIZ</div>
   </a>
 
   <a class="quiz-tile" href="quiz-wordsearch.html">
     <div class="tile-icon">🔤</div>
     <div class="tile-title">WORD SEARCH</div>
-    <div class="tile-desc">
-      Find 10 hidden railway words — stations, operators,
-      train names and lines. Words run in all 8 directions.
-    </div>
+    <div class="tile-desc">Find 10 hidden railway words in 8 directions.</div>
     <div class="tile-cta">► START PUZZLE</div>
   </a>
 
   <a class="quiz-tile" href="quiz-memory.html">
     <div class="tile-icon">🃏</div>
     <div class="tile-title">MEMORY</div>
-    <div class="tile-desc">
-      10 pairs, 20 cards face-down. Flip two at a time —
-      find the matching class before your memory runs out.
-    </div>
+    <div class="tile-desc">Flip two cards at a time — match all 10 pairs.</div>
+    <div class="tile-cta">► PLAY</div>
+  </a>
+
+  <a class="quiz-tile" href="quiz-hangman.html">
+    <div class="tile-icon">✏️</div>
+    <div class="tile-title">HANGMAN</div>
+    <div class="tile-desc">Guess the train name or railway word, letter by letter.</div>
+    <div class="tile-cta">► PLAY</div>
+  </a>
+
+  <a class="quiz-tile" href="quiz-mastermind-easy.html">
+    <div class="tile-icon">🔑</div>
+    <div class="tile-title">CODE CRACKER</div>
+    <div class="tile-desc">Crack the 3-train code from a pool of 5. Great for beginners!</div>
     <div class="tile-cta">► PLAY</div>
   </a>
 
   <a class="quiz-tile" href="quiz-mastermind.html">
     <div class="tile-icon">🔒</div>
     <div class="tile-title">MASTERMIND</div>
-    <div class="tile-desc">
-      Crack the hidden sequence of 4 train classes.
-      8 classes in the pool, 10 attempts — read the pegs.
-    </div>
+    <div class="tile-desc">Crack a 4-train code from a pool of 8. The harder challenge.</div>
     <div class="tile-cta">► PLAY</div>
   </a>
 
 </div>
 
-<div class="back-links">
-  <a href="index.html" class="back-link">LIVE TRAIN BOARD ►</a>
-</div>
-
 <div class="footer">
-  MORE QUIZZES COMING SOON
+  <span>THINK YOU KNOW YOUR TRAINS?</span>
+  <a href="index.html" class="back-link">LIVE TRAIN BOARD ►</a>
 </div>
 
 </body>

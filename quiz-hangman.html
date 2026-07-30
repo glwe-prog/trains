@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wellingborough Line — Hangman</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --y: #FFE100; --ydim: #C09000; --bg: #07070A;
+      --div: #2A2A2A; --grn: #44EE44; --red: #FF3030; --surf: #0F0F16;
+    }
+    body {
+      background: var(--bg); color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      min-height: 100vh; padding: 14px;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background: repeating-linear-gradient(to bottom,
+        transparent 0, transparent 3px,
+        rgba(0,0,0,.08) 3px, rgba(0,0,0,.08) 4px);
+      pointer-events: none; z-index: 9999;
+    }
+
+    .page-hdr {
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-bottom: 1px solid var(--ydim); padding-bottom: 8px;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 6px;
+    }
+    .page-title { font-size: clamp(.6rem, 2vw, .85rem); letter-spacing: 3px; }
+    .back-link { font-size: clamp(.6rem, 1.8vw, .8rem); letter-spacing: 2px; color: var(--ydim); text-decoration: none; }
+    .back-link:hover { color: var(--y); }
+
+    .game-wrap {
+      max-width: 680px; margin: 0 auto;
+      display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: start;
+    }
+
+    /* Gallows */
+    .gallows-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    svg.gallows {
+      width: 200px; height: 230px;
+      stroke: var(--ydim); stroke-linecap: round; fill: none;
+    }
+    svg.gallows .structure { stroke: var(--div); stroke-width: 3; }
+    svg.gallows .body-part { stroke: var(--y); stroke-width: 3; transition: opacity .2s; }
+    svg.gallows .body-part.hidden { opacity: 0; }
+    .wrong-count { font-size: .55rem; letter-spacing: 2px; color: var(--ydim); }
+    .wrong-count span { color: var(--red); }
+
+    /* Right panel */
+    .right-panel { display: flex; flex-direction: column; gap: 18px; }
+
+    .category-label {
+      font-size: .52rem; letter-spacing: 3px; color: var(--ydim);
+      border: 1px solid var(--div); display: inline-block; padding: 4px 10px;
+    }
+
+    /* Word display */
+    .word-display { display: flex; gap: 10px; flex-wrap: wrap; }
+    .letter-box {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .letter-char {
+      font-size: 1.6rem; letter-spacing: 1px; line-height: 1;
+      min-width: 28px; text-align: center; color: var(--y);
+    }
+    .letter-line { width: 28px; height: 2px; background: var(--ydim); }
+
+    /* Keyboard */
+    .keyboard { display: flex; flex-direction: column; gap: 6px; }
+    .key-row { display: flex; gap: 5px; }
+    .key {
+      font-family: inherit; font-size: .6rem; letter-spacing: 1px;
+      width: 34px; height: 34px; border: 1px solid var(--div);
+      background: var(--surf); color: var(--ydim); cursor: pointer;
+      transition: border-color .1s, color .1s, background .1s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .key:hover:not(:disabled) { border-color: var(--y); color: var(--y); }
+    .key.hit  { border-color: var(--grn); color: var(--grn); background: rgba(68,238,68,.08); }
+    .key.miss { border-color: #333; color: #333; cursor: not-allowed; }
+    .key:disabled { cursor: not-allowed; }
+
+    /* Result */
+    .result-banner {
+      display: none; border: 1px solid var(--y); padding: 16px 20px; text-align: center;
+    }
+    .result-banner.show { display: block; }
+    .result-banner .r-title { font-size: .9rem; letter-spacing: 4px; margin-bottom: 8px; }
+    .result-banner .r-sub { font-size: .58rem; letter-spacing: 2px; color: var(--ydim); }
+    .result-banner .r-sub span { color: var(--y); }
+
+    /* Controls */
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .btn {
+      font-family: inherit; font-size: .62rem; letter-spacing: 2px;
+      padding: 8px 16px; cursor: pointer;
+      border: 1px solid var(--ydim); background: transparent; color: var(--ydim);
+    }
+    .btn:hover { border-color: var(--y); color: var(--y); }
+    .hint-text { font-size: .5rem; letter-spacing: 1px; color: var(--div); }
+
+    .footer {
+      max-width: 680px; margin: 24px auto 0;
+      font-size: .54rem; color: var(--ydim); letter-spacing: 2px;
+      display: flex; justify-content: flex-end;
+      border-top: 1px solid var(--div); padding-top: 10px;
+    }
+
+    @media (max-width: 520px) {
+      .game-wrap { grid-template-columns: 1fr; }
+      svg.gallows { width: 150px; height: 175px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-hdr">
+  <span class="page-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; HANGMAN</span>
+  <a class="back-link" href="quizzes.html">◄ QUIZZES</a>
+</div>
+
+<div class="game-wrap">
+
+  <!-- Left: gallows -->
+  <div class="gallows-wrap">
+    <svg class="gallows" viewBox="0 0 200 230">
+      <!-- Structure (always shown) -->
+      <line class="structure" x1="20" y1="218" x2="180" y2="218"/>
+      <line class="structure" x1="50"  y1="218" x2="50"  y2="18"/>
+      <line class="structure" x1="50"  y1="18"  x2="130" y2="18"/>
+      <line class="structure" x1="130" y1="18"  x2="130" y2="48"/>
+      <!-- Body parts (shown one by one) -->
+      <circle class="body-part hidden" id="p0" cx="130" cy="65" r="17"/>
+      <line   class="body-part hidden" id="p1" x1="130" y1="82"  x2="130" y2="142"/>
+      <line   class="body-part hidden" id="p2" x1="130" y1="100" x2="98"  y2="128"/>
+      <line   class="body-part hidden" id="p3" x1="130" y1="100" x2="162" y2="128"/>
+      <line   class="body-part hidden" id="p4" x1="130" y1="142" x2="104" y2="178"/>
+      <line   class="body-part hidden" id="p5" x1="130" y1="142" x2="156" y2="178"/>
+    </svg>
+    <div class="wrong-count">WRONG: <span id="wrong-num">0</span> / 6</div>
+  </div>
+
+  <!-- Right: game -->
+  <div class="right-panel">
+
+    <div>
+      <div class="category-label" id="category-label">CATEGORY</div>
+    </div>
+
+    <div class="word-display" id="word-display"></div>
+
+    <div class="result-banner" id="result-banner">
+      <div class="r-title" id="r-title"></div>
+      <div class="r-sub" id="r-sub"></div>
+    </div>
+
+    <div class="keyboard" id="keyboard"></div>
+
+    <div class="controls">
+      <button class="btn" onclick="newGame()">NEW WORD</button>
+      <span class="hint-text" id="hint-text"></span>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">
+  <a href="quizzes.html" class="back-link">ALL QUIZZES ►</a>
+</div>
+
+<script>
+const WORDS = [
+  { word: 'AZUMA',          cat: 'TRAIN NAME'    },
+  { word: 'AURORA',         cat: 'TRAIN NAME'    },
+  { word: 'PENDOLINO',      cat: 'TRAIN NAME'    },
+  { word: 'VOYAGER',        cat: 'TRAIN NAME'    },
+  { word: 'EUROSTAR',       cat: 'TRAIN NAME'    },
+  { word: 'JAVELIN',        cat: 'TRAIN NAME'    },
+  { word: 'MERIDIAN',       cat: 'TRAIN NAME'    },
+  { word: 'INTERCITY',      cat: 'TRAIN NAME'    },
+  { word: 'LONDON',         cat: 'STATION'       },
+  { word: 'BEDFORD',        cat: 'STATION'       },
+  { word: 'SHEFFIELD',      cat: 'STATION'       },
+  { word: 'LEICESTER',      cat: 'STATION'       },
+  { word: 'NOTTINGHAM',     cat: 'STATION'       },
+  { word: 'KETTERING',      cat: 'STATION'       },
+  { word: 'WELLINGBOROUGH', cat: 'STATION'       },
+  { word: 'LUTON',          cat: 'STATION'       },
+  { word: 'PLATFORM',       cat: 'RAILWAY WORD'  },
+  { word: 'SIGNAL',         cat: 'RAILWAY WORD'  },
+  { word: 'TUNNEL',         cat: 'RAILWAY WORD'  },
+  { word: 'DIESEL',         cat: 'RAILWAY WORD'  },
+  { word: 'ELECTRIC',       cat: 'RAILWAY WORD'  },
+  { word: 'DRIVER',         cat: 'RAILWAY WORD'  },
+  { word: 'ENGINE',         cat: 'RAILWAY WORD'  },
+  { word: 'EXPRESS',        cat: 'RAILWAY WORD'  },
+  { word: 'CARRIAGE',       cat: 'RAILWAY WORD'  },
+  { word: 'JUNCTION',       cat: 'RAILWAY WORD'  },
+  { word: 'BUFFER',         cat: 'RAILWAY WORD'  },
+  { word: 'LIVERY',         cat: 'RAILWAY WORD'  },
+  { word: 'LOCOMOTIVE',     cat: 'RAILWAY WORD'  },
+  { word: 'PANTOGRAPH',     cat: 'RAILWAY WORD'  },
+  { word: 'VIADUCT',        cat: 'RAILWAY WORD'  },
+  { word: 'SEMAPHORE',      cat: 'RAILWAY WORD'  },
+];
+
+const KEY_ROWS = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+const MAX_WRONG = 6;
+
+let word = '';
+let category = '';
+let guessed = new Set();
+let wrongCount = 0;
+let gameOver = false;
+
+function pick() {
+  return WORDS[Math.floor(Math.random() * WORDS.length)];
+}
+
+function newGame() {
+  const entry = pick();
+  word = entry.word;
+  category = entry.cat;
+  guessed = new Set();
+  wrongCount = 0;
+  gameOver = false;
+  document.getElementById('result-banner').classList.remove('show');
+  document.getElementById('hint-text').textContent = '';
+  renderAll();
+}
+
+function renderGallows() {
+  for (let i = 0; i < MAX_WRONG; i++) {
+    document.getElementById('p' + i).classList.toggle('hidden', i >= wrongCount);
+  }
+  document.getElementById('wrong-num').textContent = wrongCount;
+}
+
+function renderWord() {
+  const el = document.getElementById('word-display');
+  el.innerHTML = word.split('').map(ch => `
+    <div class="letter-box">
+      <div class="letter-char">${guessed.has(ch) || gameOver ? ch : ' '}</div>
+      <div class="letter-line"></div>
+    </div>`).join('');
+}
+
+function renderKeyboard() {
+  const el = document.getElementById('keyboard');
+  el.innerHTML = KEY_ROWS.map(row =>
+    `<div class="key-row">${row.split('').map(ch => {
+      const hit  = guessed.has(ch) && word.includes(ch);
+      const miss = guessed.has(ch) && !word.includes(ch);
+      return `<button class="key${hit?' hit':miss?' miss':''}"
+        onclick="guess('${ch}')" ${guessed.has(ch)||gameOver?'disabled':''}>${ch}</button>`;
+    }).join('')}</div>`
+  ).join('');
+}
+
+function renderCategory() {
+  document.getElementById('category-label').textContent = category;
+}
+
+function renderAll() {
+  renderCategory();
+  renderGallows();
+  renderWord();
+  renderKeyboard();
+}
+
+function guess(ch) {
+  if (gameOver || guessed.has(ch)) return;
+  guessed.add(ch);
+  if (!word.includes(ch)) wrongCount++;
+
+  const won  = word.split('').every(c => guessed.has(c));
+  const lost = wrongCount >= MAX_WRONG;
+
+  if (won || lost) {
+    gameOver = true;
+    renderAll();
+    const banner = document.getElementById('result-banner');
+    document.getElementById('r-title').textContent = won ? 'WELL DONE!' : 'GAME OVER';
+    document.getElementById('r-sub').innerHTML = won
+      ? `You got it with <span>${wrongCount}</span> wrong guess${wrongCount===1?'':'es'}`
+      : `The word was <span>${word}</span>`;
+    banner.classList.add('show');
+    if (!won) renderWord(); // reveal full word
+  } else {
+    renderAll();
+  }
+}
+
+newGame();
+</script>
+</body>
+</html>
