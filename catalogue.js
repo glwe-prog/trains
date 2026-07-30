@@ -1307,5 +1307,36 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_802_transpennine",
+    "quizzes": {
+      "class": {
+        "name": "Class 802",
+        "blur": [
+          [
+            580,
+            379,
+            620,
+            406
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "TransPennine",
+        "blur": [
+          [
+            866,
+            306,
+            917,
+            343
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
