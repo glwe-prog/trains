@@ -1031,5 +1031,22 @@ const CATALOGUE = [
     },
     "zoom": 1.05,
     "pos": "32% 94%"
+  },
+  {
+    "id": "class_390_ghost",
+    "quizzes": {
+      "class": {
+        "name": "Class 390 Pendolino",
+        "blur": [],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Class 390 Pendolino Ghost",
+        "blur": [],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.05,
+    "pos": "32% 94%"
   }
 ];
