@@ -689,25 +689,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "livery_caledonian_sleeper",
-    "zoom": 1.0,
-    "pos": "50% 50%",
-    "quizzes": {
-      "livery": {
-        "name": "Caledonian Sleeper",
-        "blur": [
-          [
-            805,
-            239,
-            847,
-            374
-          ]
-        ],
-        "blurR": 10
-      }
-    }
-  },
-  {
     "id": "livery_chiltern",
     "zoom": 1.45,
     "pos": "50% 96%",
