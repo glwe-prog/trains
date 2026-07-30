@@ -235,24 +235,22 @@ function parsePosF(pos) {
 
 function renderEntryImage(wrap, entry, cfg, alt) {
   wrap.innerHTML = '';
+  const z   = entry.zoom || 1;
+  const pos = entry.pos  || '50% 50%';
   const container = document.createElement('div');
-  container.style.cssText = 'position:absolute;inset:0;';
+  container.style.cssText = `position:absolute;inset:0;transform:scale(${z});transform-origin:${pos};`;
   const img = document.createElement('img');
   img.src = `images/${entry.id}.jpg`;
   img.alt = alt || '';
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
   img.onerror = () => { wrap.innerHTML = '<div class="no-img">NO PHOTO AVAILABLE</div>'; };
-  const z   = entry.zoom || 1;
-  const pos = entry.pos  || '50% 50%';
-  img.style.transform       = `scale(${z})`;
-  img.style.transformOrigin = pos;
   container.appendChild(img);
   if (cfg.blur && cfg.blur.length > 0) {
-    const [ox, oy] = parsePosF(pos);
     cfg.blur.forEach(([x1, y1, x2, y2]) => {
-      const l = (ox + (x1/960 - ox) * z) * 100;
-      const t = (oy + (y1/640 - oy) * z) * 100;
-      const w = (x2 - x1) / 960 * z * 100;
-      const h = (y2 - y1) / 640 * z * 100;
+      const l = x1 / 960 * 100;
+      const t = y1 / 640 * 100;
+      const w = (x2 - x1) / 960 * 100;
+      const h = (y2 - y1) / 640 * 100;
       const bl = document.createElement('div');
       bl.style.cssText = `position:absolute;left:${l.toFixed(1)}%;top:${t.toFixed(1)}%;width:${w.toFixed(1)}%;height:${h.toFixed(1)}%;backdrop-filter:blur(${cfg.blurR||10}px);-webkit-backdrop-filter:blur(${cfg.blurR||10}px);pointer-events:none;`;
       container.appendChild(bl);
