@@ -1125,43 +1125,6 @@ const CATALOGUE = [
     "pos": "50% 50%"
   },
   {
-    "id": "class_800_azuma_gwr",
-    "quizzes": {
-      "class": {
-        "name": "Class 800 Azuma",
-        "blur": [
-          [
-            446,
-            306,
-            480,
-            330
-          ]
-        ],
-        "blurR": 12
-      },
-      "livery": {
-        "name": "GWR",
-        "blur": [
-          [
-            101,
-            292,
-            136,
-            311
-          ],
-          [
-            442,
-            245,
-            501,
-            290
-          ]
-        ],
-        "blurR": 10
-      }
-    },
-    "zoom": 1.0,
-    "pos": "50% 50%"
-  },
-  {
     "id": "class_902_nova_transpennine",
     "quizzes": {
       "class": {
