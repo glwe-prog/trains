@@ -1125,37 +1125,6 @@ const CATALOGUE = [
     "pos": "50% 50%"
   },
   {
-    "id": "class_800_azuma_lner",
-    "quizzes": {
-      "class": {
-        "name": "Class 800 Azuma",
-        "blur": [
-          [
-            794,
-            376,
-            828,
-            391
-          ]
-        ],
-        "blurR": 12
-      },
-      "livery": {
-        "name": "LNER",
-        "blur": [
-          [
-            639,
-            345,
-            679,
-            374
-          ]
-        ],
-        "blurR": 10
-      }
-    },
-    "zoom": 1.0,
-    "pos": "50% 50%"
-  },
-  {
     "id": "class_800_azuma_gwr",
     "quizzes": {
       "class": {
