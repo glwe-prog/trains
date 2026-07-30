@@ -719,7 +719,14 @@ const CATALOGUE = [
     "quizzes": {
       "livery": {
         "name": "Thameslink",
-        "blur": [],
+        "blur": [
+          [
+            269,
+            336,
+            307,
+            354
+          ]
+        ],
         "blurR": 10
       }
     }
