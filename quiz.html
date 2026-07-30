@@ -244,14 +244,19 @@ function renderEntryImage(wrap, entry, cfg, alt) {
   img.onerror = () => { wrap.innerHTML = '<div class="no-img">NO PHOTO AVAILABLE</div>'; };
   container.appendChild(img);
   if (cfg.blur && cfg.blur.length > 0) {
+    const src = `images/${entry.id}.jpg`;
     cfg.blur.forEach(([x1, y1, x2, y2]) => {
       const l = x1 / 960 * 100;
       const t = y1 / 640 * 100;
       const w = (x2 - x1) / 960 * 100;
       const h = (y2 - y1) / 640 * 100;
-      const bl = document.createElement('div');
-      bl.style.cssText = `position:absolute;left:${l.toFixed(1)}%;top:${t.toFixed(1)}%;width:${w.toFixed(1)}%;height:${h.toFixed(1)}%;backdrop-filter:blur(${cfg.blurR||10}px);-webkit-backdrop-filter:blur(${cfg.blurR||10}px);pointer-events:none;`;
-      container.appendChild(bl);
+      const bw = document.createElement('div');
+      bw.style.cssText = `position:absolute;left:${l.toFixed(2)}%;top:${t.toFixed(2)}%;width:${w.toFixed(2)}%;height:${h.toFixed(2)}%;overflow:hidden;pointer-events:none;`;
+      const bi = document.createElement('img');
+      bi.src = src;
+      bi.style.cssText = `position:absolute;display:block;width:${(10000/w).toFixed(1)}%;height:${(10000/h).toFixed(1)}%;left:${(-l/w*100).toFixed(1)}%;top:${(-t/h*100).toFixed(1)}%;filter:blur(${cfg.blurR||10}px);`;
+      bw.appendChild(bi);
+      container.appendChild(bw);
     });
   }
   wrap.appendChild(container);
