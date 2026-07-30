@@ -600,18 +600,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "livery_avanti",
-    "zoom": 1.5,
-    "pos": "50% 70%",
-    "quizzes": {
-      "livery": {
-        "name": "Avanti West Coast",
-        "blur": [],
-        "blurR": 10
-      }
-    }
-  },
-  {
     "id": "livery_lner",
     "zoom": 1.25,
     "pos": "17% 85%",
