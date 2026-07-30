@@ -612,25 +612,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "class_66",
-    "zoom": 1.0,
-    "pos": "50% 50%",
-    "quizzes": {
-      "class": {
-        "name": "Class 66",
-        "blur": [
-          [
-            203,
-            287,
-            254,
-            345
-          ]
-        ],
-        "blurR": 12
-      }
-    }
-  },
-  {
     "id": "class_67",
     "zoom": 1.0,
     "pos": "50% 50%",
