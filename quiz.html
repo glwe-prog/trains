@@ -263,7 +263,12 @@ function renderEntryImage(wrap, entry, cfg, alt) {
 }
 
 function buildQuiz() {
-  const picks = shuffle(classPool).slice(0, QUIZ_SIZE);
+  const seen = new Set();
+  const picks = shuffle(classPool).filter(e => {
+    const n = e.quizzes.class.name;
+    if (seen.has(n)) return false;
+    seen.add(n); return true;
+  }).slice(0, QUIZ_SIZE);
   questions = picks.map(entry => {
     const cfg    = entry.quizzes.class;
     const wrongs = shuffle(classPool.filter(e => e.id !== entry.id && e.quizzes.class.name !== cfg.name))
