@@ -1110,5 +1110,42 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_66_freightliner",
+    "quizzes": {
+      "class": {
+        "name": "Class 66",
+        "blur": [
+          [
+            261,
+            316,
+            306,
+            335
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Freightliner",
+        "blur": [
+          [
+            528,
+            261,
+            603,
+            316
+          ],
+          [
+            169,
+            285,
+            244,
+            304
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
