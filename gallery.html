@@ -67,94 +67,10 @@
 
 <div class="grid" id="grid"></div>
 
+<script src="catalogue.js"></script>
 <script>
-const CLASSES = [
-  { slug:'class_43_hst', name:'Class 43 HST (IC125)' },
-  { slug:'class_91',     name:'Class 91 (IC225)' },
-  { slug:'class_153',    name:'Class 153' },
-  { slug:'class_155',    name:'Class 155 Super Sprinter' },
-  { slug:'class_156',    name:'Class 156 Super Sprinter' },
-  { slug:'class_158',    name:'Class 158 Express Sprinter' },
-  { slug:'class_159',    name:'Class 159' },
-  { slug:'class_170',    name:'Class 170 Turbostar' },
-  { slug:'class_171',    name:'Class 171 Turbostar' },
-  { slug:'class_175',    name:'Class 175 Coradia' },
-  { slug:'class_180',    name:'Class 180 Adelante' },
-  { slug:'class_185',    name:'Class 185 Desiro' },
-  { slug:'class_195',    name:'Class 195 Civity' },
-  { slug:'class_197',    name:'Class 197 Civity' },
-  { slug:'class_220',    name:'Class 220 Voyager' },
-  { slug:'class_221',    name:'Class 221 Super Voyager' },
-  { slug:'class_222',    name:'Class 222 Meridian' },
-  { slug:'class_313',    name:'Class 313' },
-  { slug:'class_315',    name:'Class 315' },
-  { slug:'class_317',    name:'Class 317' },
-  { slug:'class_319',    name:'Class 319' },
-  { slug:'class_321',    name:'Class 321' },
-  { slug:'class_323',    name:'Class 323' },
-  { slug:'class_331',    name:'Class 331 Civity' },
-  { slug:'class_333',    name:'Class 333' },
-  { slug:'class_334',    name:'Class 334' },
-  { slug:'class_350',    name:'Class 350 Desiro' },
-  { slug:'class_357',    name:'Class 357' },
-  { slug:'class_360',    name:'Class 360 Desiro' },
-  { slug:'class_365',    name:'Class 365 Networker' },
-  { slug:'class_375',    name:'Class 375 Electrostar' },
-  { slug:'class_377',    name:'Class 377 Electrostar' },
-  { slug:'class_380',    name:'Class 380 Desiro' },
-  { slug:'class_385',    name:'Class 385 AT200' },
-  { slug:'class_387',    name:'Class 387 Electrostar' },
-  { slug:'class_390',    name:'Class 390 Pendolino' },
-  { slug:'class_395',    name:'Class 395 Javelin' },
-  { slug:'class_444',    name:'Class 444 Desiro' },
-  { slug:'class_450',    name:'Class 450 Desiro' },
-  { slug:'class_455',    name:'Class 455' },
-  { slug:'class_465',    name:'Class 465 Networker' },
-  { slug:'class_700',    name:'Class 700 Desiro City' },
-  { slug:'class_707',    name:'Class 707 Desiro City' },
-  { slug:'class_710',    name:'Class 710 Aventra' },
-  { slug:'class_720',    name:'Class 720 Aventra' },
-  { slug:'class_745',    name:'Class 745' },
-  { slug:'class_755',    name:'Class 755 Flirt' },
-  { slug:'class_800',    name:'Class 800 Azuma' },
-  { slug:'class_802',    name:'Class 802' },
-  { slug:'class_810',    name:'Class 810 Aurora' },
-  { slug:'class_37',     name:'Class 37' },
-  { slug:'class_47',     name:'Class 47' },
-  { slug:'class_57',     name:'Class 57' },
-  { slug:'class_66',     name:'Class 66' },
-  { slug:'class_67',     name:'Class 67' },
-  { slug:'class_68',     name:'Class 68' },
-];
-
-const LIVERIES = [
-  { slug:'livery_avanti',             name:'Avanti West Coast' },
-  { slug:'livery_lner',               name:'LNER' },
-  { slug:'livery_gwr',                name:'Great Western Railway' },
-  { slug:'livery_emr',                name:'East Midlands Railway' },
-  { slug:'livery_crosscountry',       name:'CrossCountry' },
-  { slug:'livery_hull_trains',        name:'Hull Trains' },
-  { slug:'livery_grand_central',      name:'Grand Central' },
-  { slug:'livery_heathrow_express',   name:'Heathrow Express' },
-  { slug:'livery_caledonian_sleeper', name:'Caledonian Sleeper' },
-  { slug:'livery_chiltern',           name:'Chiltern Railways' },
-  { slug:'livery_thameslink',         name:'Thameslink' },
-  { slug:'livery_southeastern',       name:'Southeastern' },
-  { slug:'livery_southern',           name:'Southern' },
-  { slug:'livery_greater_anglia',     name:'Greater Anglia' },
-  { slug:'livery_c2c',                name:'c2c' },
-  { slug:'livery_scotrail',           name:'ScotRail' },
-  { slug:'livery_transpennine',       name:'TransPennine Express' },
-  { slug:'livery_northern',           name:'Northern' },
-  { slug:'livery_merseyrail',         name:'Merseyrail' },
-  { slug:'livery_west_midlands',      name:'West Midlands Railway' },
-  { slug:'livery_tfw',                name:'Transport for Wales' },
-  { slug:'livery_db_cargo',           name:'DB Cargo UK' },
-  { slug:'livery_freightliner',       name:'Freightliner' },
-  { slug:'livery_gbrf',               name:'GB Railfreight' },
-  { slug:'livery_colas',              name:'Colas Rail' },
-  { slug:'livery_drs',                name:'Direct Rail Services' },
-];
+const CLASSES  = CATALOGUE.filter(e => e.quizzes.class);
+const LIVERIES = CATALOGUE.filter(e => e.quizzes.livery);
 
 let filterMode = 'all';
 
@@ -193,12 +109,13 @@ function render() {
 }
 
 function card(e, type) {
+  const name = (e.quizzes[type] || e.quizzes.class || e.quizzes.livery).name;
   return `<div class="card">
-    <img src="images/${e.slug}.jpg" alt="${e.name}" loading="lazy"
+    <img src="images/${e.id}.jpg" alt="${name}" loading="lazy"
          onerror="this.style.opacity='.2'">
     <div class="card-info">
-      <div class="card-name">${e.name}</div>
-      <div class="card-slug">${e.slug}</div>
+      <div class="card-name">${name}</div>
+      <div class="card-slug">${e.id}</div>
       <div class="card-badge ${type}">${type.toUpperCase()}</div>
     </div>
   </div>`;

@@ -205,42 +205,10 @@
 
 </div>
 
+<script src="catalogue.js"></script>
 <script>
-// Catalogue — modern UK passenger & freight operator liveries
-// slug maps to /images/<slug>.jpg
-const CATALOGUE = [
-  // Passenger — long distance / intercity
-  { slug: 'livery_avanti',             name: 'Avanti West Coast',    zoom: 1.50, pos: '50% 70%'  },
-  { slug: 'livery_lner',               name: 'LNER',                 zoom: 1.25, pos: '17% 85%'  },
-  { slug: 'livery_gwr',                name: 'Great Western Railway', zoom: 1.95, pos: '85% 86%'  },
-  { slug: 'livery_emr',                name: 'East Midlands Railway', zoom: 1.60, pos: '59% 74%'  },
-  { slug: 'livery_crosscountry',       name: 'CrossCountry',          zoom: 1.45, pos: '50% 22%'  },
-  { slug: 'livery_hull_trains',        name: 'Hull Trains'                                         },
-  { slug: 'livery_grand_central',      name: 'Grand Central',         zoom: 1.70, pos: '57% 50%'  },
-  { slug: 'livery_heathrow_express',   name: 'Heathrow Express',      zoom: 2.20                  },
-  { slug: 'livery_caledonian_sleeper', name: 'Caledonian Sleeper'                                  },
-  // Passenger — regional / suburban
-  { slug: 'livery_chiltern',           name: 'Chiltern Railways',     zoom: 1.45, pos: '50% 96%'  },
-  { slug: 'livery_thameslink',         name: 'Thameslink',            zoom: 1.20, pos: '98% 4%'   },
-  { slug: 'livery_southeastern',       name: 'Southeastern',          zoom: 1.40, pos: '19% 83%'  },
-  { slug: 'livery_southern',           name: 'Southern',              zoom: 1.30, pos: '96% 50%'  },
-  { slug: 'livery_greater_anglia',     name: 'Greater Anglia',        zoom: 1.45, pos: '50% 59%'  },
-  { slug: 'livery_c2c',                name: 'c2c',                   zoom: 1.35, pos: '53% 14%'  },
-  { slug: 'livery_scotrail',           name: 'ScotRail',              zoom: 1.50                  },
-  { slug: 'livery_transpennine',       name: 'TransPennine Express',  pos: 'right center'         },
-  { slug: 'livery_northern',           name: 'Northern',              zoom: 1.25, pos: '99% 29%'  },
-  { slug: 'livery_merseyrail',         name: 'Merseyrail',            zoom: 1.30                  },
-  { slug: 'livery_west_midlands',      name: 'West Midlands Railway', zoom: 1.40, pos: '2% 52%'   },
-  { slug: 'livery_tfw',                name: 'Transport for Wales',   zoom: 1.55                  },
-  // Freight
-  { slug: 'livery_db_cargo',           name: 'DB Cargo UK',           zoom: 1.90, pos: '73% 60%'  },
-  { slug: 'livery_freightliner',       name: 'Freightliner'                                        },
-  { slug: 'livery_gbrf',               name: 'GB Railfreight',        zoom: 1.35, pos: '28% 50%'  },
-  { slug: 'livery_colas',              name: 'Colas Rail',            zoom: 1.60                  },
-  { slug: 'livery_drs',                name: 'Direct Rail Services',  zoom: 1.95, pos: '63% 71%'  },
-  { slug: '', name: 'Freightliner' },
-];
 
+const liveryPool = CATALOGUE.filter(e => e.quizzes.livery);
 const QUIZ_SIZE = 10;
 const LETTERS   = ['A','B','C','D'];
 
@@ -259,13 +227,50 @@ function shuffle(arr) {
   return a;
 }
 
+function parsePosF(pos) {
+  const m = (pos || '50% 50%').match(/([\d.]+)%\s+([\d.]+)%/);
+  return m ? [parseFloat(m[1])/100, parseFloat(m[2])/100] : [0.5, 0.5];
+}
+
+function renderEntryImage(wrap, entry, cfg, alt) {
+  wrap.innerHTML = '';
+  const container = document.createElement('div');
+  container.style.cssText = 'position:relative;width:100%;height:100%;';
+  const img = document.createElement('img');
+  img.src = `images/${entry.id}.jpg`;
+  img.alt = alt || '';
+  img.onerror = () => { wrap.innerHTML = '<div class="no-img">NO PHOTO AVAILABLE</div>'; };
+  const z   = entry.zoom || 1;
+  const pos = entry.pos  || '50% 50%';
+  if (z > 1.01) {
+    img.style.transform       = `scale(${z})`;
+    img.style.transformOrigin = pos;
+  } else if (pos !== '50% 50%') {
+    img.style.objectPosition = pos;
+  }
+  container.appendChild(img);
+  if (cfg.blur && cfg.blur.length > 0) {
+    const [ox, oy] = parsePosF(pos);
+    cfg.blur.forEach(([x1, y1, x2, y2]) => {
+      const l = (ox + (x1/960 - ox) * z) * 100;
+      const t = (oy + (y1/640 - oy) * z) * 100;
+      const w = (x2 - x1) / 960 * z * 100;
+      const h = (y2 - y1) / 640 * z * 100;
+      const bl = document.createElement('div');
+      bl.style.cssText = `position:absolute;left:${l.toFixed(1)}%;top:${t.toFixed(1)}%;width:${w.toFixed(1)}%;height:${h.toFixed(1)}%;backdrop-filter:blur(${cfg.blurR||10}px);-webkit-backdrop-filter:blur(${cfg.blurR||10}px);pointer-events:none;`;
+      container.appendChild(bl);
+    });
+  }
+  wrap.appendChild(container);
+}
+
 function buildQuiz() {
-  const picks = shuffle(CATALOGUE).slice(0, QUIZ_SIZE);
-  questions = picks.map(op => {
-    const wrongs  = shuffle(CATALOGUE.filter(c => c.slug !== op.slug))
-                      .slice(0, 3).map(c => c.name);
-    const choices = shuffle([op.name, ...wrongs]);
-    return { op, choices };
+  const picks = shuffle(liveryPool).slice(0, QUIZ_SIZE);
+  questions = picks.map(entry => {
+    const cfg    = entry.quizzes.livery;
+    const wrongs = shuffle(liveryPool.filter(e => e.id !== entry.id))
+                     .slice(0, 3).map(e => e.quizzes.livery.name);
+    return { entry, cfg, choices: shuffle([cfg.name, ...wrongs]) };
   });
   dotStates = Array(QUIZ_SIZE).fill('pending');
   current   = 0;
@@ -289,29 +294,14 @@ function renderDots() {
 
 function showQuestion() {
   answered = false;
-  const q  = questions[current];
-
+  const q = questions[current];
   document.getElementById('q-label').textContent  = `QUESTION ${current + 1} OF ${QUIZ_SIZE}`;
   document.getElementById('q-score').textContent  = `SCORE: ${score}/${current}`;
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className   = '';
   document.getElementById('next-btn').style.display = 'none';
   renderDots();
-
-  const wrap = document.getElementById('img-wrap');
-  wrap.innerHTML = '';
-  const img  = document.createElement('img');
-  img.src   = `images/${q.op.slug}.jpg`;
-  img.alt   = 'Train livery';
-  if (q.op.zoom) {
-    img.style.transform       = `scale(${q.op.zoom})`;
-    img.style.transformOrigin = q.op.pos || '50% 50%';
-  } else if (q.op.pos) {
-    img.style.objectPosition = q.op.pos;
-  }
-  img.onerror = () => { wrap.innerHTML = '<div class="no-img">NO PHOTO AVAILABLE</div>'; };
-  wrap.appendChild(img);
-
+  renderEntryImage(document.getElementById('img-wrap'), q.entry, q.cfg, 'Train livery');
   document.getElementById('choices').innerHTML =
     q.choices.map((c, i) =>
       `<button class="choice-btn" data-choice="${escAttr(c)}" onclick="handleAnswer(this)">
@@ -325,16 +315,13 @@ function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 function handleAnswer(btn) {
   if (answered) return;
   answered = true;
-
   const chosen  = btn.dataset.choice;
-  const correct = questions[current].op.name;
+  const correct = questions[current].cfg.name;
   const fb      = document.getElementById('feedback');
-
   document.querySelectorAll('.choice-btn').forEach(b => {
     b.disabled = true;
     if (b.dataset.choice === correct) b.classList.add('correct');
   });
-
   if (chosen === correct) {
     score++;
     dotStates[current] = 'correct';
@@ -346,9 +333,7 @@ function handleAnswer(btn) {
     fb.textContent = `✗  WRONG — It was ${correct}`;
     fb.className   = 'fb-err';
   }
-
   renderDots();
-
   const nb = document.getElementById('next-btn');
   nb.textContent   = current + 1 < QUIZ_SIZE ? 'NEXT QUESTION →' : 'SEE RESULTS →';
   nb.style.display = 'inline-block';
@@ -363,21 +348,19 @@ function nextQuestion() {
 function showResults() {
   document.getElementById('quiz-panel').style.display = 'none';
   document.getElementById('results').style.display    = 'block';
-
   const pct = score / QUIZ_SIZE;
   let msg, colour;
-  if (pct === 1)       { msg = '★  PERFECT — True livery expert!';              colour = 'var(--grn)'; }
-  else if (pct >= 0.8) { msg = 'EXCELLENT — Sharp eyes on the platform!';        colour = 'var(--grn)'; }
-  else if (pct >= 0.6) { msg = 'GOOD EFFORT — You know your colours!';           colour = 'var(--y)';   }
-  else if (pct >= 0.4) { msg = 'NOT BAD — More platform time needed!';           colour = 'var(--ora)'; }
-  else                 { msg = 'KEEP PRACTISING — Hit the platform!';            colour = 'var(--red)'; }
-
+  if (pct === 1)       { msg = '★  PERFECT — True livery expert!';           colour = 'var(--grn)'; }
+  else if (pct >= 0.8) { msg = 'EXCELLENT — Sharp eyes on the platform!';    colour = 'var(--grn)'; }
+  else if (pct >= 0.6) { msg = 'GOOD EFFORT — You know your colours!';       colour = 'var(--y)';   }
+  else if (pct >= 0.4) { msg = 'NOT BAD — More platform time needed!';       colour = 'var(--ora)'; }
+  else                 { msg = 'KEEP PRACTISING — Hit the platform!';        colour = 'var(--red)'; }
   document.getElementById('res-score').textContent = `${score}/${QUIZ_SIZE}`;
   document.getElementById('res-score').style.color = colour;
   document.getElementById('res-msg').textContent   = msg;
   document.getElementById('res-sub').innerHTML     =
     `${score} correct out of ${QUIZ_SIZE} questions<br>`
-    + `Quiz drawn from a catalogue of ${CATALOGUE.length} operators`;
+    + `Quiz drawn from a catalogue of ${liveryPool.length} operators`;
 }
 
 function resetQuiz() { buildQuiz(); }

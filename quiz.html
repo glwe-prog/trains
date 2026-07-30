@@ -203,73 +203,10 @@
 
 </div>
 
+<script src="catalogue.js"></script>
 <script>
-// Catalogue — 54 classes, diesels & electrics since 1980
-// slug maps to /images/<slug>.jpg (pre-processed, TOPS codes blurred)
-const CATALOGUE = [
-  // Intercity / express diesel
-  { slug: 'class_43_hst', name: 'Class 43 HST (IC125)'        },
-  { slug: 'class_220',    name: 'Class 220 Voyager'           },
-  { slug: 'class_221',    name: 'Class 221 Super Voyager'     },
-  { slug: 'class_222',    name: 'Class 222 Meridian'          },
-  { slug: 'class_180',    name: 'Class 180 Adelante'          },
-  // Intercity / express electric & bi-mode
-  { slug: 'class_91',     name: 'Class 91 (IC225)'            },
-  { slug: 'class_390', name: 'Avanti West Coast' },
-  { slug: 'class_395',    name: 'Class 395 Javelin'           },
-  { slug: 'class_800',    name: 'Class 800 Azuma'             },
-  { slug: 'class_802',    name: 'Class 802'                   },
-  { slug: 'class_810',    name: 'Class 810 Aurora',   zoom: 1.60, pos: '59% 74%' },
-  // Regional diesel units
-  { slug: 'class_153',    name: 'Class 153'                   },
-  { slug: 'class_155',    name: 'Class 155 Super Sprinter'    },
-  { slug: 'class_156',    name: 'Class 156 Super Sprinter'    },
-  { slug: 'class_158',    name: 'Class 158 Express Sprinter'  },
-  { slug: 'class_159',    name: 'Class 159'                   },
-  { slug: 'class_170',    name: 'Class 170 Turbostar'         },
-  { slug: 'class_171',    name: 'Class 171 Turbostar'         },
-  { slug: 'class_175',    name: 'Class 175 Coradia'           },
-  { slug: 'class_185',    name: 'Class 185 Desiro'            },
-  { slug: 'class_195',    name: 'Class 195 Civity'            },
-  { slug: 'class_197',    name: 'Class 197 Civity'            },
-  // Electric suburban
-  { slug: 'class_313',    name: 'Class 313'                   },
-  { slug: 'class_315',    name: 'Class 315'                   },
-  { slug: 'class_317',    name: 'Class 317'                   },
-  { slug: 'class_319',    name: 'Class 319'                   },
-  { slug: 'class_321',    name: 'Class 321'                   },
-  { slug: 'class_323',    name: 'Class 323'                   },
-  { slug: 'class_331',    name: 'Class 331 Civity'            },
-  { slug: 'class_333',    name: 'Class 333'                   },
-  { slug: 'class_350',    name: 'Class 350 Desiro'            },
-  { slug: 'class_357',    name: 'Class 357'                   },
-  { slug: 'class_360',    name: 'Class 360 Desiro'            },
-  { slug: 'class_365',    name: 'Class 365 Networker'         },
-  { slug: 'class_375',    name: 'Class 375 Electrostar'       },
-  { slug: 'class_377',    name: 'Class 377 Electrostar'       },
-  { slug: 'class_380',    name: 'Class 380 Desiro'            },
-  { slug: 'class_385',    name: 'Class 385 AT200'             },
-  { slug: 'class_387',    name: 'Class 387 Electrostar'       },
-  { slug: 'class_444',    name: 'Class 444 Desiro'            },
-  { slug: 'class_450',    name: 'Class 450 Desiro'            },
-  { slug: 'class_455',    name: 'Class 455'                   },
-  { slug: 'class_465',    name: 'Class 465 Networker'         },
-  { slug: 'class_700',    name: 'Class 700 Desiro City'       },
-  { slug: 'class_707',    name: 'Class 707 Desiro City'       },
-  { slug: 'class_710',    name: 'Class 710 Aventra'           },
-  { slug: 'class_720',    name: 'Class 720 Aventra'           },
-  { slug: 'class_745',    name: 'Class 745'                   },
-  { slug: 'class_755',    name: 'Class 755 Flirt'             },
-  // Diesel locomotives
-  { slug: 'class_37',     name: 'Class 37'                    },
-  { slug: 'class_47',     name: 'Class 47'                    },
-  { slug: 'class_57',     name: 'Class 57'                    },
-  { slug: 'class_66',     name: 'Class 66'                    },
-  { slug: 'class_67',     name: 'Class 67'                    },
-  { slug: 'class_68',     name: 'Class 68'                    },
-  { slug: 'livery_tfw', name: 'Transport for Wales', zoom: 1.55 },
-];
 
+const classPool = CATALOGUE.filter(e => e.quizzes.class);
 const QUIZ_SIZE = 10;
 const LETTERS   = ['A','B','C','D'];
 
@@ -288,14 +225,50 @@ function shuffle(arr) {
   return a;
 }
 
-// ── Build a fresh quiz (synchronous — images are local) ─────────────────────
+function parsePosF(pos) {
+  const m = (pos || '50% 50%').match(/([\d.]+)%\s+([\d.]+)%/);
+  return m ? [parseFloat(m[1])/100, parseFloat(m[2])/100] : [0.5, 0.5];
+}
+
+function renderEntryImage(wrap, entry, cfg, alt) {
+  wrap.innerHTML = '';
+  const container = document.createElement('div');
+  container.style.cssText = 'position:relative;width:100%;height:100%;';
+  const img = document.createElement('img');
+  img.src = `images/${entry.id}.jpg`;
+  img.alt = alt || '';
+  img.onerror = () => { wrap.innerHTML = '<div class="no-img">NO PHOTO AVAILABLE</div>'; };
+  const z   = entry.zoom || 1;
+  const pos = entry.pos  || '50% 50%';
+  if (z > 1.01) {
+    img.style.transform       = `scale(${z})`;
+    img.style.transformOrigin = pos;
+  } else if (pos !== '50% 50%') {
+    img.style.objectPosition = pos;
+  }
+  container.appendChild(img);
+  if (cfg.blur && cfg.blur.length > 0) {
+    const [ox, oy] = parsePosF(pos);
+    cfg.blur.forEach(([x1, y1, x2, y2]) => {
+      const l = (ox + (x1/960 - ox) * z) * 100;
+      const t = (oy + (y1/640 - oy) * z) * 100;
+      const w = (x2 - x1) / 960 * z * 100;
+      const h = (y2 - y1) / 640 * z * 100;
+      const bl = document.createElement('div');
+      bl.style.cssText = `position:absolute;left:${l.toFixed(1)}%;top:${t.toFixed(1)}%;width:${w.toFixed(1)}%;height:${h.toFixed(1)}%;backdrop-filter:blur(${cfg.blurR||10}px);-webkit-backdrop-filter:blur(${cfg.blurR||10}px);pointer-events:none;`;
+      container.appendChild(bl);
+    });
+  }
+  wrap.appendChild(container);
+}
+
 function buildQuiz() {
-  const picks = shuffle(CATALOGUE).slice(0, QUIZ_SIZE);
-  questions = picks.map(train => {
-    const wrongs  = shuffle(CATALOGUE.filter(c => c.slug !== train.slug))
-                      .slice(0, 3).map(c => c.name);
-    const choices = shuffle([train.name, ...wrongs]);
-    return { train, choices };
+  const picks = shuffle(classPool).slice(0, QUIZ_SIZE);
+  questions = picks.map(entry => {
+    const cfg    = entry.quizzes.class;
+    const wrongs = shuffle(classPool.filter(e => e.id !== entry.id))
+                     .slice(0, 3).map(e => e.quizzes.class.name);
+    return { entry, cfg, choices: shuffle([cfg.name, ...wrongs]) };
   });
   dotStates = Array(QUIZ_SIZE).fill('pending');
   current   = 0;
@@ -306,7 +279,6 @@ function buildQuiz() {
   showQuestion();
 }
 
-// ── Render progress dots ─────────────────────────────────────────────────────
 function renderDots() {
   document.getElementById('dots').innerHTML =
     dotStates.map((s, i) => {
@@ -318,26 +290,16 @@ function renderDots() {
     }).join('');
 }
 
-// ── Show one question ────────────────────────────────────────────────────────
 function showQuestion() {
   answered = false;
-  const q  = questions[current];
-
+  const q = questions[current];
   document.getElementById('q-label').textContent  = `QUESTION ${current + 1} OF ${QUIZ_SIZE}`;
   document.getElementById('q-score').textContent  = `SCORE: ${score}/${current}`;
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className   = '';
   document.getElementById('next-btn').style.display = 'none';
   renderDots();
-
-  const wrap = document.getElementById('img-wrap');
-  wrap.innerHTML = '';
-  const img  = document.createElement('img');
-  img.src    = `images/${q.train.slug}.jpg`;
-  img.alt    = 'Train';
-  img.onerror = () => { wrap.innerHTML = '<div class="no-img">NO PHOTO AVAILABLE</div>'; };
-  wrap.appendChild(img);
-
+  renderEntryImage(document.getElementById('img-wrap'), q.entry, q.cfg, 'Train');
   document.getElementById('choices').innerHTML =
     q.choices.map((c, i) =>
       `<button class="choice-btn" data-choice="${escAttr(c)}" onclick="handleAnswer(this)">
@@ -348,20 +310,16 @@ function showQuestion() {
 
 function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
-// ── Handle answer ────────────────────────────────────────────────────────────
 function handleAnswer(btn) {
   if (answered) return;
   answered = true;
-
   const chosen  = btn.dataset.choice;
-  const correct = questions[current].train.name;
+  const correct = questions[current].cfg.name;
   const fb      = document.getElementById('feedback');
-
   document.querySelectorAll('.choice-btn').forEach(b => {
     b.disabled = true;
     if (b.dataset.choice === correct) b.classList.add('correct');
   });
-
   if (chosen === correct) {
     score++;
     dotStates[current] = 'correct';
@@ -373,46 +331,38 @@ function handleAnswer(btn) {
     fb.textContent = `✗  WRONG — It was the ${correct}`;
     fb.className   = 'fb-err';
   }
-
   renderDots();
-
   const nb = document.getElementById('next-btn');
   nb.textContent   = current + 1 < QUIZ_SIZE ? 'NEXT QUESTION →' : 'SEE RESULTS →';
   nb.style.display = 'inline-block';
 }
 
-// ── Advance ──────────────────────────────────────────────────────────────────
 function nextQuestion() {
   current++;
   if (current >= QUIZ_SIZE) { showResults(); return; }
   showQuestion();
 }
 
-// ── Results ──────────────────────────────────────────────────────────────────
 function showResults() {
   document.getElementById('quiz-panel').style.display = 'none';
   document.getElementById('results').style.display    = 'block';
-
   const pct = score / QUIZ_SIZE;
   let msg, colour;
-  if (pct === 1)       { msg = '★  PERFECT — True train expert!';           colour = 'var(--grn)'; }
-  else if (pct >= 0.8) { msg = 'EXCELLENT — Nearly a perfect spotter!';          colour = 'var(--grn)'; }
-  else if (pct >= 0.6) { msg = 'GOOD EFFORT — Keep those eyes on the line!';    colour = 'var(--y)';   }
-  else if (pct >= 0.4) { msg = 'NOT BAD — More platform time needed!';          colour = 'var(--ora)'; }
-  else                 { msg = 'KEEP PRACTISING — Hit the platform!';           colour = 'var(--red)'; }
-
+  if (pct === 1)       { msg = '★  PERFECT — True train expert!';            colour = 'var(--grn)'; }
+  else if (pct >= 0.8) { msg = 'EXCELLENT — Nearly a perfect spotter!';      colour = 'var(--grn)'; }
+  else if (pct >= 0.6) { msg = 'GOOD EFFORT — Keep those eyes on the line!'; colour = 'var(--y)';   }
+  else if (pct >= 0.4) { msg = 'NOT BAD — More platform time needed!';       colour = 'var(--ora)'; }
+  else                 { msg = 'KEEP PRACTISING — Hit the platform!';        colour = 'var(--red)'; }
   document.getElementById('res-score').textContent = `${score}/${QUIZ_SIZE}`;
   document.getElementById('res-score').style.color = colour;
   document.getElementById('res-msg').textContent   = msg;
   document.getElementById('res-sub').innerHTML     =
     `${score} correct out of ${QUIZ_SIZE} questions<br>`
-    + `Quiz drawn from a catalogue of ${CATALOGUE.length} train classes`;
+    + `Quiz drawn from a catalogue of ${classPool.length} train classes`;
 }
 
-// ── Reset ────────────────────────────────────────────────────────────────────
 function resetQuiz() { buildQuiz(); }
 
-// ── Clock ────────────────────────────────────────────────────────────────────
 function tick() {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
 }

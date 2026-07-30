@@ -183,74 +183,20 @@
 
 </div>
 
+<script src="catalogue.js"></script>
 <script>
-const CLASSES = [
-  { slug:'class_43_hst', name:'Class 43 HST (IC125)'       },
-  { slug:'class_220',    name:'Class 220 Voyager'           },
-  { slug:'class_221',    name:'Class 221 Super Voyager'     },
-  { slug:'class_222',    name:'Class 222 Meridian'          },
-  { slug:'class_180',    name:'Class 180 Adelante'          },
-  { slug:'class_91',     name:'Class 91 (IC225)'            },
-  { slug:'class_390',    name:'Class 390 Pendolino'         },
-  { slug:'class_395',    name:'Class 395 Javelin'           },
-  { slug:'class_800',    name:'Class 800 Azuma'             },
-  { slug:'class_802',    name:'Class 802'                   },
-  { slug:'class_810',    name:'Class 810 Aurora'            },
-  { slug:'class_153',    name:'Class 153'                   },
-  { slug:'class_158',    name:'Class 158 Express Sprinter'  },
-  { slug:'class_170',    name:'Class 170 Turbostar'         },
-  { slug:'class_185',    name:'Class 185 Desiro'            },
-  { slug:'class_195',    name:'Class 195 Civity'            },
-  { slug:'class_317',    name:'Class 317'                   },
-  { slug:'class_350',    name:'Class 350 Desiro'            },
-  { slug:'class_360',    name:'Class 360 Desiro'            },
-  { slug:'class_377',    name:'Class 377 Electrostar'       },
-  { slug:'class_387',    name:'Class 387 Electrostar'       },
-  { slug:'class_444',    name:'Class 444 Desiro'            },
-  { slug:'class_700',    name:'Class 700 Desiro City'       },
-  { slug:'class_710',    name:'Class 710 Aventra'           },
-  { slug:'class_37',     name:'Class 37'                    },
-  { slug:'class_66',     name:'Class 66'                    },
-  { slug:'class_68',     name:'Class 68'                    },
-];
-
-const LIVERIES = [
-  { slug:'livery_avanti',             name:'Avanti West Coast'     },
-  { slug:'livery_lner',               name:'LNER'                  },
-  { slug:'livery_gwr',                name:'Great Western Railway' },
-  { slug:'livery_emr',                name:'East Midlands Railway' },
-  { slug:'livery_crosscountry',       name:'CrossCountry'          },
-  { slug:'livery_hull_trains',        name:'Hull Trains'           },
-  { slug:'livery_grand_central',      name:'Grand Central'         },
-  { slug:'livery_heathrow_express',   name:'Heathrow Express'      },
-  { slug:'livery_caledonian_sleeper', name:'Caledonian Sleeper'    },
-  { slug:'livery_chiltern',           name:'Chiltern Railways'     },
-  { slug:'livery_thameslink',         name:'Thameslink'            },
-  { slug:'livery_southeastern',       name:'Southeastern'          },
-  { slug:'livery_southern',           name:'Southern'              },
-  { slug:'livery_greater_anglia',     name:'Greater Anglia'        },
-  { slug:'livery_c2c',                name:'c2c'                   },
-  { slug:'livery_scotrail',           name:'ScotRail'              },
-  { slug:'livery_transpennine',       name:'TransPennine Express'  },
-  { slug:'livery_northern',           name:'Northern'              },
-  { slug:'livery_merseyrail',         name:'Merseyrail'            },
-  { slug:'livery_west_midlands',      name:'West Midlands Railway' },
-  { slug:'livery_tfw',                name:'Transport for Wales'   },
-  { slug:'livery_db_cargo',           name:'DB Cargo UK'           },
-  { slug:'livery_freightliner',       name:'Freightliner'          },
-  { slug:'livery_gbrf',               name:'GB Railfreight'        },
-  { slug:'livery_colas',              name:'Colas Rail'            },
-  { slug:'livery_drs',                name:'Direct Rail Services'  },
-];
+const CLASSES  = CATALOGUE.filter(e => e.quizzes.class);
+const LIVERIES = CATALOGUE.filter(e => e.quizzes.livery);
 
 const COLS = 4, ROWS = 4, TOTAL = COLS * ROWS;
 const MAX_ATTEMPTS = 5;
 const MIN_REVEALS = 3;
 const LABELS = ['A','B','C','D','E','F'];
 
-let current = null, pool = [], revealOrder = [];
+let current = null, currentCfg = null, pool = [], revealOrder = [];
 let revealedCount = 0, attemptsLeft = MAX_ATTEMPTS, locked = false;
 let quizMode = 'random'; // 'random' | 'class' | 'livery'
+let useClassMode = true;
 
 function setMode(mode, btn) {
   quizMode = mode;
@@ -270,18 +216,19 @@ function shuffle(a) {
 
 function newRound() {
   // Pick a type based on mode
-  const useClass = quizMode === 'class' ? true : quizMode === 'livery' ? false : Math.random() < 0.5;
-  pool = useClass ? CLASSES : LIVERIES;
+  useClassMode = quizMode === 'class' ? true : quizMode === 'livery' ? false : Math.random() < 0.5;
+  pool = useClassMode ? CLASSES : LIVERIES;
   if (!pool.length) return;
 
-  current = pool[Math.floor(Math.random() * pool.length)];
+  current    = pool[Math.floor(Math.random() * pool.length)];
+  currentCfg = useClassMode ? current.quizzes.class : current.quizzes.livery;
   revealedCount = 0;
   attemptsLeft = MAX_ATTEMPTS;
   locked = false;
 
   // Load image
   const img = document.getElementById('quiz-img');
-  img.src = `images/${current.slug}.jpg`;
+  img.src = `images/${current.id}.jpg`;
 
   // Build grid
   const overlay = document.getElementById('grid-overlay');
@@ -295,20 +242,17 @@ function newRound() {
     overlay.appendChild(cell);
   }
 
-  // Question
-  document.getElementById('question').textContent =
-    useClass ? 'WHAT CLASS IS THIS?' : 'WHOSE LIVERY IS THIS?';
-
   // Options: correct + 5 wrong from same pool, locked until MIN_REVEALS cells uncovered
-  const wrong = shuffle(pool.filter(p => p.slug !== current.slug)).slice(0, 5).map(p => p.name);
-  const opts  = shuffle([current.name, ...wrong]);
+  const wrong = shuffle(pool.filter(p => p.id !== current.id)).slice(0, 5)
+                  .map(p => useClassMode ? p.quizzes.class.name : p.quizzes.livery.name);
+  const opts  = shuffle([currentCfg.name, ...wrong]);
   document.getElementById('options').innerHTML = opts.map((n, i) =>
     `<button class="opt-btn" data-name="${n}" onclick="handleAnswer(this)" disabled>
       <span class="ltr">${LABELS[i]}.</span><span>${n}</span>
     </button>`
   ).join('');
   document.getElementById('question').innerHTML =
-    (useClass ? 'WHAT CLASS IS THIS?' : 'WHOSE LIVERY IS THIS?') +
+    (useClassMode ? 'WHAT CLASS IS THIS?' : 'WHOSE LIVERY IS THIS?') +
     ` <span id="reveal-hint" style="font-size:.55rem;color:var(--ydim);letter-spacing:1px"> — REVEAL ${MIN_REVEALS} CELLS TO GUESS</span>`;
 
   // Pips
@@ -363,13 +307,13 @@ function handleAnswer(btn) {
   if (locked || btn.classList.contains('eliminated')) return;
   const chosen = btn.getAttribute('data-name');
 
-  if (chosen === current.name) {
+  if (chosen === currentCfg.name) {
     locked = true;
     btn.classList.add('correct');
     document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
     revealAll(160);
     const res = document.getElementById('result');
-    res.textContent = '✓ CORRECT! ' + current.name.toUpperCase();
+    res.textContent = '✓ CORRECT! ' + currentCfg.name.toUpperCase();
     res.className = 'result win';
     document.getElementById('btn-next').style.display = 'inline-block';
   } else {
@@ -389,7 +333,7 @@ function handleAnswer(btn) {
       document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
       revealAll(200);
       const res = document.getElementById('result');
-      res.textContent = '✗ OUT OF ATTEMPTS — ' + current.name.toUpperCase();
+      res.textContent = '✗ OUT OF ATTEMPTS — ' + currentCfg.name.toUpperCase();
       res.className = 'result loss';
       document.getElementById('btn-next').style.display = 'inline-block';
     }
