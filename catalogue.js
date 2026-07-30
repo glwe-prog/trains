@@ -84,18 +84,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "class_810",
-    "zoom": 1.6,
-    "pos": "59% 74%",
-    "quizzes": {
-      "class": {
-        "name": "Class 810 Aurora",
-        "blur": [],
-        "blurR": 12
-      }
-    }
-  },
-  {
     "id": "class_153",
     "zoom": 1.0,
     "pos": "50% 50%",
