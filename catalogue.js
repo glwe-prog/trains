@@ -1010,7 +1010,7 @@ const CATALOGUE = [
         "blurR": 12
       },
       "livery": {
-        "name": "Class 390 Pendolino Ghost",
+        "name": "Ghost",
         "blur": [],
         "blurR": 10
       }
