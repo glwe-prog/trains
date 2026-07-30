@@ -1253,5 +1253,48 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 31%"
+  },
+  {
+    "id": "class_66_gb_railfreight",
+    "quizzes": {
+      "class": {
+        "name": "Class 66",
+        "blur": [
+          [
+            220,
+            336,
+            261,
+            353
+          ],
+          [
+            626,
+            253,
+            658,
+            285
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "GB Railfreight",
+        "blur": [
+          [
+            524,
+            230,
+            586,
+            290
+          ],
+          [
+            288,
+            308,
+            335,
+            351
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
