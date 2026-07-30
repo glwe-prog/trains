@@ -869,18 +869,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "livery_freightliner",
-    "zoom": 1.0,
-    "pos": "50% 50%",
-    "quizzes": {
-      "livery": {
-        "name": "Freightliner",
-        "blur": [],
-        "blurR": 10
-      }
-    }
-  },
-  {
     "id": "livery_gbrf",
     "zoom": 1.35,
     "pos": "28% 50%",
