@@ -786,31 +786,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "livery_colas",
-    "zoom": 1.6,
-    "pos": "50% 50%",
-    "quizzes": {
-      "livery": {
-        "name": "Colas Rail",
-        "blur": [
-          [
-            412,
-            352,
-            478,
-            389
-          ],
-          [
-            718,
-            313,
-            739,
-            357
-          ]
-        ],
-        "blurR": 10
-      }
-    }
-  },
-  {
     "id": "livery_drs",
     "zoom": 1.95,
     "pos": "63% 71%",
