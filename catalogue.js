@@ -132,18 +132,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "class_158",
-    "zoom": 1.0,
-    "pos": "50% 50%",
-    "quizzes": {
-      "class": {
-        "name": "Class 158 Express Sprinter",
-        "blur": [],
-        "blurR": 12
-      }
-    }
-  },
-  {
     "id": "class_159",
     "zoom": 1.0,
     "pos": "50% 50%",
