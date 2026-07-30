@@ -1455,5 +1455,42 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_158_northern",
+    "quizzes": {
+      "class": {
+        "name": "Class 158",
+        "blur": [
+          [
+            182,
+            308,
+            233,
+            325
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Northern",
+        "blur": [
+          [
+            467,
+            345,
+            535,
+            398
+          ],
+          [
+            881,
+            362,
+            913,
+            383
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
