@@ -1321,5 +1321,36 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_159_south_western_railway",
+    "quizzes": {
+      "class": {
+        "name": "Class 159",
+        "blur": [
+          [
+            127,
+            328,
+            169,
+            353
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "South Western Railway",
+        "blur": [
+          [
+            441,
+            342,
+            592,
+            379
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
