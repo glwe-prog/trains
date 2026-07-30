@@ -1352,5 +1352,42 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_390_avanti_west_coast",
+    "quizzes": {
+      "class": {
+        "name": "Class 390 Pendolino",
+        "blur": [
+          [
+            348,
+            330,
+            388,
+            355
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Avanti West Coat",
+        "blur": [
+          [
+            405,
+            300,
+            452,
+            345
+          ],
+          [
+            153,
+            285,
+            229,
+            308
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
