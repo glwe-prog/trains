@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add It To The List</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #FFE100;
+      color: #111;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      min-height: 100vh;
+      padding: 0 0 48px;
+    }
+
+    .header {
+      background: #111;
+      color: #FFE100;
+      text-align: center;
+      padding: 22px 20px 20px;
+    }
+    .header-title {
+      font-size: clamp(1rem, 5vw, 1.6rem);
+      letter-spacing: 4px;
+    }
+    .header-sub {
+      font-size: clamp(0.55rem, 2vw, 0.72rem);
+      letter-spacing: 3px;
+      color: #C09000;
+      margin-top: 6px;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; max-width: 540px; margin: 0 auto; padding: 28px 20px; }
+    .screen.active { display: block; }
+
+    /* ── Setup screen ── */
+    .setup-intro {
+      background: #fff;
+      border: 2px solid #111;
+      box-shadow: 4px 4px 0 #111;
+      padding: 20px;
+      margin-bottom: 20px;
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      line-height: 2;
+    }
+    .setup-intro b { color: #CC0000; }
+    .setup-steps {
+      margin: 10px 0 0 0;
+      padding-left: 18px;
+      font-size: 0.68rem;
+      letter-spacing: 1px;
+      line-height: 2.2;
+    }
+
+    /* ── Form elements ── */
+    label {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: #555;
+      margin-bottom: 6px;
+      margin-top: 18px;
+    }
+    input[type="text"],
+    input[type="date"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      background: #fff;
+      border: 2px solid #111;
+      font-family: inherit;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      padding: 12px 14px;
+      color: #111;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type="text"]:focus,
+    input[type="date"]:focus,
+    input[type="password"]:focus,
+    textarea:focus {
+      border-color: #CC0000;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      margin-top: 22px;
+      background: #CC0000;
+      color: #fff;
+      border: 2px solid #111;
+      box-shadow: 4px 4px 0 #111;
+      font-family: inherit;
+      font-size: clamp(0.8rem, 3vw, 1rem);
+      letter-spacing: 4px;
+      padding: 16px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-primary:hover { background: #aa0000; }
+    .btn-primary:disabled { background: #888; cursor: default; box-shadow: none; border-color: #888; }
+
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      background: transparent;
+      color: #555;
+      border: 2px solid #888;
+      font-family: inherit;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-secondary:hover { border-color: #111; color: #111; }
+
+    /* ── Status / feedback ── */
+    .status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      line-height: 1.6;
+      display: none;
+    }
+    .status.ok   { display: block; background: #fff; border: 2px solid #111; color: #111; }
+    .status.err  { display: block; background: #CC0000; border: 2px solid #111; color: #fff; }
+    .status.spin { display: block; background: #fff; border: 2px solid #888; color: #555; }
+
+    /* ── Success screen ── */
+    .success-box {
+      background: #111;
+      color: #FFE100;
+      border: 2px solid #111;
+      box-shadow: 4px 4px 0 #555;
+      padding: 32px 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .success-big {
+      font-size: clamp(1.8rem, 8vw, 3rem);
+      letter-spacing: 4px;
+      margin-bottom: 14px;
+    }
+    .success-sub {
+      font-size: 0.72rem;
+      letter-spacing: 3px;
+      color: #C09000;
+      line-height: 1.8;
+    }
+
+    /* ── Footer links ── */
+    .page-links {
+      max-width: 540px;
+      margin: 24px auto 0;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .page-link {
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      color: #555;
+      text-decoration: none;
+    }
+    .page-link:hover { color: #111; }
+    .reset-link {
+      font-size: 0.55rem;
+      letter-spacing: 1px;
+      color: #aaa;
+      background: none;
+      border: none;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .reset-link:hover { color: #555; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">ADD IT TO THE LIST</div>
+  <div class="header-sub">OFFICIAL CRIME REPORTING PORTAL</div>
+</div>
+
+<!-- Setup screen: shown first time, no token saved -->
+<div class="screen" id="screen-setup">
+  <div class="setup-intro">
+    <b>FIRST TIME SETUP</b><br><br>
+    To add entries from this device, you need a GitHub token.<br><br>
+    <b>How to get one:</b>
+    <ol class="setup-steps">
+      <li>Go to <b>github.com</b> on a computer</li>
+      <li>Click your profile photo → <b>Settings</b></li>
+      <li>Left menu → <b>Developer settings</b></li>
+      <li><b>Personal access tokens → Fine-grained tokens</b></li>
+      <li>Generate new token — select repository <b>trains</b>, give <b>Contents: Read and write</b></li>
+      <li>Copy the token and paste it below</li>
+    </ol>
+  </div>
+  <label for="token-input">GITHUB TOKEN</label>
+  <input type="password" id="token-input" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+  <button class="btn-primary" onclick="saveToken()">SAVE &amp; CONTINUE →</button>
+  <div class="status" id="setup-status"></div>
+</div>
+
+<!-- Add form screen -->
+<div class="screen" id="screen-add">
+  <label for="entry-date">DATE OF OFFENCE</label>
+  <input type="date" id="entry-date">
+
+  <label for="entry-text">WHAT DID NANNY DO?</label>
+  <textarea id="entry-text" placeholder="Describe the crime..." rows="5"></textarea>
+
+  <button class="btn-primary" id="submit-btn" onclick="submitEntry()">ADD IT TO THE LIST!</button>
+  <div class="status" id="add-status"></div>
+</div>
+
+<!-- Success screen -->
+<div class="screen" id="screen-success">
+  <div class="success-box">
+    <div class="success-big">ADDED!</div>
+    <div class="success-sub">
+      OFFICIALLY ON THE LIST<br><br>
+      NANNY HAS BEEN WARNED.
+    </div>
+  </div>
+  <button class="btn-primary" onclick="addAnother()">ADD ANOTHER</button>
+  <a class="btn-secondary" href="nanny-list.html">VIEW THE LIST</a>
+</div>
+
+<div class="page-links">
+  <a class="page-link" href="nanny-list.html">◄ VIEW THE LIST</a>
+  <button class="reset-link" onclick="clearToken()" title="Reset saved token">reset token</button>
+</div>
+
+<script>
+const REPO = 'glwe-prog/trains';
+const FILE = 'nanny.json';
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'status ' + type;
+  el.textContent = msg;
+}
+
+function clearStatus(id) {
+  const el = document.getElementById(id);
+  el.className = 'status';
+  el.textContent = '';
+}
+
+// ── Token management ────────────────────────────────────────────
+function saveToken() {
+  const t = document.getElementById('token-input').value.trim();
+  if (!t) { setStatus('setup-status', 'err', 'Please paste your token.'); return; }
+  localStorage.setItem('nanny_gh_token', t);
+  initAddScreen();
+  show('screen-add');
+}
+
+function clearToken() {
+  if (!confirm('Clear saved token? You will need to set it up again.')) return;
+  localStorage.removeItem('nanny_gh_token');
+  document.getElementById('token-input').value = '';
+  clearStatus('setup-status');
+  show('screen-setup');
+}
+
+// ── Init ────────────────────────────────────────────────────────
+function initAddScreen() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('entry-date').value = today;
+  document.getElementById('entry-text').value = '';
+  clearStatus('add-status');
+  document.getElementById('submit-btn').disabled = false;
+}
+
+// ── Submit ──────────────────────────────────────────────────────
+async function submitEntry() {
+  const text = document.getElementById('entry-text').value.trim();
+  const date = document.getElementById('entry-date').value;
+  if (!text) { setStatus('add-status', 'err', 'Please describe the offence.'); return; }
+  if (!date) { setStatus('add-status', 'err', 'Please select a date.'); return; }
+
+  const token = localStorage.getItem('nanny_gh_token');
+  if (!token) { show('screen-setup'); return; }
+
+  document.getElementById('submit-btn').disabled = true;
+  setStatus('add-status', 'spin', 'FILING THE REPORT...');
+
+  try {
+    // 1. Fetch current file
+    const getResp = await fetch(
+      `https://api.github.com/repos/${REPO}/contents/${FILE}`,
+      { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } }
+    );
+    if (getResp.status === 401) { throw new Error('TOKEN_INVALID'); }
+    if (!getResp.ok) { throw new Error('Could not read the list (HTTP ' + getResp.status + ')'); }
+
+    const fileData = await getResp.json();
+    const sha = fileData.sha;
+    let content;
+    try {
+      content = JSON.parse(atob(fileData.content.replace(/\n/g, '')));
+    } catch {
+      content = { entries: [] };
+    }
+    if (!Array.isArray(content.entries)) content.entries = [];
+
+    // 2. Append new entry
+    content.entries.push({ id: Date.now(), date, text });
+
+    // 3. Commit updated file
+    const newB64 = btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2) + '\n')));
+    const putResp = await fetch(
+      `https://api.github.com/repos/${REPO}/contents/${FILE}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: "Add to Nanny's list (" + date + ")",
+          content: newB64,
+          sha
+        })
+      }
+    );
+    if (putResp.status === 401) { throw new Error('TOKEN_INVALID'); }
+    if (!putResp.ok) {
+      const err = await putResp.json().catch(() => ({}));
+      throw new Error(err.message || 'Update failed (HTTP ' + putResp.status + ')');
+    }
+
+    // Success
+    show('screen-success');
+
+  } catch (err) {
+    if (err.message === 'TOKEN_INVALID') {
+      localStorage.removeItem('nanny_gh_token');
+      setStatus('add-status', 'err', 'Token rejected. Please set up a new token.');
+      setTimeout(() => { clearStatus('add-status'); show('screen-setup'); }, 2000);
+    } else {
+      setStatus('add-status', 'err', err.message || 'Something went wrong. Try again.');
+      document.getElementById('submit-btn').disabled = false;
+    }
+  }
+}
+
+function addAnother() {
+  initAddScreen();
+  show('screen-add');
+}
+
+// ── Start ───────────────────────────────────────────────────────
+if (localStorage.getItem('nanny_gh_token')) {
+  initAddScreen();
+  show('screen-add');
+} else {
+  show('screen-setup');
+}
+</script>
+</body>
+</html>

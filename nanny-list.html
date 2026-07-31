@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The List</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #FFE100;
+      color: #111;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      min-height: 100vh;
+      padding: 0 0 48px;
+    }
+
+    .header {
+      background: #111;
+      color: #FFE100;
+      text-align: center;
+      padding: 28px 20px 24px;
+    }
+    .title {
+      font-size: clamp(3.2rem, 14vw, 7rem);
+      letter-spacing: 8px;
+      line-height: 1;
+      color: #FFE100;
+    }
+    .subtitle {
+      font-size: clamp(0.55rem, 2.2vw, 0.82rem);
+      letter-spacing: 4px;
+      margin-top: 10px;
+      color: #C09000;
+    }
+    .by-line {
+      font-size: clamp(0.7rem, 3vw, 1.1rem);
+      letter-spacing: 3px;
+      margin-top: 6px;
+      color: #FFE100;
+    }
+
+    .count-bar {
+      background: #CC0000;
+      color: #fff;
+      text-align: center;
+      font-size: clamp(0.7rem, 2.5vw, 0.9rem);
+      letter-spacing: 4px;
+      padding: 11px 16px;
+    }
+
+    .entries {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 20px 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .entry {
+      background: #fff;
+      border: 2px solid #111;
+      box-shadow: 4px 4px 0 #111;
+      display: flex;
+      gap: 0;
+    }
+    .entry-num {
+      background: #CC0000;
+      color: #fff;
+      font-size: clamp(1.3rem, 5vw, 2rem);
+      letter-spacing: 0;
+      padding: 14px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 60px;
+      flex-shrink: 0;
+      writing-mode: horizontal-tb;
+    }
+    .entry-body {
+      flex: 1;
+      padding: 12px 14px;
+    }
+    .entry-date {
+      font-size: 0.62rem;
+      letter-spacing: 2px;
+      color: #888;
+      margin-bottom: 5px;
+    }
+    .entry-text {
+      font-size: clamp(0.78rem, 2.6vw, 0.96rem);
+      letter-spacing: 1px;
+      line-height: 1.55;
+      color: #111;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      line-height: 2;
+      color: #555;
+    }
+
+    .footer {
+      max-width: 620px;
+      margin: 28px auto 0;
+      padding: 0 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .refresh-btn {
+      background: #111;
+      color: #FFE100;
+      border: none;
+      font-family: inherit;
+      font-size: 0.62rem;
+      letter-spacing: 3px;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    .refresh-btn:hover { background: #333; }
+    .add-link {
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      color: #555;
+      text-decoration: none;
+    }
+    .add-link:hover { color: #111; }
+
+    .loading-msg {
+      text-align: center;
+      padding: 48px 20px;
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title">THE LIST</div>
+  <div class="subtitle">OFFICIAL RECORD OF NANNY'S CRIMES</div>
+  <div class="by-line">AS REPORTED BY LOUIE</div>
+</div>
+
+<div class="count-bar" id="count-bar">LOADING...</div>
+
+<div class="entries" id="entries">
+  <div class="loading-msg">LOADING THE EVIDENCE...</div>
+</div>
+
+<div class="footer">
+  <button class="refresh-btn" onclick="loadList()">↺ REFRESH</button>
+  <a class="add-link" href="nanny-add.html">+ ADD TO THE LIST</a>
+</div>
+
+<script>
+async function loadList() {
+  document.getElementById('count-bar').textContent = 'LOADING...';
+  document.getElementById('entries').innerHTML = '<div class="loading-msg">LOADING THE EVIDENCE...</div>';
+  try {
+    const resp = await fetch('nanny.json?v=' + Date.now());
+    if (!resp.ok) throw new Error('fetch failed');
+    const data = await resp.json();
+    const entries = data.entries || [];
+
+    const countBar = document.getElementById('count-bar');
+    if (entries.length === 0) {
+      countBar.textContent = 'NO OFFENCES ON FILE YET';
+      document.getElementById('entries').innerHTML =
+        '<div class="empty">Nothing here yet...<br><br>Either Nanny is behaving<br>or Louie hasn\'t been watching closely enough.</div>';
+      return;
+    }
+
+    countBar.textContent = entries.length === 1
+      ? '1 OFFENCE ON FILE'
+      : entries.length + ' OFFENCES ON FILE';
+
+    const reversed = [...entries].reverse();
+    document.getElementById('entries').innerHTML = reversed.map((e, i) => {
+      const num = entries.length - i;
+      return `<div class="entry">
+        <div class="entry-num">#${num}</div>
+        <div class="entry-body">
+          ${e.date ? `<div class="entry-date">${fmtDate(e.date)}</div>` : ''}
+          <div class="entry-text">${esc(e.text)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch {
+    document.getElementById('count-bar').textContent = 'ERROR';
+    document.getElementById('entries').innerHTML =
+      '<div class="loading-msg">Could not load the list. Try refreshing.</div>';
+  }
+}
+
+function fmtDate(d) {
+  const [y, m, day] = d.split('-');
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return parseInt(day) + ' ' + months[parseInt(m) - 1] + ' ' + y;
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+loadList();
+</script>
+</body>
+</html>
