@@ -158,7 +158,7 @@
   </div>
 
   <div class="img-wrap">
-    <img id="quiz-img" src="" alt="">
+    <div id="img-container" style="position:absolute;inset:0;"></div>
     <div id="grid-overlay"></div>
   </div>
 
@@ -187,6 +187,35 @@
 <script>
 const CLASSES  = CATALOGUE.filter(e => e.quizzes.class);
 const LIVERIES = CATALOGUE.filter(e => e.quizzes.livery);
+
+function renderEntryImage(container, entry, cfg) {
+  container.innerHTML = '';
+  const z   = entry.zoom || 1;
+  const pos = entry.pos  || '50% 50%';
+  const inner = document.createElement('div');
+  inner.style.cssText = `position:absolute;inset:0;transform:scale(${z});transform-origin:${pos};`;
+  const img = document.createElement('img');
+  img.src = `images/${entry.id}.jpg`;
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+  inner.appendChild(img);
+  if (cfg.blur && cfg.blur.length > 0) {
+    const src = `images/${entry.id}.jpg`;
+    cfg.blur.forEach(([x1, y1, x2, y2]) => {
+      const l = x1 / 960 * 100;
+      const t = y1 / 640 * 100;
+      const w = (x2 - x1) / 960 * 100;
+      const h = (y2 - y1) / 640 * 100;
+      const bw = document.createElement('div');
+      bw.style.cssText = `position:absolute;left:${l.toFixed(2)}%;top:${t.toFixed(2)}%;width:${w.toFixed(2)}%;height:${h.toFixed(2)}%;overflow:hidden;pointer-events:none;`;
+      const bi = document.createElement('img');
+      bi.src = src;
+      bi.style.cssText = `position:absolute;display:block;width:${(10000/w).toFixed(1)}%;height:${(10000/h).toFixed(1)}%;left:${(-l/w*100).toFixed(1)}%;top:${(-t/h*100).toFixed(1)}%;filter:blur(${cfg.blurR||10}px);`;
+      bw.appendChild(bi);
+      inner.appendChild(bw);
+    });
+  }
+  container.appendChild(inner);
+}
 
 const COLS = 4, ROWS = 4, TOTAL = COLS * ROWS;
 const MAX_ATTEMPTS = 5;
@@ -227,8 +256,7 @@ function newRound() {
   locked = false;
 
   // Load image
-  const img = document.getElementById('quiz-img');
-  img.src = `images/${current.id}.jpg`;
+  renderEntryImage(document.getElementById('img-container'), current, currentCfg);
 
   // Build grid
   const overlay = document.getElementById('grid-overlay');
