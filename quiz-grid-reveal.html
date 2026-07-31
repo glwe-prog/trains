@@ -129,6 +129,24 @@
     .btn:hover { background: rgba(255,225,0,.08); }
     #btn-next { display: none; }
 
+    .progress-row {
+      display: flex; justify-content: space-between;
+      font-size: .6rem; letter-spacing: 2px; color: var(--ydim);
+      margin-bottom: 8px;
+    }
+    .progress-row span { color: var(--y); }
+
+    #results-panel {
+      border: 1px solid var(--ydim);
+      padding: clamp(20px, 6vw, 44px);
+      text-align: center;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .res-score { font-size: clamp(3rem, 10vw, 5rem); letter-spacing: 6px; margin-bottom: 10px; }
+    .res-msg   { font-size: clamp(.85rem, 2.5vw, 1.1rem); letter-spacing: 2px; margin-bottom: 8px; }
+    .res-sub   { font-size: .7rem; letter-spacing: 2px; color: var(--ydim); margin-bottom: 26px; line-height: 1.8; }
+
     .mode-row { display: flex; gap: 8px; margin-bottom: 10px; }
     .mode-btn {
       font-family: inherit; font-size: .55rem; letter-spacing: 2px;
@@ -157,6 +175,11 @@
     <button class="mode-btn" id="mode-livery" onclick="setMode('livery',this)">LIVERY</button>
   </div>
 
+  <div class="progress-row">
+    <span>ROUND <span id="round-num">1</span> / 10</span>
+    <span>SCORE <span id="score-num">0</span> / 10</span>
+  </div>
+
   <div class="img-wrap">
     <div id="img-container" style="position:absolute;inset:0;"></div>
     <div id="grid-overlay"></div>
@@ -165,7 +188,7 @@
   <div class="status-bar">
     <span>REVEALED: <span class="revealed-count" id="revealed-count">0</span> / 16</span>
     <span>ATTEMPTS LEFT: <span class="attempts" id="attempts-row"></span></span>
-    <button class="btn" onclick="newRound()" style="font-size:.52rem;padding:4px 10px;border-color:var(--ydim);color:var(--ydim)">SKIP</button>
+    <button class="btn" onclick="nextRound()" style="font-size:.52rem;padding:4px 10px;border-color:var(--ydim);color:var(--ydim)">SKIP</button>
   </div>
 
   <div class="question" id="question">WHAT IS THIS?</div>
@@ -173,7 +196,14 @@
   <div class="result" id="result"></div>
 
   <div class="controls">
-    <button class="btn" id="btn-next" onclick="newRound()">NEXT →</button>
+    <button class="btn" id="btn-next" onclick="nextRound()">NEXT →</button>
+  </div>
+
+  <div id="results-panel">
+    <div class="res-score" id="res-score"></div>
+    <div class="res-msg"   id="res-msg"></div>
+    <div class="res-sub"   id="res-sub"></div>
+    <button class="btn" onclick="startGame()">▶ PLAY AGAIN</button>
   </div>
 
   <div class="back-links">
@@ -227,11 +257,48 @@ let revealedCount = 0, attemptsLeft = MAX_ATTEMPTS, locked = false;
 let quizMode = 'random'; // 'random' | 'class' | 'livery'
 let useClassMode = true;
 
+const MAX_ROUNDS = 10;
+let roundNum = 0;
+let gameScore = 0;
+
 function setMode(mode, btn) {
   quizMode = mode;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  startGame();
+}
+
+function startGame() {
+  roundNum = 0;
+  gameScore = 0;
+  document.getElementById('results-panel').style.display = 'none';
+  document.getElementById('score-num').textContent = '0';
   newRound();
+}
+
+function nextRound() {
+  if (roundNum >= MAX_ROUNDS) {
+    showFinalResults();
+  } else {
+    newRound();
+  }
+}
+
+function showFinalResults() {
+  document.getElementById('results-panel').style.display = 'block';
+  document.getElementById('btn-next').style.display = 'none';
+  document.getElementById('result').className = 'result';
+  const pct = gameScore / MAX_ROUNDS;
+  let msg, colour;
+  if (pct === 1)       { msg = '★  PERFECT — True expert!';                colour = 'var(--grn)'; }
+  else if (pct >= 0.8) { msg = 'EXCELLENT — Sharp eyes!';                  colour = 'var(--grn)'; }
+  else if (pct >= 0.6) { msg = 'GOOD EFFORT — Keep practising!';           colour = 'var(--y)';   }
+  else if (pct >= 0.4) { msg = 'NOT BAD — More platform time needed!';     colour = 'var(--ora)'; }
+  else                 { msg = 'KEEP PRACTISING — Hit the platform!';      colour = 'var(--red)'; }
+  document.getElementById('res-score').textContent = `${gameScore} / ${MAX_ROUNDS}`;
+  document.getElementById('res-score').style.color = colour;
+  document.getElementById('res-msg').textContent   = msg;
+  document.getElementById('res-sub').textContent   = `${gameScore} correct out of ${MAX_ROUNDS} questions`;
 }
 
 function shuffle(a) {
@@ -244,6 +311,8 @@ function shuffle(a) {
 }
 
 function newRound() {
+  roundNum++;
+  document.getElementById('round-num').textContent = roundNum;
   // Pick a type based on mode
   useClassMode = quizMode === 'class' ? true : quizMode === 'livery' ? false : Math.random() < 0.5;
   pool = useClassMode ? CLASSES : LIVERIES;
@@ -336,6 +405,8 @@ function handleAnswer(btn) {
   const chosen = btn.getAttribute('data-name');
 
   if (chosen === currentCfg.name) {
+    gameScore++;
+    document.getElementById('score-num').textContent = gameScore;
     locked = true;
     btn.classList.add('correct');
     document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
@@ -343,7 +414,9 @@ function handleAnswer(btn) {
     const res = document.getElementById('result');
     res.textContent = '✓ CORRECT! ' + currentCfg.name.toUpperCase();
     res.className = 'result win';
-    document.getElementById('btn-next').style.display = 'inline-block';
+    const nb = document.getElementById('btn-next');
+    nb.textContent = roundNum >= MAX_ROUNDS ? 'SEE RESULTS →' : 'NEXT →';
+    nb.style.display = 'inline-block';
   } else {
     attemptsLeft--;
     btn.classList.add('wrong');
@@ -363,12 +436,14 @@ function handleAnswer(btn) {
       const res = document.getElementById('result');
       res.textContent = '✗ OUT OF ATTEMPTS — ' + currentCfg.name.toUpperCase();
       res.className = 'result loss';
-      document.getElementById('btn-next').style.display = 'inline-block';
+      const nb2 = document.getElementById('btn-next');
+      nb2.textContent = roundNum >= MAX_ROUNDS ? 'SEE RESULTS →' : 'NEXT →';
+      nb2.style.display = 'inline-block';
     }
   }
 }
 
-newRound();
+startGame();
 </script>
 </body>
 </html>
