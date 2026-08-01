@@ -168,7 +168,7 @@ async function loadList() {
   document.getElementById('count-bar').textContent = 'LOADING...';
   document.getElementById('entries').innerHTML = '<div class="loading-msg">LOADING THE EVIDENCE...</div>';
   try {
-    const resp = await fetch('nanny.json?v=' + Date.now());
+    const resp = await fetch('https://raw.githubusercontent.com/glwe-prog/trains/main/nanny.json?v=' + Date.now());
     if (!resp.ok) throw new Error('fetch failed');
     const data = await resp.json();
     const entries = data.entries || [];
