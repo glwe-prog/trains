@@ -79,6 +79,9 @@
       min-width: 60px;
       flex-shrink: 0;
       writing-mode: horizontal-tb;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .entry-body {
       flex: 1;
@@ -189,7 +192,7 @@ async function loadList() {
     document.getElementById('entries').innerHTML = reversed.map((e, i) => {
       const num = entries.length - i;
       return `<div class="entry">
-        <div class="entry-num">#${num}</div>
+        <div class="entry-num" onclick="deleteEntry(${e.id})">#${num}</div>
         <div class="entry-body">
           ${e.date ? `<div class="entry-date">${fmtDate(e.date)}</div>` : ''}
           <div class="entry-text">${esc(e.text)}</div>
@@ -213,6 +216,52 @@ function esc(s) {
   return String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const REPO = 'glwe-prog/trains';
+const FILE = 'nanny.json';
+
+async function deleteEntry(id) {
+  if (!confirm('Remove this entry from the list?')) return;
+
+  let token = localStorage.getItem('nanny_gh_token');
+  if (!token) {
+    token = prompt('GitHub token:');
+    if (!token) return;
+    localStorage.setItem('nanny_gh_token', token);
+  }
+
+  try {
+    const getResp = await fetch(
+      `https://api.github.com/repos/${REPO}/contents/${FILE}`,
+      { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } }
+    );
+    if (!getResp.ok) throw new Error('Could not read list');
+    const fileData = await getResp.json();
+    const content = JSON.parse(atob(fileData.content.replace(/\n/g, '')));
+    content.entries = content.entries.filter(e => e.id !== id);
+    const newB64 = btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2) + '\n')));
+    const putResp = await fetch(
+      `https://api.github.com/repos/${REPO}/contents/${FILE}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: "Remove entry from Nanny's list",
+          content: newB64,
+          sha: fileData.sha
+        })
+      }
+    );
+    if (!putResp.ok) throw new Error('Delete failed');
+    loadList();
+  } catch (err) {
+    alert(err.message || 'Something went wrong.');
+  }
 }
 
 loadList();
