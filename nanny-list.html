@@ -192,7 +192,7 @@ async function loadList() {
     document.getElementById('entries').innerHTML = reversed.map((e, i) => {
       const num = entries.length - i;
       return `<div class="entry">
-        <div class="entry-num" ondblclick="deleteEntry(${e.id})">#${num}</div>
+        <div class="entry-num" onclick="handleTap(${e.id})">#${num}</div>
         <div class="entry-body">
           ${e.date ? `<div class="entry-date">${fmtDate(e.date)}</div>` : ''}
           <div class="entry-text">${esc(e.text)}</div>
@@ -216,6 +216,17 @@ function esc(s) {
   return String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const tapTimers = {};
+function handleTap(id) {
+  if (tapTimers[id]) {
+    clearTimeout(tapTimers[id]);
+    delete tapTimers[id];
+    deleteEntry(id);
+  } else {
+    tapTimers[id] = setTimeout(() => { delete tapTimers[id]; }, 400);
+  }
 }
 
 const REPO = 'glwe-prog/trains';
