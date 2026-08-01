@@ -269,7 +269,8 @@ async function deleteEntry(id) {
       }
     );
     if (!putResp.ok) throw new Error('Delete failed');
-    loadList();
+    document.getElementById('count-bar').textContent = 'ENTRY DELETED — RELOADING...';
+    setTimeout(loadList, 2000);
   } catch (err) {
     alert(err.message || 'Something went wrong.');
   }
