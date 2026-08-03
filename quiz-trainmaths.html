@@ -258,7 +258,7 @@ function buildQuiz() {
     const a = questions[i], b = questions[i + 1];
     const na = classNum(a.quizzes.class.name), nb = classNum(b.quizzes.class.name);
     // Randomise operator
-    const useSubtract = Math.random() < 0.4 && na !== nb;
+    const useSubtract = Math.random() < 0.25 && na !== nb;
     let entryA = a, entryB = b, numA = na, numB = nb, op = '+', answer = na + nb;
     if (useSubtract) {
       // show larger - smaller
