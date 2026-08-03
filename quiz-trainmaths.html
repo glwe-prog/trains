@@ -265,6 +265,7 @@ function buildQuiz() {
       if (na >= nb) { op = '−'; answer = na - nb; }
       else { entryA = b; entryB = a; numA = nb; numB = na; op = '−'; answer = nb - na; }
     }
+    if (answer >= 1000) continue;
     pairs.push({ entryA, entryB, numA, numB, op, answer });
   }
   return pairs;
