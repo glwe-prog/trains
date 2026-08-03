@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Train Maths — Wellingborough Line</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --y: #FFE100; --ydim: #C09000; --bg: #07070A;
+      --div: #2A2A2A; --grn: #44EE44; --red: #FF3030; --ora: #FF9900;
+    }
+    body {
+      background: var(--bg); color: var(--y);
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      min-height: 100vh; padding: 14px;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background: repeating-linear-gradient(to bottom,
+        transparent 0, transparent 3px, rgba(0,0,0,.08) 3px, rgba(0,0,0,.08) 4px);
+      pointer-events: none; z-index: 9999;
+    }
+    .page-hdr {
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-bottom: 1px solid var(--ydim); padding-bottom: 8px;
+      margin-bottom: 14px; flex-wrap: wrap; gap: 6px;
+    }
+    .page-title { font-size: clamp(.55rem, 2vw, .82rem); letter-spacing: 3px; }
+    .page-clock { font-size: clamp(1.4rem, 5vw, 2rem); letter-spacing: 5px; }
+    .container { max-width: 700px; margin: 0 auto; }
+
+    #quiz-panel { border: 1px solid var(--ydim); padding: clamp(12px, 4vw, 22px); }
+
+    .progress {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: .7rem; letter-spacing: 3px; color: var(--ydim);
+      margin-bottom: 14px; flex-wrap: wrap; gap: 6px;
+    }
+
+    /* ── Equation row ── */
+    .equation {
+      display: flex; align-items: flex-start;
+      gap: clamp(6px, 2vw, 14px); margin-bottom: 14px;
+    }
+    .eq-unit { flex: 1; min-width: 0; }
+    .img-wrap {
+      position: relative; width: 100%; aspect-ratio: 3/2;
+      border: 1px solid var(--div); overflow: hidden; background: #111;
+    }
+    .img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .class-label {
+      display: none; text-align: center; margin-top: 6px;
+      font-size: clamp(.6rem, 2vw, .82rem); letter-spacing: 2px;
+      color: var(--y); line-height: 1.3;
+    }
+    .operator {
+      font-size: clamp(1.4rem, 5vw, 2.4rem); letter-spacing: 0;
+      color: var(--ydim); flex-shrink: 0;
+      padding-top: clamp(18px, 5vw, 30px);
+    }
+
+    /* ── Answer row ── */
+    .answer-row {
+      display: flex; gap: 10px; align-items: center;
+      margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .answer-prompt {
+      font-size: clamp(.72rem, 2.5vw, .9rem); letter-spacing: 3px;
+      color: var(--ydim); flex-shrink: 0;
+    }
+    #answer-input {
+      background: transparent; border: 1px solid var(--y);
+      color: var(--y); font-family: inherit;
+      font-size: clamp(1rem, 4vw, 1.6rem); letter-spacing: 4px;
+      padding: 8px 14px; width: 140px; text-align: center; outline: none;
+      -moz-appearance: textfield;
+    }
+    #answer-input::-webkit-outer-spin-button,
+    #answer-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    #answer-input:focus { border-color: var(--y); box-shadow: 0 0 6px rgba(255,225,0,.3); }
+    #answer-input:disabled { border-color: var(--div); color: var(--ydim); }
+
+    #submit-btn {
+      background: transparent; border: 1px solid var(--y);
+      color: var(--y); font-family: inherit;
+      font-size: .72rem; letter-spacing: 3px;
+      padding: 9px 18px; cursor: pointer;
+    }
+    #submit-btn:hover:not(:disabled) { background: rgba(255,225,0,.08); }
+    #submit-btn:disabled { border-color: var(--div); color: var(--ydim); cursor: default; }
+
+    /* ── Reveal banner ── */
+    #reveal-banner {
+      display: none; text-align: center;
+      font-size: clamp(.72rem, 2.5vw, 1rem); letter-spacing: 2px;
+      padding: 10px; margin-bottom: 10px; border: 1px solid var(--div);
+    }
+    #reveal-banner .eq-string { color: var(--ydim); font-size: clamp(.6rem, 2vw, .8rem); margin-top: 4px; }
+
+    #feedback { min-height: 1.4em; font-size: .82rem; letter-spacing: 2px; margin-bottom: 10px; }
+    .fb-ok  { color: var(--grn); }
+    .fb-err { color: var(--red); }
+
+    #next-btn {
+      background: transparent; border: 1px solid var(--y);
+      color: var(--y); font-family: inherit;
+      font-size: .82rem; letter-spacing: 3px;
+      padding: 9px 22px; cursor: pointer; display: none;
+    }
+    #next-btn:hover { background: rgba(255,225,0,.1); }
+
+    /* ── Results ── */
+    #results {
+      border: 1px solid var(--ydim); padding: clamp(20px, 6vw, 44px);
+      text-align: center; display: none;
+    }
+    .res-score { font-size: clamp(3rem, 10vw, 5rem); letter-spacing: 6px; margin-bottom: 10px; }
+    .res-msg   { font-size: clamp(.85rem, 2.5vw, 1.1rem); letter-spacing: 2px; margin-bottom: 8px; }
+    .res-sub   { font-size: .7rem; letter-spacing: 2px; color: var(--ydim); margin-bottom: 26px; line-height: 1.8; }
+    .play-again {
+      background: transparent; border: 1px solid var(--y); color: var(--y);
+      font-family: inherit; font-size: .88rem; letter-spacing: 3px;
+      padding: 11px 28px; cursor: pointer;
+    }
+    .play-again:hover { background: rgba(255,225,0,.1); }
+
+    .back-links {
+      display: flex; justify-content: space-between; margin-top: 12px; flex-wrap: wrap; gap: 6px;
+    }
+    .back-link {
+      font-size: .63rem; letter-spacing: 2px; color: var(--ydim); text-decoration: none;
+    }
+    .back-link:hover { color: var(--y); }
+  </style>
+</head>
+<body>
+
+<div class="page-hdr">
+  <div class="page-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; TRAIN MATHS &nbsp;·&nbsp; LOUIE LINE</div>
+  <div class="page-clock" id="clock">--:--:--</div>
+</div>
+
+<div class="container">
+  <div id="quiz-panel">
+    <div class="progress">
+      <span id="q-label">QUESTION 1 OF 10</span>
+      <span id="q-score">SCORE: 0/0</span>
+    </div>
+
+    <!-- Equation: [img A] [op] [img B] = ? -->
+    <div class="equation">
+      <div class="eq-unit">
+        <div class="img-wrap" id="wrap-a"></div>
+        <div class="class-label" id="label-a"></div>
+      </div>
+      <div class="operator" id="op-display">+</div>
+      <div class="eq-unit">
+        <div class="img-wrap" id="wrap-b"></div>
+        <div class="class-label" id="label-b"></div>
+      </div>
+    </div>
+
+    <div id="reveal-banner">
+      <div id="reveal-text"></div>
+      <div class="eq-string" id="reveal-eq"></div>
+    </div>
+
+    <div class="answer-row">
+      <span class="answer-prompt">= &nbsp;</span>
+      <input type="number" id="answer-input" inputmode="numeric" placeholder="?" autocomplete="off">
+      <button id="submit-btn" onclick="handleSubmit()">SUBMIT</button>
+    </div>
+
+    <div id="feedback"></div>
+    <button id="next-btn" onclick="nextQuestion()">NEXT QUESTION →</button>
+  </div>
+
+  <div id="results">
+    <div class="res-score" id="res-score"></div>
+    <div class="res-msg"   id="res-msg"></div>
+    <div class="res-sub"   id="res-sub"></div>
+    <button class="play-again" onclick="resetQuiz()">▶ PLAY AGAIN</button>
+  </div>
+
+  <div class="back-links">
+    <a href="quizzes.html" class="back-link">◄ QUIZ MENU</a>
+    <a href="index.html"   class="back-link">LIVE TRAIN BOARD ►</a>
+  </div>
+</div>
+
+<script src="catalogue.js?v=1785741085"></script>
+<script>
+
+function classNum(name) {
+  const m = (name || '').match(/\d+/);
+  return m ? parseInt(m[0], 10) : null;
+}
+
+// Only entries that have a numeric class name
+const pool = CATALOGUE.filter(e => e.quizzes && e.quizzes.class && classNum(e.quizzes.class.name) !== null);
+
+const QUIZ_SIZE = 10;
+const LETTERS   = ['A','B','C','D'];
+
+let questions = [], current = 0, score = 0, answered = false;
+
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+
+function renderEntryImage(wrap, entry, cfg) {
+  wrap.innerHTML = '';
+  const z   = entry.zoom || 1;
+  const pos = entry.pos  || '50% 50%';
+  const container = document.createElement('div');
+  container.style.cssText = `position:absolute;inset:0;transform:scale(${z});transform-origin:${pos};`;
+  const img = document.createElement('img');
+  img.src = `images/${entry.id}.jpg`;
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+  container.appendChild(img);
+  if (cfg.blur && cfg.blur.length > 0) {
+    const src = `images/${entry.id}.jpg`;
+    cfg.blur.forEach(([x1, y1, x2, y2]) => {
+      const l = x1 / 960 * 100, t = y1 / 640 * 100;
+      const w = (x2 - x1) / 960 * 100, h = (y2 - y1) / 640 * 100;
+      const bw = document.createElement('div');
+      bw.style.cssText = `position:absolute;left:${l.toFixed(2)}%;top:${t.toFixed(2)}%;width:${w.toFixed(2)}%;height:${h.toFixed(2)}%;overflow:hidden;pointer-events:none;`;
+      const bi = document.createElement('img');
+      bi.src = src;
+      bi.style.cssText = `position:absolute;display:block;width:${(10000/w).toFixed(1)}%;height:${(10000/h).toFixed(1)}%;left:${(-l/w*100).toFixed(1)}%;top:${(-t/h*100).toFixed(1)}%;filter:blur(${cfg.blurR||10}px);`;
+      bw.appendChild(bi);
+      container.appendChild(bw);
+    });
+  }
+  wrap.appendChild(container);
+}
+
+function buildQuiz() {
+  const shuffled = shuffle(pool);
+  questions = [];
+  const used = new Set();
+  for (const entry of shuffled) {
+    if (questions.length >= QUIZ_SIZE * 2) break; // collect candidates
+    used.add(entry.id);
+    questions.push(entry);
+  }
+
+  // Pair them up: questions[0]+[1], [2]+[3], ...
+  const pairs = [];
+  for (let i = 0; i + 1 < questions.length && pairs.length < QUIZ_SIZE; i += 2) {
+    const a = questions[i], b = questions[i + 1];
+    const na = classNum(a.quizzes.class.name), nb = classNum(b.quizzes.class.name);
+    // Randomise operator
+    const useSubtract = Math.random() < 0.4 && na !== nb;
+    let entryA = a, entryB = b, numA = na, numB = nb, op = '+', answer = na + nb;
+    if (useSubtract) {
+      // show larger - smaller
+      if (na >= nb) { op = '−'; answer = na - nb; }
+      else { entryA = b; entryB = a; numA = nb; numB = na; op = '−'; answer = nb - na; }
+    }
+    pairs.push({ entryA, entryB, numA, numB, op, answer });
+  }
+  return pairs;
+}
+
+let quiz = [];
+
+function startQuiz() {
+  quiz = buildQuiz();
+  current = 0; score = 0; answered = false;
+  document.getElementById('results').style.display    = 'none';
+  document.getElementById('quiz-panel').style.display = 'block';
+  showQuestion();
+}
+
+function showQuestion() {
+  answered = false;
+  const q = quiz[current];
+
+  document.getElementById('q-label').textContent = `QUESTION ${current + 1} OF ${QUIZ_SIZE}`;
+  document.getElementById('q-score').textContent = `SCORE: ${score}/${current}`;
+  document.getElementById('op-display').textContent  = q.op;
+  document.getElementById('feedback').textContent    = '';
+  document.getElementById('feedback').className      = '';
+  document.getElementById('next-btn').style.display  = 'none';
+
+  const revBanner = document.getElementById('reveal-banner');
+  revBanner.style.display = 'none';
+
+  document.getElementById('label-a').style.display = 'none';
+  document.getElementById('label-b').style.display = 'none';
+
+  const input = document.getElementById('answer-input');
+  input.value = '';
+  input.disabled = false;
+  input.focus();
+
+  document.getElementById('submit-btn').disabled = false;
+
+  renderEntryImage(document.getElementById('wrap-a'), q.entryA, q.entryA.quizzes.class);
+  renderEntryImage(document.getElementById('wrap-b'), q.entryB, q.entryB.quizzes.class);
+}
+
+function handleSubmit() {
+  if (answered) return;
+  const input  = document.getElementById('answer-input');
+  const raw    = input.value.trim();
+  if (raw === '') { input.focus(); return; }
+  const given  = parseInt(raw, 10);
+  if (isNaN(given)) { input.focus(); return; }
+
+  answered = true;
+  input.disabled = true;
+  document.getElementById('submit-btn').disabled = true;
+
+  const q  = quiz[current];
+  const fb = document.getElementById('feedback');
+
+  // Reveal class names
+  const nameA = q.entryA.quizzes.class.name.toUpperCase();
+  const nameB = q.entryB.quizzes.class.name.toUpperCase();
+  document.getElementById('label-a').textContent = nameA;
+  document.getElementById('label-b').textContent = nameB;
+  document.getElementById('label-a').style.display = 'block';
+  document.getElementById('label-b').style.display = 'block';
+
+  const revBanner = document.getElementById('reveal-banner');
+  revBanner.style.display = 'block';
+  document.getElementById('reveal-eq').textContent =
+    `${nameA} ${q.op} ${nameB} = ${q.answer}`;
+
+  if (given === q.answer) {
+    score++;
+    fb.textContent = '✓  CORRECT!';
+    fb.className   = 'fb-ok';
+    document.getElementById('reveal-text').textContent = '✓ CORRECT!';
+    revBanner.style.borderColor = 'var(--grn)';
+    revBanner.style.color = 'var(--grn)';
+  } else {
+    fb.textContent = `✗  WRONG — THE ANSWER WAS ${q.answer}`;
+    fb.className   = 'fb-err';
+    document.getElementById('reveal-text').textContent = `✗  ANSWER: ${q.answer}`;
+    revBanner.style.borderColor = 'var(--red)';
+    revBanner.style.color = 'var(--red)';
+  }
+
+  document.getElementById('q-score').textContent = `SCORE: ${score}/${current + 1}`;
+
+  const nb = document.getElementById('next-btn');
+  nb.textContent   = current + 1 < QUIZ_SIZE ? 'NEXT QUESTION →' : 'SEE RESULTS →';
+  nb.style.display = 'inline-block';
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= QUIZ_SIZE) { showResults(); return; }
+  showQuestion();
+}
+
+function showResults() {
+  document.getElementById('quiz-panel').style.display = 'none';
+  document.getElementById('results').style.display    = 'block';
+  const pct = score / QUIZ_SIZE;
+  let msg, colour;
+  if (pct === 1)       { msg = '★  PERFECT — Maths genius!';                colour = 'var(--grn)'; }
+  else if (pct >= 0.8) { msg = 'EXCELLENT — Sharp eyes AND sharp mind!';    colour = 'var(--grn)'; }
+  else if (pct >= 0.6) { msg = 'GOOD EFFORT — Keep practising!';            colour = 'var(--y)';   }
+  else if (pct >= 0.4) { msg = 'NOT BAD — More train spotting needed!';     colour = 'var(--ora)'; }
+  else                 { msg = 'KEEP PRACTISING — Back to the platform!';   colour = 'var(--red)'; }
+  document.getElementById('res-score').textContent = `${score}/${QUIZ_SIZE}`;
+  document.getElementById('res-score').style.color = colour;
+  document.getElementById('res-msg').textContent   = msg;
+  document.getElementById('res-sub').innerHTML     =
+    `${score} correct out of ${QUIZ_SIZE} questions<br>Mostly addition — some subtraction for variety`;
+}
+
+function resetQuiz() { startQuiz(); }
+
+// Allow Enter key to submit
+document.getElementById('answer-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleSubmit();
+});
+
+function tick() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
+}
+setInterval(tick, 1000);
+tick();
+
+startQuiz();
+</script>
+</body>
+</html>
