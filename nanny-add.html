@@ -324,7 +324,7 @@ async function submitEntry() {
     const sha = fileData.sha;
     let content;
     try {
-      content = JSON.parse(atob(fileData.content.replace(/\n/g, '')));
+      content = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, '')))));
     } catch {
       content = { entries: [] };
     }
