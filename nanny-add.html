@@ -326,7 +326,7 @@ async function submitEntry() {
     try {
       content = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, '')))));
     } catch {
-      content = { entries: [] };
+      throw new Error('Could not read the existing list — entry NOT saved. Please tell Graham.');
     }
     if (!Array.isArray(content.entries)) content.entries = [];
 
