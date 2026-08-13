@@ -152,6 +152,35 @@
       margin-bottom: 5px;
     }
 
+    /* ── Next trains peek strip ──────────── */
+    .peek-strip {
+      border-top: 1px solid var(--div);
+      margin-top: 10px;
+      padding-top: 6px;
+    }
+    .peek-label {
+      font-size: clamp(0.55rem, 1.5vw, 0.65rem);
+      letter-spacing: 3px;
+      color: var(--ydim);
+      margin-bottom: 4px;
+    }
+    .peek-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 3px 0;
+      font-size: clamp(0.7rem, 1.8vw, 0.85rem);
+      letter-spacing: 1px;
+      border-top: 1px solid transparent;
+    }
+    .peek-row + .peek-row { border-top-color: var(--div); }
+    .peek-time { flex-shrink: 0; color: var(--y); min-width: 3.2em; }
+    .peek-dest { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .peek-exp  { flex-shrink: 0; font-size: clamp(0.6rem, 1.5vw, 0.72rem); }
+    .peek-exp.ontime { color: var(--grn); }
+    .peek-exp.late   { color: var(--red); }
+    .peek-exp.early  { color: var(--ora); }
+
     /* ── States ───────────────────────────── */
     .state { font-size: 0.72rem; letter-spacing: 3px; color: var(--ydim); padding: 14px 0; }
 
@@ -196,10 +225,12 @@
   <div class="display">
     <div class="dir-bar">▲ &nbsp;NORTHBOUND &nbsp;·&nbsp; LEICESTER &nbsp;·&nbsp; NOTTINGHAM &nbsp;·&nbsp; SHEFFIELD</div>
     <div id="north-body"><div class="state">FETCHING…</div></div>
+    <div id="north-peek"></div>
   </div>
   <div class="display">
     <div class="dir-bar">▼ &nbsp;SOUTHBOUND &nbsp;·&nbsp; LONDON ST PANCRAS</div>
     <div id="south-body"><div class="state">FETCHING…</div></div>
+    <div id="south-peek"></div>
   </div>
 </div>
 
@@ -542,6 +573,23 @@ ${locLine}<div class="row3">
 </div>`;
   }
 
+  // ── Next trains peek strip ─────────────────────────────────────────
+  function renderPeek(trains, elId) {
+    const el = document.getElementById(elId);
+    if (!trains.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="peek-strip">
+  <div class="peek-label">COMING UP</div>
+  ${trains.map(e => {
+    const exp = expLabel(e);
+    return `<div class="peek-row">
+    <span class="peek-time">${e.wboTime}</span>
+    <span class="peek-dest">${e.dest}</span>
+    <span class="peek-exp ${exp.cls}">${exp.text}</span>
+  </div>`;
+  }).join('')}
+</div>`;
+  }
+
   // ── Update display ─────────────────────────────────────────────────
   function updateDisplay() {
     const nowMins = toMins(nowHHMM());
@@ -549,6 +597,8 @@ ${locLine}<div class="row3">
     const south = cachedSouth.filter(e => toMins(e.stationTime) >= nowMins);
     renderPanel(north[0] || null, 'north-body');
     renderPanel(south[0] || null, 'south-body');
+    renderPeek(north.slice(1, 4), 'north-peek');
+    renderPeek(south.slice(1, 4), 'south-peek');
     requestAnimationFrame(() => requestAnimationFrame(initMarquees));
     document.getElementById('footer').innerHTML =
       `Updated ${new Date().toLocaleTimeString('en-GB')} · `
