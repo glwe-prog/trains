@@ -167,39 +167,213 @@
 
 <script>
 const WORDS = [
-  { word: 'AZUMA',          cat: 'TRAIN NAME'    },
-  { word: 'AURORA',         cat: 'TRAIN NAME'    },
-  { word: 'PENDOLINO',      cat: 'TRAIN NAME'    },
-  { word: 'VOYAGER',        cat: 'TRAIN NAME'    },
-  { word: 'EUROSTAR',       cat: 'TRAIN NAME'    },
-  { word: 'JAVELIN',        cat: 'TRAIN NAME'    },
-  { word: 'MERIDIAN',       cat: 'TRAIN NAME'    },
-  { word: 'INTERCITY',      cat: 'TRAIN NAME'    },
-  { word: 'LONDON',         cat: 'STATION'       },
-  { word: 'BEDFORD',        cat: 'STATION'       },
-  { word: 'SHEFFIELD',      cat: 'STATION'       },
-  { word: 'LEICESTER',      cat: 'STATION'       },
-  { word: 'NOTTINGHAM',     cat: 'STATION'       },
-  { word: 'KETTERING',      cat: 'STATION'       },
-  { word: 'WELLINGBOROUGH', cat: 'STATION'       },
-  { word: 'LUTON',          cat: 'STATION'       },
-  { word: 'PLATFORM',       cat: 'RAILWAY WORD'  },
-  { word: 'SIGNAL',         cat: 'RAILWAY WORD'  },
-  { word: 'TUNNEL',         cat: 'RAILWAY WORD'  },
-  { word: 'DIESEL',         cat: 'RAILWAY WORD'  },
-  { word: 'ELECTRIC',       cat: 'RAILWAY WORD'  },
-  { word: 'DRIVER',         cat: 'RAILWAY WORD'  },
-  { word: 'ENGINE',         cat: 'RAILWAY WORD'  },
-  { word: 'EXPRESS',        cat: 'RAILWAY WORD'  },
-  { word: 'CARRIAGE',       cat: 'RAILWAY WORD'  },
-  { word: 'JUNCTION',       cat: 'RAILWAY WORD'  },
-  { word: 'BUFFER',         cat: 'RAILWAY WORD'  },
-  { word: 'LIVERY',         cat: 'RAILWAY WORD'  },
-  { word: 'LOCOMOTIVE',     cat: 'RAILWAY WORD'  },
-  { word: 'PANTOGRAPH',     cat: 'RAILWAY WORD'  },
-  { word: 'VIADUCT',        cat: 'RAILWAY WORD'  },
-  { word: 'SEMAPHORE',      cat: 'RAILWAY WORD'  },
+  // ── Train names / rolling stock ─────────────────────────────
+  { word: 'AZUMA',               cat: 'TRAIN NAME'   },
+  { word: 'AURORA',              cat: 'TRAIN NAME'   },
+  { word: 'PENDOLINO',           cat: 'TRAIN NAME'   },
+  { word: 'VOYAGER',             cat: 'TRAIN NAME'   },
+  { word: 'EUROSTAR',            cat: 'TRAIN NAME'   },
+  { word: 'JAVELIN',             cat: 'TRAIN NAME'   },
+  { word: 'MERIDIAN',            cat: 'TRAIN NAME'   },
+  { word: 'INTERCITY',           cat: 'TRAIN NAME'   },
+  { word: 'SPRINTER',            cat: 'TRAIN NAME'   },
+  { word: 'TURBOSTAR',           cat: 'TRAIN NAME'   },
+  { word: 'ADELANTE',            cat: 'TRAIN NAME'   },
+  { word: 'ELECTROSTAR',         cat: 'TRAIN NAME'   },
+  { word: 'DESIRO',              cat: 'TRAIN NAME'   },
+  { word: 'VELARO',              cat: 'TRAIN NAME'   },
+  { word: 'AVENTRA',             cat: 'TRAIN NAME'   },
+  { word: 'NOVA',                cat: 'TRAIN NAME'   },
+  { word: 'PARAGON',             cat: 'TRAIN NAME'   },
+  { word: 'FLIRT',               cat: 'TRAIN NAME'   },
+  { word: 'TALENT',              cat: 'TRAIN NAME'   },
+  { word: 'CALEDONIAN SLEEPER',  cat: 'TRAIN NAME'   },
+  { word: 'NIGHT RIVIERA',       cat: 'TRAIN NAME'   },
+  { word: 'GATWICK EXPRESS',     cat: 'TRAIN NAME'   },
+  { word: 'HEATHROW EXPRESS',    cat: 'TRAIN NAME'   },
+  { word: 'CORNISH RIVIERA',     cat: 'TRAIN NAME'   },
+  { word: 'NORTHERN BELLE',      cat: 'TRAIN NAME'   },
+  { word: 'ORIENT EXPRESS',      cat: 'TRAIN NAME'   },
+  // ── Famous locomotives ──────────────────────────────────────
+  { word: 'FLYING SCOTSMAN',     cat: 'LOCOMOTIVE'   },
+  { word: 'MALLARD',             cat: 'LOCOMOTIVE'   },
+  { word: 'TORNADO',             cat: 'LOCOMOTIVE'   },
+  { word: 'BRITANNIA',           cat: 'LOCOMOTIVE'   },
+  { word: 'DELTIC',              cat: 'LOCOMOTIVE'   },
+  { word: 'EVENING STAR',        cat: 'LOCOMOTIVE'   },
+  { word: 'ROCKET',              cat: 'LOCOMOTIVE'   },
+  { word: 'CORONATION',          cat: 'LOCOMOTIVE'   },
+  { word: 'CITY OF TRURO',       cat: 'LOCOMOTIVE'   },
+  { word: 'GREEN ARROW',         cat: 'LOCOMOTIVE'   },
+  { word: 'BLUE PETER',          cat: 'LOCOMOTIVE'   },
+  { word: 'PRINCESS',            cat: 'LOCOMOTIVE'   },
+  { word: 'DUCHESS',             cat: 'LOCOMOTIVE'   },
+  { word: 'PATRIOT',             cat: 'LOCOMOTIVE'   },
+  { word: 'HARDWICKE',           cat: 'LOCOMOTIVE'   },
+  // ── Operators ───────────────────────────────────────────────
+  { word: 'AVANTI',              cat: 'OPERATOR'     },
+  { word: 'CHILTERN',            cat: 'OPERATOR'     },
+  { word: 'CROSSCOUNTRY',        cat: 'OPERATOR'     },
+  { word: 'SOUTHEASTERN',        cat: 'OPERATOR'     },
+  { word: 'THAMESLINK',          cat: 'OPERATOR'     },
+  { word: 'NORTHERN',            cat: 'OPERATOR'     },
+  { word: 'MERSEYRAIL',          cat: 'OPERATOR'     },
+  { word: 'SCOTRAIL',            cat: 'OPERATOR'     },
+  { word: 'LNER',                cat: 'OPERATOR'     },
+  { word: 'TRANSPENNINE',        cat: 'OPERATOR'     },
+  { word: 'ARRIVA',              cat: 'OPERATOR'     },
+  { word: 'GOVIA',               cat: 'OPERATOR'     },
+  { word: 'STAGECOACH',          cat: 'OPERATOR'     },
+  { word: 'FIRSTGROUP',          cat: 'OPERATOR'     },
+  { word: 'NETWORK RAIL',        cat: 'OPERATOR'     },
+  { word: 'BRITISH RAIL',        cat: 'OPERATOR'     },
+  { word: 'DB CARGO',            cat: 'OPERATOR'     },
+  { word: 'FREIGHTLINER',        cat: 'OPERATOR'     },
+  { word: 'HULL TRAINS',         cat: 'OPERATOR'     },
+  { word: 'GRAND CENTRAL',       cat: 'OPERATOR'     },
+  { word: 'GREATER ANGLIA',      cat: 'OPERATOR'     },
+  { word: 'GREAT WESTERN',       cat: 'OPERATOR'     },
+  { word: 'GREAT NORTHERN',      cat: 'OPERATOR'     },
+  { word: 'SOUTHERN',            cat: 'OPERATOR'     },
+  { word: 'CALEDONIAN',          cat: 'OPERATOR'     },
+  { word: 'LUMO',                cat: 'OPERATOR'     },
+  { word: 'COLAS RAIL',          cat: 'OPERATOR'     },
+  { word: 'EAST MIDLANDS',       cat: 'OPERATOR'     },
+  // ── Named lines and routes ──────────────────────────────────
+  { word: 'MIDLAND MAIN LINE',   cat: 'RAILWAY LINE' },
+  { word: 'EAST COAST MAIN LINE',cat: 'RAILWAY LINE' },
+  { word: 'WEST COAST MAIN LINE',cat: 'RAILWAY LINE' },
+  { word: 'CHILTERN MAIN LINE',  cat: 'RAILWAY LINE' },
+  { word: 'SETTLE CARLISLE',     cat: 'RAILWAY LINE' },
+  { word: 'HEART OF WALES',      cat: 'RAILWAY LINE' },
+  { word: 'CAMBRIAN LINE',       cat: 'RAILWAY LINE' },
+  { word: 'COTSWOLD LINE',       cat: 'RAILWAY LINE' },
+  { word: 'MARCHES LINE',        cat: 'RAILWAY LINE' },
+  { word: 'TARKA LINE',          cat: 'RAILWAY LINE' },
+  { word: 'CUMBRIAN COAST',      cat: 'RAILWAY LINE' },
+  { word: 'ELIZABETH LINE',      cat: 'RAILWAY LINE' },
+  { word: 'GOLDEN VALLEY LINE',  cat: 'RAILWAY LINE' },
+  { word: 'AVOCET LINE',         cat: 'RAILWAY LINE' },
+  { word: 'CONWY VALLEY',        cat: 'RAILWAY LINE' },
+  { word: 'NORTHERN MAIN LINE',  cat: 'RAILWAY LINE' },
+  { word: 'TRANSPENNINE ROUTE',  cat: 'RAILWAY LINE' },
+  { word: 'FENLAND LINE',        cat: 'RAILWAY LINE' },
+  { word: 'TYNE VALLEY',         cat: 'RAILWAY LINE' },
+  { word: 'KYLE LINE',           cat: 'RAILWAY LINE' },
+  { word: 'FAR NORTH LINE',      cat: 'RAILWAY LINE' },
+  // ── Stations ────────────────────────────────────────────────
+  { word: 'LONDON',              cat: 'STATION'      },
+  { word: 'BEDFORD',             cat: 'STATION'      },
+  { word: 'SHEFFIELD',           cat: 'STATION'      },
+  { word: 'LEICESTER',           cat: 'STATION'      },
+  { word: 'NOTTINGHAM',          cat: 'STATION'      },
+  { word: 'KETTERING',           cat: 'STATION'      },
+  { word: 'WELLINGBOROUGH',      cat: 'STATION'      },
+  { word: 'LUTON',               cat: 'STATION'      },
+  { word: 'CORBY',               cat: 'STATION'      },
+  { word: 'DERBY',               cat: 'STATION'      },
+  { word: 'CHESTERFIELD',        cat: 'STATION'      },
+  { word: 'DONCASTER',           cat: 'STATION'      },
+  { word: 'YORK',                cat: 'STATION'      },
+  { word: 'LEEDS',               cat: 'STATION'      },
+  { word: 'CREWE',               cat: 'STATION'      },
+  { word: 'EDINBURGH',           cat: 'STATION'      },
+  { word: 'GLASGOW',             cat: 'STATION'      },
+  { word: 'BIRMINGHAM',          cat: 'STATION'      },
+  { word: 'MANCHESTER',          cat: 'STATION'      },
+  { word: 'LIVERPOOL',           cat: 'STATION'      },
+  { word: 'NEWCASTLE',           cat: 'STATION'      },
+  { word: 'BRISTOL',             cat: 'STATION'      },
+  { word: 'EXETER',              cat: 'STATION'      },
+  { word: 'PENZANCE',            cat: 'STATION'      },
+  { word: 'CAMBRIDGE',           cat: 'STATION'      },
+  { word: 'NORWICH',             cat: 'STATION'      },
+  { word: 'CARLISLE',            cat: 'STATION'      },
+  { word: 'INVERNESS',           cat: 'STATION'      },
+  { word: 'ABERDEEN',            cat: 'STATION'      },
+  { word: 'COVENTRY',            cat: 'STATION'      },
+  { word: 'WOLVERHAMPTON',       cat: 'STATION'      },
+  { word: 'NORTHAMPTON',         cat: 'STATION'      },
+  { word: 'MARKET HARBOROUGH',   cat: 'STATION'      },
+  { word: 'BRIGHTON',            cat: 'STATION'      },
+  { word: 'PORTSMOUTH',          cat: 'STATION'      },
+  { word: 'SOUTHAMPTON',         cat: 'STATION'      },
+  { word: 'ST PANCRAS',          cat: 'STATION'      },
+  { word: 'PADDINGTON',          cat: 'STATION'      },
+  { word: 'EUSTON',              cat: 'STATION'      },
+  { word: 'KINGS CROSS',         cat: 'STATION'      },
+  { word: 'WATERLOO',            cat: 'STATION'      },
+  { word: 'VICTORIA',            cat: 'STATION'      },
+  { word: 'GRANTHAM',            cat: 'STATION'      },
+  { word: 'PETERBOROUGH',        cat: 'STATION'      },
+  { word: 'DARLINGTON',          cat: 'STATION'      },
+  { word: 'READING',             cat: 'STATION'      },
+  { word: 'OXFORD',              cat: 'STATION'      },
+  { word: 'SHREWSBURY',          cat: 'STATION'      },
+  { word: 'STOCKPORT',           cat: 'STATION'      },
+  { word: 'BLACKPOOL',           cat: 'STATION'      },
+  { word: 'STRATFORD',           cat: 'STATION'      },
+  { word: 'STIRLING',            cat: 'STATION'      },
+  // ── Railway terminology ─────────────────────────────────────
+  { word: 'PLATFORM',            cat: 'RAILWAY TERM' },
+  { word: 'SIGNAL',              cat: 'RAILWAY TERM' },
+  { word: 'TUNNEL',              cat: 'RAILWAY TERM' },
+  { word: 'DIESEL',              cat: 'RAILWAY TERM' },
+  { word: 'ELECTRIC',            cat: 'RAILWAY TERM' },
+  { word: 'DRIVER',              cat: 'RAILWAY TERM' },
+  { word: 'ENGINE',              cat: 'RAILWAY TERM' },
+  { word: 'EXPRESS',             cat: 'RAILWAY TERM' },
+  { word: 'CARRIAGE',            cat: 'RAILWAY TERM' },
+  { word: 'JUNCTION',            cat: 'RAILWAY TERM' },
+  { word: 'BUFFER',              cat: 'RAILWAY TERM' },
+  { word: 'LIVERY',              cat: 'RAILWAY TERM' },
+  { word: 'LOCOMOTIVE',          cat: 'RAILWAY TERM' },
+  { word: 'PANTOGRAPH',          cat: 'RAILWAY TERM' },
+  { word: 'VIADUCT',             cat: 'RAILWAY TERM' },
+  { word: 'SEMAPHORE',           cat: 'RAILWAY TERM' },
+  { word: 'TRACTION',            cat: 'RAILWAY TERM' },
+  { word: 'HEADCODE',            cat: 'RAILWAY TERM' },
+  { word: 'BOGIE',               cat: 'RAILWAY TERM' },
+  { word: 'COUPLING',            cat: 'RAILWAY TERM' },
+  { word: 'SHUNTER',             cat: 'RAILWAY TERM' },
+  { word: 'MARSHALLING',         cat: 'RAILWAY TERM' },
+  { word: 'BALLAST',             cat: 'RAILWAY TERM' },
+  { word: 'CATENARY',            cat: 'RAILWAY TERM' },
+  { word: 'FLANGE',              cat: 'RAILWAY TERM' },
+  { word: 'TERMINUS',            cat: 'RAILWAY TERM' },
+  { word: 'SIDINGS',             cat: 'RAILWAY TERM' },
+  { word: 'TIMETABLE',           cat: 'RAILWAY TERM' },
+  { word: 'DERAILMENT',          cat: 'RAILWAY TERM' },
+  { word: 'CONDUCTOR',           cat: 'RAILWAY TERM' },
+  { word: 'DISPATCHER',          cat: 'RAILWAY TERM' },
+  { word: 'EXCURSION',           cat: 'RAILWAY TERM' },
+  { word: 'RESERVATION',         cat: 'RAILWAY TERM' },
+  { word: 'RAILCARD',            cat: 'RAILWAY TERM' },
+  { word: 'EMBANKMENT',          cat: 'RAILWAY TERM' },
+  { word: 'SLEEPER',             cat: 'RAILWAY TERM' },
+  { word: 'FOOTBRIDGE',          cat: 'RAILWAY TERM' },
+  { word: 'STATIONMASTER',       cat: 'RAILWAY TERM' },
+  { word: 'ELECTRIFICATION',     cat: 'RAILWAY TERM' },
+  { word: 'NATIONALISATION',     cat: 'RAILWAY TERM' },
+  { word: 'PRIVATISATION',       cat: 'RAILWAY TERM' },
+  { word: 'PRESERVATION',        cat: 'RAILWAY TERM' },
+  { word: 'DIVERSION',           cat: 'RAILWAY TERM' },
+  { word: 'WHEELSET',            cat: 'RAILWAY TERM' },
+  { word: 'SIGNAL BOX',          cat: 'RAILWAY TERM' },
+  { word: 'LEVEL CROSSING',      cat: 'RAILWAY TERM' },
+  { word: 'OVERHEAD LINE',       cat: 'RAILWAY TERM' },
+  { word: 'THIRD RAIL',          cat: 'RAILWAY TERM' },
+  { word: 'BUFFET CAR',          cat: 'RAILWAY TERM' },
+  { word: 'DINING CAR',          cat: 'RAILWAY TERM' },
+  { word: 'FIRST CLASS',         cat: 'RAILWAY TERM' },
 ];
+
+// Shuffle queue so every word appears before repeating
+let queue = [];
+function pickNext() {
+  if (!queue.length) queue = [...WORDS].sort(() => Math.random() - 0.5);
+  return queue.pop();
+}
 
 const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 const MAX_WRONG = 6;
@@ -209,7 +383,7 @@ let guessed = new Set();
 let wrongCount = 0, gameOver = false;
 
 function newGame() {
-  const entry = WORDS[Math.floor(Math.random() * WORDS.length)];
+  const entry = pickNext();
   word = entry.word; category = entry.cat;
   guessed = new Set(); wrongCount = 0; gameOver = false;
   document.getElementById('result-banner').classList.remove('show');
@@ -223,11 +397,14 @@ function renderGallows() {
 }
 
 function renderWord() {
-  document.getElementById('word-display').innerHTML = word.split('').map(ch => `
-    <div class="letter-box">
-      <div class="letter-char">${guessed.has(ch) || gameOver ? ch : ' '}</div>
-      <div class="letter-line"></div>
-    </div>`).join('');
+  // Group letters by word so multi-word phrases never break mid-word
+  document.getElementById('word-display').innerHTML = word.split(' ').map(segment =>
+    `<span style="display:flex;gap:8px;flex-shrink:0;">${
+      segment.split('').map(ch =>
+        `<div class="letter-box"><div class="letter-char">${guessed.has(ch) || gameOver ? ch : ' '}</div><div class="letter-line"></div></div>`
+      ).join('')
+    }</span>`
+  ).join('<span style="min-width:20px;flex-shrink:0;"></span>');
 }
 
 function renderKeyboard() {
@@ -250,7 +427,7 @@ function guess(ch) {
   if (gameOver || guessed.has(ch)) return;
   guessed.add(ch);
   if (!word.includes(ch)) wrongCount++;
-  const won  = word.split('').every(c => guessed.has(c));
+  const won  = word.split('').every(c => c === ' ' || guessed.has(c));
   const lost = wrongCount >= MAX_WRONG;
   if (won || lost) {
     gameOver = true; renderAll();
