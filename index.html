@@ -466,10 +466,10 @@
   function startMarquee(ticker) {
     const text = ticker.querySelector('.calling-text');
     if (!text) return;
-    text.getAnimations().forEach(a => a.cancel());
-    text.style.left = '0px';
+    if (text.getAnimations().length > 0) return;  // already running — leave it alone
     const tw = ticker.offsetWidth, iw = text.scrollWidth;
     if (!tw || !iw) return;
+    text.style.visibility = '';
     text.animate(
       [{ transform: `translateX(${tw}px)` }, { transform: `translateX(${-iw}px)` }],
       { duration: ((tw + iw) / 80) * 1000, delay: 1200,
@@ -506,8 +506,26 @@
     const locLine = e.lastSeen
       ? `<div class="loc-line">▶ LAST SEEN ${e.lastSeen.station.toUpperCase()}  ${e.lastSeen.time}</div>`
       : '';
+
+    if (!changed) {
+      // Same train — update only the parts that change without touching the marquee DOM
+      const expEl = el.querySelector('.r1-exp');
+      if (expEl) { expEl.textContent = exp.text; expEl.className = `r1-exp ${exp.cls}`; }
+      const stEl = el.querySelector('.r3-status');
+      if (stEl) { stEl.textContent = st.text; stEl.className = `r3-status ${st.cls}`; }
+      const existingLoc = el.querySelector('.loc-line');
+      const row3 = el.querySelector('.row3');
+      if (locLine && row3) {
+        if (existingLoc) existingLoc.outerHTML = locLine;
+        else row3.insertAdjacentHTML('beforebegin', locLine);
+      } else if (existingLoc) {
+        existingLoc.remove();
+      }
+      return;
+    }
+
     el.innerHTML = `
-<div class="row1${changed ? ' panel-enter' : ''}">
+<div class="row1 panel-enter">
   <span class="r1-time">${e.wboTime}</span>
   <span class="r1-dest">${e.dest}</span>
   <span class="r1-exp ${exp.cls}">${exp.text}</span>
@@ -516,7 +534,7 @@ ${badge}${classTag}
 <div class="calling-wrap">
   <span class="calling-label">Calling at:</span>
   <div class="calling-ticker">
-    <span class="calling-text">${e.callingStr || '—'}</span>
+    <span class="calling-text" style="visibility:hidden">${e.callingStr || '—'}</span>
   </div>
 </div>
 ${locLine}<div class="row3">
