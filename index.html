@@ -468,15 +468,13 @@
     if (!text) return;
     text.getAnimations().forEach(a => a.cancel());
     text.style.left = '0px';
-    setTimeout(() => {
-      const tw = ticker.offsetWidth, iw = text.scrollWidth;
-      if (!tw || !iw) return;
-      text.animate(
-        [{ transform: `translateX(${tw}px)` }, { transform: `translateX(${-iw}px)` }],
-        { duration: ((tw + iw) / 80) * 1000, delay: 1200,
-          iterations: Infinity, easing: 'linear', fill: 'backwards' }
-      );
-    }, 200);
+    const tw = ticker.offsetWidth, iw = text.scrollWidth;
+    if (!tw || !iw) return;
+    text.animate(
+      [{ transform: `translateX(${tw}px)` }, { transform: `translateX(${-iw}px)` }],
+      { duration: ((tw + iw) / 80) * 1000, delay: 1200,
+        iterations: Infinity, easing: 'linear', fill: 'backwards' }
+    );
   }
 
   function initMarquees() {
