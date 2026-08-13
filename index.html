@@ -176,6 +176,7 @@
     .peek-row + .peek-row { border-top-color: var(--div); }
     .peek-time { flex-shrink: 0; color: var(--y); min-width: 3.2em; }
     .peek-dest { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .peek-orig { flex-shrink: 0; font-size: clamp(0.58rem, 1.4vw, 0.68rem); color: var(--ydim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 35%; }
     .peek-exp  { flex-shrink: 0; font-size: clamp(0.6rem, 1.5vw, 0.72rem); }
     .peek-exp.ontime { color: var(--grn); }
     .peek-exp.late   { color: var(--red); }
@@ -264,7 +265,7 @@
 
   const NORTH_STA    = { crs: 'BDM', offsetMins: 11 };
   const SOUTH_STA    = { crs: 'KET', offsetMins:  6 };
-  const HOUSE_OFFSET = 3;   // mins south of Wellingborough station
+  const HOUSE_OFFSET = 0;   // set to 0: show actual WEL station times
 
   let cachedNorth = [];
   let cachedSouth = [];
@@ -424,6 +425,7 @@
            || svc.temporalData?.arrival?.scheduleAdvertised) || '??:??');
     const isCancelled = !!svc.temporalData?.departure?.isCancelled;
     const dest       = (svc.destination?.[0]?.location?.description || 'Unknown').toUpperCase();
+    const boardOrigin = (svc.origin?.[0]?.location?.description || '').toUpperCase();
     const stopsAtWBO = !!welEntry && welEntry.temporalData?.displayAs !== 'PASS';
 
     // WEL time: exact from WEL board if stopping, estimated if passing
@@ -456,7 +458,7 @@
     const callingStr  = originLabel ? (rawCalling ? `${originLabel}   ·   ${rawCalling}` : originLabel) : rawCalling;
     const trainClass  = detail ? extractClass(detail) : (known.class || boardClass(svc));
 
-    return { uid, svc, welEntry, wboLive, stopsAtWBO, stationTime, wboTime: houseTime, callingStr, trainClass, lastSeen: null, dest, deptTime, isCancelled, offsetMins, staCrs, northward };
+    return { uid, svc, welEntry, wboLive, stopsAtWBO, stationTime, wboTime: houseTime, callingStr, trainClass, lastSeen: null, dest, boardOrigin, deptTime, isCancelled, offsetMins, staCrs, northward };
   }
 
   // ── Status / timing labels ─────────────────────────────────────────
@@ -581,9 +583,11 @@ ${locLine}<div class="row3">
   <div class="peek-label">COMING UP</div>
   ${trains.map(e => {
     const exp = expLabel(e);
+    const orig = e.boardOrigin ? `ex ${e.boardOrigin}` : '';
     return `<div class="peek-row">
     <span class="peek-time">${e.wboTime}</span>
     <span class="peek-dest">${e.dest}</span>
+    ${orig ? `<span class="peek-orig">${orig}</span>` : ''}
     <span class="peek-exp ${exp.cls}">${exp.text}</span>
   </div>`;
   }).join('')}
