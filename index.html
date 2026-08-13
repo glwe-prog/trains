@@ -424,8 +424,9 @@
       : (isoToHHMM(svc.temporalData?.departure?.scheduleAdvertised
            || svc.temporalData?.arrival?.scheduleAdvertised) || '??:??');
     const isCancelled = !!svc.temporalData?.departure?.isCancelled;
-    const dest       = (svc.destination?.[0]?.location?.description || 'Unknown').toUpperCase();
-    const boardOrigin = (svc.origin?.[0]?.location?.description || '').toUpperCase();
+    const dest         = (svc.destination?.[0]?.location?.description || 'Unknown').toUpperCase();
+    const boardOrigin  = (svc.origin?.[0]?.location?.description || '').toUpperCase();
+    const operatorName = (svc.scheduleMetadata?.operator?.name || svc.scheduleMetadata?.operator?.code || '').toUpperCase();
     const stopsAtWBO = !!welEntry && welEntry.temporalData?.displayAs !== 'PASS';
 
     // WEL time: exact from WEL board if stopping, estimated if passing
@@ -458,7 +459,7 @@
     const callingStr  = originLabel ? (rawCalling ? `${originLabel}   ·   ${rawCalling}` : originLabel) : rawCalling;
     const trainClass  = detail ? extractClass(detail) : (known.class || boardClass(svc));
 
-    return { uid, svc, welEntry, wboLive, stopsAtWBO, stationTime, wboTime: houseTime, callingStr, trainClass, lastSeen: null, dest, boardOrigin, deptTime, isCancelled, offsetMins, staCrs, northward };
+    return { uid, svc, welEntry, wboLive, stopsAtWBO, stationTime, wboTime: houseTime, callingStr, trainClass, operatorName, lastSeen: null, dest, boardOrigin, deptTime, isCancelled, offsetMins, staCrs, northward };
   }
 
   // ── Status / timing labels ─────────────────────────────────────────
@@ -531,8 +532,8 @@
     const badge = e.stopsAtWBO
       ? '<span class="stop-badge stops">● STOPS</span>'
       : '<span class="stop-badge passes">○ PASSES THROUGH</span>';
-    const classTag = e.trainClass
-      ? `<span class="train-class">${e.trainClass}</span>` : '';
+    const classLabel = e.trainClass || (e.operatorName !== 'EAST MIDLANDS RAILWAY' ? e.operatorName : '');
+    const classTag = classLabel ? `<span class="train-class">${classLabel}</span>` : '';
     const key = `${e.wboTime}|${e.dest}`;
     const changed = _shown[elId] !== key;
     _shown[elId] = key;
@@ -658,8 +659,8 @@ ${locLine}<div class="row3">
   async function enrichDisplayed() {
     const nowMins = toMins(nowHHMM());
     const toEnrich = [
-      ...cachedNorth.filter(e => toMins(e.stationTime) >= nowMins - 20).slice(0, 4),
-      ...cachedSouth.filter(e => toMins(e.stationTime) >= nowMins - 20).slice(0, 4),
+      ...cachedNorth.filter(e => toMins(e.stationTime) >= nowMins - 20 && e.operatorName === 'EAST MIDLANDS RAILWAY').slice(0, 4),
+      ...cachedSouth.filter(e => toMins(e.stationTime) >= nowMins - 20 && e.operatorName === 'EAST MIDLANDS RAILWAY').slice(0, 4),
     ];
     let updated = false;
     for (const e of toEnrich) {
@@ -719,12 +720,11 @@ ${locLine}<div class="row3">
         fetch(`${RTT_BASE}/gb-nr/location?code=${SOUTH_STA.crs}&timeWindow=180`).then(checkOk('KET')),
       ]);
 
-      // Index ALL EMR services at WEL by UID — both CALL and PASS get exact times
+      // Index ALL services at WEL by UID — both CALL and PASS get exact times
       const welByUid = new Map();
       for (const s of (welData.services || [])) {
         const uid = s.scheduleMetadata?.uniqueIdentity;
-        if (uid && s.scheduleMetadata?.operator?.code === EMR_CODE)
-          welByUid.set(uid, s);
+        if (uid) welByUid.set(uid, s);
       }
 
       const nowMins = toMins(nowHHMM());
@@ -789,7 +789,7 @@ ${locLine}<div class="row3">
       const coveredUids = new Set([...cachedNorth, ...cachedSouth].map(e => e.uid));
       for (const s of (welData.services || [])) {
         const uid = s.scheduleMetadata?.uniqueIdentity;
-        if (!uid || s.scheduleMetadata?.operator?.code !== EMR_CODE) continue;
+        if (!uid) continue;
         if (coveredUids.has(uid)) continue;
         const dest = (s.destination?.[0]?.location?.description || '').toLowerCase();
         const north = !/london|pancras|bedford|luton|flitwick|harlington|leagrave|st albans/.test(dest);
