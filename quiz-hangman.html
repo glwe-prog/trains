@@ -368,11 +368,15 @@ const WORDS = [
   { word: 'FIRST CLASS',         cat: 'RAILWAY TERM' },
 ];
 
-// Shuffle queue so every word appears before repeating
-let queue = [];
+// Avoid repeating any word seen in the last 60 games (persisted across refreshes)
+const RECENT_LIMIT = 60;
 function pickNext() {
-  if (!queue.length) queue = [...WORDS].sort(() => Math.random() - 0.5);
-  return queue.pop();
+  const recent = new Set(JSON.parse(localStorage.getItem('hg_recent') || '[]'));
+  const pool = WORDS.filter(w => !recent.has(w.word));
+  const entry = (pool.length ? pool : WORDS)[Math.floor(Math.random() * (pool.length || WORDS.length))];
+  const updated = [...recent, entry.word].slice(-RECENT_LIMIT);
+  localStorage.setItem('hg_recent', JSON.stringify(updated));
+  return entry;
 }
 
 const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
