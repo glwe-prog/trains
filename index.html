@@ -472,7 +472,7 @@
       const tw = ticker.offsetWidth, iw = text.scrollWidth;
       if (!tw || !iw) return;
       text.animate(
-        [{ left: `${tw}px` }, { left: `${-iw}px` }],
+        [{ transform: `translateX(${tw}px)` }, { transform: `translateX(${-iw}px)` }],
         { duration: ((tw + iw) / 80) * 1000, delay: 1200,
           iterations: Infinity, easing: 'linear', fill: 'backwards' }
       );
