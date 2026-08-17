@@ -1559,5 +1559,35 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_43_midland_mainline",
+    "quizzes": {
+      "class": {
+        "name": "Class 43",
+        "blur": [
+          [
+            316,
+            296,
+            422,
+            340
+          ],
+          [
+            422,
+            383,
+            446,
+            396
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Midland Mainline",
+        "blur": [],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
