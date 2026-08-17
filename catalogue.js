@@ -1529,5 +1529,35 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_66_one",
+    "quizzes": {
+      "class": {
+        "name": "Class 66",
+        "blur": [
+          [
+            633,
+            338,
+            694,
+            376
+          ],
+          [
+            284,
+            245,
+            365,
+            302
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "One",
+        "blur": [],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
