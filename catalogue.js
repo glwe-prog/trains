@@ -1499,5 +1499,35 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_008_british_rail",
+    "quizzes": {
+      "class": {
+        "name": "Class 008",
+        "blur": [
+          [
+            286,
+            223,
+            367,
+            271
+          ],
+          [
+            633,
+            300,
+            726,
+            332
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "British Rail",
+        "blur": [],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
