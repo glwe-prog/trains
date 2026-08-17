@@ -1589,5 +1589,35 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_43_east_midland_trains",
+    "quizzes": {
+      "class": {
+        "name": "Class 43",
+        "blur": [
+          [
+            416,
+            300,
+            507,
+            338
+          ],
+          [
+            545,
+            368,
+            586,
+            398
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "East Midland Trains",
+        "blur": [],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
