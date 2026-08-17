@@ -1,17 +1,5 @@
 const CATALOGUE = [
   {
-    "id": "class_43_hst",
-    "zoom": 1.0,
-    "pos": "50% 50%",
-    "quizzes": {
-      "class": {
-        "name": "Class 43 HST (IC125)",
-        "blur": [],
-        "blurR": 12
-      }
-    }
-  },
-  {
     "id": "class_220",
     "zoom": 1.0,
     "pos": "50% 50%",
