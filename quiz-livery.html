@@ -273,7 +273,9 @@ function buildQuiz() {
   }).slice(0, QUIZ_SIZE);
   questions = picks.map(entry => {
     const cfg    = entry.quizzes.livery;
+    const seenW = new Set();
     const wrongs = shuffle(liveryPool.filter(e => e.id !== entry.id && e.quizzes.livery.name !== cfg.name))
+                     .filter(e => { const n = e.quizzes.livery.name; if (seenW.has(n)) return false; seenW.add(n); return true; })
                      .slice(0, 3).map(e => e.quizzes.livery.name);
     return { entry, cfg, choices: shuffle([cfg.name, ...wrongs]) };
   });
