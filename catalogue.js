@@ -1668,7 +1668,20 @@ const CATALOGUE = [
       },
       "livery": {
         "name": "Midland Mainline",
-        "blur": [],
+        "blur": [
+          [
+            318,
+            285,
+            437,
+            349
+          ],
+          [
+            416,
+            372,
+            448,
+            398
+          ]
+        ],
         "blurR": 10
       }
     },
