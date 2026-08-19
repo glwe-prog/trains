@@ -264,18 +264,6 @@ const CATALOGUE = [
     }
   },
   {
-    "id": "class_331",
-    "zoom": 1.0,
-    "pos": "50% 50%",
-    "quizzes": {
-      "class": {
-        "name": "Class 331 Civity",
-        "blur": [],
-        "blurR": 12
-      }
-    }
-  },
-  {
     "id": "class_333",
     "zoom": 1.0,
     "pos": "50% 50%",
