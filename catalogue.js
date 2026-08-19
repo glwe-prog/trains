@@ -1837,5 +1837,48 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_331_northern",
+    "quizzes": {
+      "class": {
+        "name": "Class 331 Civity",
+        "blur": [
+          [
+            429,
+            347,
+            463,
+            393
+          ],
+          [
+            662,
+            326,
+            705,
+            357
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Northern",
+        "blur": [
+          [
+            435,
+            351,
+            475,
+            393
+          ],
+          [
+            664,
+            326,
+            720,
+            360
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
