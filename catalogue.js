@@ -1601,7 +1601,20 @@ const CATALOGUE = [
       },
       "livery": {
         "name": "British Rail",
-        "blur": [],
+        "blur": [
+          [
+            291,
+            234,
+            354,
+            273
+          ],
+          [
+            635,
+            294,
+            724,
+            321
+          ]
+        ],
         "blurR": 10
       }
     },
