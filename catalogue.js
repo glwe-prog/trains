@@ -54,8 +54,27 @@ const CATALOGUE = [
     "quizzes": {
       "class": {
         "name": "Class 91 (IC225)",
-        "blur": [],
+        "blur": [
+          [
+            588,
+            389,
+            630,
+            421
+          ]
+        ],
         "blurR": 12
+      },
+      "livery": {
+        "name": "Class 91 (IC225)",
+        "blur": [
+          [
+            446,
+            203,
+            501,
+            277
+          ]
+        ],
+        "blurR": 10
       }
     }
   },
