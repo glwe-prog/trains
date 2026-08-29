@@ -1979,5 +1979,29 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_66_direct_rail_services",
+    "quizzes": {
+      "class": {
+        "name": "Class 66",
+        "blur": [],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Direct Rail Services",
+        "blur": [
+          [
+            323,
+            398,
+            348,
+            438
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
