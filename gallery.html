@@ -34,7 +34,7 @@
     }
 
     .card { border: 1px solid var(--div); overflow: hidden; }
-    .card img { width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; }
+    .card-img { position: relative; width: 100%; aspect-ratio: 3/2; overflow: hidden; background: #111; }
     .card-info { padding: 6px 8px; background: var(--surf); }
     .card-name { font-size: .62rem; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .card-slug { font-size: .48rem; color: var(--ydim); letter-spacing: .5px; margin-top: 2px; }
@@ -108,11 +108,34 @@ function render() {
   document.getElementById('count').textContent = count + ' images';
 }
 
+function blurOverlays(cfg, id) {
+  if (!cfg.blur || !cfg.blur.length) return '';
+  return cfg.blur.map(([x1, y1, x2, y2]) => {
+    const l = (x1 / 960 * 100).toFixed(2);
+    const t = (y1 / 640 * 100).toFixed(2);
+    const w = ((x2 - x1) / 960 * 100).toFixed(2);
+    const h = ((y2 - y1) / 640 * 100).toFixed(2);
+    const r = cfg.blurR || 10;
+    return `<div style="position:absolute;left:${l}%;top:${t}%;width:${w}%;height:${h}%;overflow:hidden;pointer-events:none;">` +
+      `<img src="images/${id}.jpg" style="position:absolute;width:${(10000/w).toFixed(1)}%;height:${(10000/h).toFixed(1)}%;left:${(-l/w*100).toFixed(1)}%;top:${(-t/h*100).toFixed(1)}%;filter:blur(${r}px);">` +
+      `</div>`;
+  }).join('');
+}
+
 function card(e, type) {
-  const name = (e.quizzes[type] || e.quizzes.class || e.quizzes.livery).name;
+  const cfg  = e.quizzes[type] || e.quizzes.class || e.quizzes.livery;
+  const name = cfg.name;
+  const z    = e.zoom || 1;
+  const pos  = e.pos  || '50% 50%';
   return `<div class="card">
-    <img src="images/${e.id}.jpg" alt="${name}" loading="lazy"
-         onerror="this.style.opacity='.2'">
+    <div class="card-img">
+      <div style="position:absolute;inset:0;transform:scale(${z});transform-origin:${pos};">
+        <img src="images/${e.id}.jpg" alt="${name}" loading="lazy"
+             style="width:100%;height:100%;object-fit:cover;display:block;"
+             onerror="this.style.opacity='.2'">
+      </div>
+      ${blurOverlays(cfg, e.id)}
+    </div>
     <div class="card-info">
       <div class="card-name">${name}</div>
       <div class="card-slug">${e.id}</div>
