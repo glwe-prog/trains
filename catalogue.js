@@ -2016,5 +2016,17 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_897_serenza",
+    "quizzes": {
+      "class": {
+        "name": "Class 897 Serenza",
+        "blur": [],
+        "blurR": 12
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
