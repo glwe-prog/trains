@@ -2204,7 +2204,7 @@ const CATALOGUE = [
     "id": "class_222_emr",
     "quizzes": {
       "class": {
-        "name": "Class 222",
+        "name": "Class 222 Meridian",
         "blur": [
           [
             144,
