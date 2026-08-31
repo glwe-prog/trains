@@ -1184,10 +1184,10 @@ const CATALOGUE = [
         "name": "East Midland Trains",
         "blur": [
           [
-            609,
+            607,
             345,
-            677,
-            362
+            679,
+            367
           ]
         ],
         "blurR": 10
