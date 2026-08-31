@@ -2259,7 +2259,7 @@ const CATALOGUE = [
     "id": "class_222_east_midland_trains",
     "quizzes": {
       "class": {
-        "name": "Class 222`",
+        "name": "Class 222 Meridian",
         "blur": [
           [
             824,
