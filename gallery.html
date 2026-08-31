@@ -171,10 +171,13 @@ function card(e, type) {
   const z    = e.zoom || 1;
   const pos  = e.pos  || '50% 50%';
   const idx  = CATALOGUE.indexOf(e);
-  return `<div class="card" onclick="openModal(${idx},'${type}')">
+  const imgUrl = `https://glwe-prog.github.io/trains/images/${e.id}.jpg`;
+  return `<div class="card" draggable="true"
+    ondragstart="event.dataTransfer.setData('text/plain','trains-id:${e.id}');event.dataTransfer.setData('text/uri-list','${imgUrl}');"
+    onclick="openModal(${idx},'${type}')">
     <div class="card-img">
       <div style="position:absolute;inset:0;transform:scale(${z});transform-origin:${pos};">
-        <img src="images/${e.id}.jpg" alt="${name}" loading="lazy"
+        <img src="images/${e.id}.jpg" alt="${name}" loading="lazy" draggable="false"
              style="width:100%;height:100%;object-fit:cover;display:block;"
              onerror="this.style.opacity='.2'">
       </div>
