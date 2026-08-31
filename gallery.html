@@ -49,6 +49,36 @@
       font-size: .6rem; letter-spacing: 3px; color: var(--ydim);
       border-bottom: 1px solid var(--div); padding-bottom: 6px; margin: 18px 0 10px;
     }
+
+    .card { cursor: pointer; }
+    .card:hover .card-img { opacity: .85; }
+
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.82);
+      z-index: 200; align-items: center; justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--bg); border: 1px solid var(--ydim);
+      width: min(800px, 95vw); max-height: 90vh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .modal-hdr {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; border-bottom: 1px solid var(--div); flex-shrink: 0;
+    }
+    .modal-title { font-size: .72rem; letter-spacing: 2px; }
+    .modal-slug  { font-size: .5rem;  letter-spacing: 1px; color: var(--ydim); margin-top: 2px; }
+    .modal-close {
+      font-family: inherit; font-size: .7rem; letter-spacing: 2px;
+      background: transparent; border: 1px solid var(--ydim); color: var(--ydim);
+      padding: 4px 12px; cursor: pointer;
+    }
+    .modal-close:hover { border-color: var(--y); color: var(--y); }
+    .modal-img-wrap {
+      position: relative; width: 100%; aspect-ratio: 4/3;
+      overflow: hidden; background: #111; flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -66,6 +96,19 @@
 </div>
 
 <div class="grid" id="grid"></div>
+
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-slug"  id="modal-slug"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕ CLOSE</button>
+    </div>
+    <div class="modal-img-wrap" id="modal-img-wrap"></div>
+  </div>
+</div>
 
 <script src="catalogue.js?v=1788188091"></script>
 <script>
@@ -127,7 +170,8 @@ function card(e, type) {
   const name = cfg.name;
   const z    = e.zoom || 1;
   const pos  = e.pos  || '50% 50%';
-  return `<div class="card">
+  const idx  = CATALOGUE.indexOf(e);
+  return `<div class="card" onclick="openModal(${idx},'${type}')">
     <div class="card-img">
       <div style="position:absolute;inset:0;transform:scale(${z});transform-origin:${pos};">
         <img src="images/${e.id}.jpg" alt="${name}" loading="lazy"
@@ -142,6 +186,26 @@ function card(e, type) {
       <div class="card-badge ${type}">${type.toUpperCase()}</div>
     </div>
   </div>`;
+}
+
+function openModal(idx, type) {
+  const e   = CATALOGUE[idx];
+  const cfg = e.quizzes[type] || e.quizzes.class || e.quizzes.livery;
+  const z   = e.zoom || 1;
+  const pos = e.pos  || '50% 50%';
+  document.getElementById('modal-title').textContent = cfg.name;
+  document.getElementById('modal-slug').textContent  = e.id;
+  const wrap = document.getElementById('modal-img-wrap');
+  wrap.innerHTML =
+    `<div style="position:absolute;inset:0;transform:scale(${z});transform-origin:${pos};">` +
+    `<img src="images/${e.id}.jpg" style="width:100%;height:100%;object-fit:cover;display:block;">` +
+    `</div>` + blurOverlays(cfg, e.id);
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.getElementById('modal-img-wrap').innerHTML = '';
 }
 
 render();
