@@ -1815,7 +1815,20 @@ const CATALOGUE = [
       },
       "livery": {
         "name": "East Midland Trains",
-        "blur": [],
+        "blur": [
+          [
+            418,
+            302,
+            505,
+            334
+          ],
+          [
+            550,
+            366,
+            588,
+            398
+          ]
+        ],
         "blurR": 10
       }
     },
