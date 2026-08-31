@@ -340,7 +340,10 @@ function newRound() {
   }
 
   // Options: correct + 5 wrong from same pool, locked until MIN_REVEALS cells uncovered
-  const wrong = shuffle(pool.filter(p => p.id !== current.id)).slice(0, 5)
+  const seenW = new Set();
+  const wrong = shuffle(pool.filter(p => p.id !== current.id))
+                  .filter(p => { const n = useClassMode ? p.quizzes.class.name : p.quizzes.livery.name; if (seenW.has(n)) return false; seenW.add(n); return true; })
+                  .slice(0, 5)
                   .map(p => useClassMode ? p.quizzes.class.name : p.quizzes.livery.name);
   const opts  = shuffle([currentCfg.name, ...wrong]);
   document.getElementById('options').innerHTML = opts.map((n, i) =>
