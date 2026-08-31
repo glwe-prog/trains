@@ -2254,5 +2254,48 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_222_east_midland_trains",
+    "quizzes": {
+      "class": {
+        "name": "Class 222`",
+        "blur": [
+          [
+            824,
+            263,
+            865,
+            285
+          ],
+          [
+            230,
+            234,
+            287,
+            267
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "East Midland Trains",
+        "blur": [
+          [
+            813,
+            256,
+            866,
+            288
+          ],
+          [
+            233,
+            235,
+            309,
+            269
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
