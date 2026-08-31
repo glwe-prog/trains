@@ -2125,5 +2125,36 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_373_eurostar",
+    "quizzes": {
+      "class": {
+        "name": "Class 373",
+        "blur": [
+          [
+            486,
+            232,
+            635,
+            301
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "Eurostar",
+        "blur": [
+          [
+            481,
+            234,
+            636,
+            302
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
