@@ -2340,5 +2340,36 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_370_london_northwestern",
+    "quizzes": {
+      "class": {
+        "name": "class 730",
+        "blur": [
+          [
+            508,
+            420,
+            560,
+            450
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "London NorthWestern",
+        "blur": [
+          [
+            508,
+            417,
+            560,
+            449
+          ]
+        ],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
