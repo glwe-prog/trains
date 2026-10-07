@@ -2465,6 +2465,18 @@ const CATALOGUE = [
           ]
         ],
         "blurR": 12
+      },
+      "livery": {
+        "name": "Class 60",
+        "blur": [
+          [
+            0,
+            255,
+            144,
+            332
+          ]
+        ],
+        "blurR": 10
       }
     },
     "zoom": 1.0,
