@@ -2493,5 +2493,29 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_730_london_north_western",
+    "quizzes": {
+      "class": {
+        "name": "Class 730",
+        "blur": [
+          [
+            350,
+            398,
+            369,
+            423
+          ]
+        ],
+        "blurR": 12
+      },
+      "livery": {
+        "name": "London North Western",
+        "blur": [],
+        "blurR": 10
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
