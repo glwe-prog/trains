@@ -2471,30 +2471,6 @@ const CATALOGUE = [
     "pos": "50% 50%"
   },
   {
-    "id": "class_158_east_midland_railways",
-    "quizzes": {
-      "class": {
-        "name": "Class 158",
-        "blur": [
-          [
-            524,
-            311,
-            607,
-            338
-          ]
-        ],
-        "blurR": 12
-      },
-      "livery": {
-        "name": "East Midland Railways",
-        "blur": [],
-        "blurR": 10
-      }
-    },
-    "zoom": 1.0,
-    "pos": "50% 50%"
-  },
-  {
     "id": "class_730_london_north_western",
     "quizzes": {
       "class": {
