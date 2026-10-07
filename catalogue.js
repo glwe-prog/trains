@@ -2450,5 +2450,24 @@ const CATALOGUE = [
     },
     "zoom": 1.0,
     "pos": "50% 50%"
+  },
+  {
+    "id": "class_60_dc_rail_freight",
+    "quizzes": {
+      "class": {
+        "name": "Class 60",
+        "blur": [
+          [
+            0,
+            253,
+            140,
+            342
+          ]
+        ],
+        "blurR": 12
+      }
+    },
+    "zoom": 1.0,
+    "pos": "50% 50%"
   }
 ];
