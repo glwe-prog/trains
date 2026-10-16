@@ -196,13 +196,13 @@ body::before {
 
 <!-- GAME UI -->
 <div class="hdr">
-  <div class="hdr-title">WELLINGBOROUGH LINE &nbsp;Â·&nbsp; WHACK-A-TRAIN</div>
+  <div class="hdr-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; WHACK-A-TRAIN</div>
   <div class="hdr-right">
     <div class="hdr-stat">TRAIN <span id="train-count">0</span><span style="font-size:.7em;color:var(--ydim)">/20</span></div>
     <div class="hdr-stat">SCORE <span id="score-display">0</span></div>
   </div>
 </div>
-<div class="subtitle">TAP THE TRAIN BEFORE IT RETREATS â€” FASTER TRAINS SCORE MORE</div>
+<div class="subtitle">TAP THE TRAIN BEFORE IT RETREATS &#8212; FASTER TRAINS SCORE MORE</div>
 
 <div class="bars-wrap">
   <div class="bar-group">
@@ -225,8 +225,8 @@ body::before {
 </div>
 
 <div class="back-links">
-  <a href="quizzes.html" class="back-link">â—„ QUIZ MENU</a>
-  <a href="index.html"   class="back-link">LIVE TRAIN BOARD â–º</a>
+  <a href="quizzes.html" class="back-link">&#9668; QUIZ MENU</a>
+  <a href="index.html"   class="back-link">LIVE TRAIN BOARD &#9658;</a>
 </div>
 
 <script>
@@ -437,7 +437,7 @@ function endGame() {
   document.getElementById('final-rating').textContent = rating;
   document.getElementById('final-hits').textContent = `${totalHits} / ${TOTAL_TRAINS} TRAINS HIT`;
   document.getElementById('final-breakdown').textContent =
-    `SLOW Ã—${hitsPerLevel[0]}  MEDIUM Ã—${hitsPerLevel[1]}  FAST Ã—${hitsPerLevel[2]}  MAX Ã—${hitsPerLevel[3]}`;
+    `SLOW &times;${hitsPerLevel[0]}  MEDIUM &times;${hitsPerLevel[1]}  FAST &times;${hitsPerLevel[2]}  MAX &times;${hitsPerLevel[3]}`;
 
   setTimeout(() => document.getElementById('result-screen').classList.remove('hidden'), 700);
 }

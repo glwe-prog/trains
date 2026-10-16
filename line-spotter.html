@@ -192,7 +192,7 @@ body::before {
   100% { transform: scale(1); }
 }
 
-/* â”€â”€ Result banners â€” positioned at bottom of grid, opaque bg â”€â”€ */
+/* â”€â”€ Result banners &#8212; positioned at bottom of grid, opaque bg â”€â”€ */
 .banner {
   position: absolute; bottom: 9%; left: 4%; right: 4%;
   padding: 14px 20px;
@@ -240,10 +240,10 @@ body::before {
 <!-- MARKUP -->
 
 <div class="hdr">
-  <div class="hdr-title">WELLINGBOROUGH LINE &nbsp;Â·&nbsp; LINE SPOTTER &nbsp;Â·&nbsp; LOUIE LINE</div>
+  <div class="hdr-title">WELLINGBOROUGH LINE &nbsp;·&nbsp; LINE SPOTTER &nbsp;·&nbsp; LOUIE LINE</div>
   <div class="hdr-clock" id="clock">--:--:--</div>
 </div>
-<div class="subtitle">CHOOSE 4 TYPES FROM YOUR 8 TILES â€” FILL A ROW OR COLUMN OF 5 TO WIN</div>
+<div class="subtitle">CHOOSE 4 TYPES FROM YOUR 8 TILES &#8212; FILL A ROW OR COLUMN OF 5 TO WIN</div>
 
 <div class="game">
 
@@ -258,8 +258,8 @@ body::before {
 
   <div class="grid-wrap">
     <div class="main-grid" id="main-grid"></div>
-    <div class="banner win"  id="win-banner">â˜… LINE COMPLETE â€” YOU WIN!</div>
-    <div class="banner lose" id="lose-banner">NO LINE THIS TIME â€” TRY AGAIN</div>
+    <div class="banner win"  id="win-banner">â˜… LINE COMPLETE &#8212; YOU WIN!</div>
+    <div class="banner lose" id="lose-banner">NO LINE THIS TIME &#8212; TRY AGAIN</div>
     <button class="play-again" id="play-again" onclick="init()">&#9654; PLAY AGAIN</button>
   </div>
 
@@ -305,7 +305,7 @@ function generateBoard() {
   const wl1 = shuffle([...wt1, wt1[Math.floor(Math.random() * 4)]]);
   const wl2 = shuffle([...wt2, wt2[Math.floor(Math.random() * 4)]]);
 
-  // Both parallel (2 rows OR 2 columns) â€” avoids intersection conflict
+  // Both parallel (2 rows OR 2 columns) &#8212; avoids intersection conflict
   const useRows = Math.random() < 0.5;
   const [i1, i2] = shuffle([0,1,2,3,4]);
 
@@ -315,7 +315,7 @@ function generateBoard() {
     else         { board[j][i1] = wl1[j]; board[j][i2] = wl2[j]; }
   }
 
-  // Fill remaining 15 cells randomly â€” density of 8 types across 25 cells
+  // Fill remaining 15 cells randomly &#8212; density of 8 types across 25 cells
   // creates several extra winnable lines naturally
   for (let r = 0; r < 5; r++)
     for (let c = 0; c < 5; c++)
@@ -408,7 +408,7 @@ function checkWin() {
 
   if (won) {
     document.getElementById('win-banner').classList.add('visible');
-    document.getElementById('status').textContent = `${matched.size} cells lit â€” line found!`;
+    document.getElementById('status').textContent = `${matched.size} cells lit &#8212; line found!`;
   } else {
     let revealDelay = 0;
     for (let r = 0; r < 5; r++) {
@@ -421,15 +421,15 @@ function checkWin() {
       }
     }
     document.getElementById('lose-banner').classList.add('visible');
-    document.getElementById('status').textContent = `${matched.size} cells lit â€” no complete line`;
+    document.getElementById('status').textContent = `${matched.size} cells lit &#8212; no complete line`;
   }
   document.getElementById('play-again').classList.add('visible');
 }
 
 function updateStatus() {
   document.getElementById('status').textContent = picksLeft > 0
-    ? `${matched.size} cell${matched.size !== 1 ? 's' : ''} lit Â· ${picksLeft} pick${picksLeft !== 1 ? 's' : ''} left`
-    : `${matched.size} cells lit Â· checking for a lineâ€¦`;
+    ? `${matched.size} cell${matched.size !== 1 ? 's' : ''} lit · ${picksLeft} pick${picksLeft !== 1 ? 's' : ''} left`
+    : `${matched.size} cells lit · checking for a lineâ€¦`;
 }
 
 function init() {
