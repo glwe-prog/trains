@@ -85,6 +85,7 @@ body::before {
   cursor: default;
   transition: border-color .12s;
   user-select: none; -webkit-user-select: none;
+  touch-action: manipulation;
 }
 .hole.rising   { cursor: pointer; }
 .hole.active   { border-color: var(--y);  cursor: pointer; }
@@ -289,7 +290,7 @@ function buildGrid() {
     const hole = document.createElement('div');
     hole.className = 'hole';
     hole.dataset.idx = i;
-    hole.onclick = () => whack(i);
+    hole.addEventListener('pointerdown', e => { e.preventDefault(); whack(i); });
 
     const img = document.createElement('img');
     img.className = 'train-img'; img.alt = '';
