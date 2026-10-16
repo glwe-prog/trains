@@ -1,0 +1,454 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Line Spotter</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap">
+
+<style>
+:root {
+  --bg:   #07070A;
+  --surf: #0D0D14;
+  --div:  #252530;
+  --y:    #FFE100;
+  --ydim: #A07800;
+  --grn:  #44EE44;
+  --font: 'Share Tech Mono', 'Courier New', monospace;
+
+  /* grid sizing: min of height-constrained and width-constrained */
+  --pw:  188px;   /* picks panel width */
+  --gg:  12px;    /* gap between panels */
+  --pad: 32px;    /* total side padding */
+  --chr: 108px;   /* header + subtitle + footer + body padding */
+  --gs: min(
+    calc(100dvh - var(--chr)),
+    calc(100vw  - var(--pw) - var(--gg) - var(--pad))
+  );
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--y);
+  font-family: var(--font);
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-block: 10px;
+  padding-left:  max(16px, env(safe-area-inset-left,  0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background: repeating-linear-gradient(0deg,
+    transparent 0, transparent 3px,
+    rgba(0,0,0,.07) 3px, rgba(0,0,0,.07) 4px);
+}
+
+/* â”€â”€ Header â”€â”€ */
+.hdr {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-bottom: 1px solid var(--ydim); padding-bottom: 6px; margin-bottom: 4px;
+  flex-wrap: wrap; gap: 4px; flex-shrink: 0;
+}
+.hdr-title { font-size: clamp(.5rem, 1.6vw, .72rem); letter-spacing: 3px; }
+.hdr-clock { font-size: clamp(1.1rem, 3.5vw, 1.6rem); letter-spacing: 5px; }
+.subtitle  {
+  font-size: .5rem; letter-spacing: 2.5px; color: var(--ydim);
+  margin-bottom: 10px; flex-shrink: 0;
+}
+
+/* â”€â”€ Game layout â”€â”€ */
+.game {
+  flex: 1 1 0; min-height: 0;
+  display: flex; gap: var(--gg); align-items: flex-start;
+}
+
+/* â”€â”€ Picks panel â”€â”€ */
+.picks-panel {
+  flex: 0 0 var(--pw); width: var(--pw);
+  height: var(--gs);
+  border: 1px solid var(--ydim); padding: 10px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.panel-hdr {
+  font-size: .52rem; letter-spacing: 3px; color: var(--ydim);
+  display: flex; justify-content: space-between; margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.picks-count { color: var(--y); }
+
+.picks-grid {
+  flex: 1 1 0; min-height: 0;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr);
+  gap: 5px; margin-bottom: 8px;
+}
+
+.pick-btn {
+  background: var(--surf);
+  border: 1px solid var(--div);
+  color: var(--ydim);
+  font-family: var(--font);
+  font-size: .5rem; letter-spacing: 1px;
+  cursor: pointer; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0; line-height: 1.3; overflow: hidden;
+  transition: border-color .12s, background .12s;
+  padding: 4px;
+}
+.pick-btn:hover:not([disabled]):not(.used) {
+  border-color: var(--y); background: rgba(255,225,0,.06);
+}
+.pick-btn.used { border-color: rgba(255,225,0,.45); cursor: default; padding: 0; }
+.pick-btn[disabled]:not(.used) { opacity: .32; cursor: default; }
+.pick-q { font-size: 1rem; line-height: 1; color: var(--ydim); }
+
+/* Revealed pick: mini photo + label */
+.pick-photo {
+  width: 100%; flex: 1 1 0; min-height: 0; object-fit: cover; display: block;
+  filter: none;
+}
+.pick-name {
+  font-size: .44rem; letter-spacing: 1px; color: var(--y);
+  padding: 3px 3px 4px; line-height: 1.3; text-align: center; flex-shrink: 0;
+}
+
+/* Status strip */
+.status-strip {
+  border-top: 1px solid var(--div); padding-top: 7px;
+  font-size: .48rem; letter-spacing: 2px; color: var(--ydim);
+  line-height: 1.7; flex-shrink: 0;
+}
+
+/* â”€â”€ Main grid â”€â”€ */
+.grid-wrap {
+  flex: 0 0 var(--gs);
+  width: var(--gs); height: var(--gs);
+  position: relative; overflow: hidden;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 4px;
+  width: 100%; height: 100%;
+}
+
+.cell {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--div);
+  background: var(--surf);
+}
+.cell img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  filter: grayscale(1) brightness(0.45) contrast(0.9);
+  transition: filter .55s ease;
+}
+.cell.matched img  { filter: none; }
+.cell.revealed img { filter: brightness(0.6) saturate(0.5); }
+
+/* Placeholder when image fails to load */
+.cell.no-img img { display: none; }
+.cell.no-img .cell-name {
+  transform: translateY(0) !important;
+  color: var(--ydim) !important;
+  opacity: 0.5;
+  background: none !important;
+  padding: 0 4px !important;
+  display: flex; align-items: center; justify-content: center;
+  height: 100%;
+}
+
+/* Label band */
+.cell-name {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,.72));
+  font-size: clamp(.3rem, .9vw, .5rem); letter-spacing: .5px; color: var(--y);
+  padding: 10px 4px 4px; text-align: center; line-height: 1.2;
+  transform: translateY(100%); transition: transform .35s .15s ease;
+  pointer-events: none;
+}
+.cell.matched .cell-name  { transform: translateY(0); }
+.cell.revealed .cell-name { transform: translateY(0); color: var(--ydim); }
+
+.cell.matched  { border-color: rgba(255,225,0,.45); }
+.cell.win-line { border-color: var(--grn) !important; }
+.cell.win-line::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(68,238,68,.18); pointer-events: none;
+}
+
+.cell.pop { animation: cellpop .4s ease; }
+@keyframes cellpop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* â”€â”€ Result banners â€” positioned at bottom of grid, opaque bg â”€â”€ */
+.banner {
+  position: absolute; bottom: 9%; left: 4%; right: 4%;
+  padding: 14px 20px;
+  font-size: clamp(.62rem, 1.6vw, .84rem); letter-spacing: 3px; text-align: center;
+  line-height: 1.6; display: none;
+  background: var(--bg);
+}
+.banner.win  { border: 2px solid var(--grn); color: var(--grn); }
+.banner.lose { border: 2px solid var(--ydim); color: var(--ydim); }
+.banner.visible { display: block; }
+
+.play-again {
+  position: absolute; bottom: 2%; left: 50%; transform: translateX(-50%);
+  white-space: nowrap;
+  background: var(--bg); border: 1px solid var(--y); color: var(--y);
+  font-family: var(--font); font-size: clamp(.56rem, 1.4vw, .72rem); letter-spacing: 3px;
+  padding: 8px 20px; cursor: pointer; display: none;
+}
+.play-again.visible { display: inline-block; }
+.play-again:hover { background: rgba(255,225,0,.1); }
+
+/* â”€â”€ Footer â”€â”€ */
+.back-links {
+  flex-shrink: 0;
+  display: flex; justify-content: space-between; margin-top: 8px;
+  flex-wrap: wrap; gap: 4px;
+}
+.back-link  { font-size: .56rem; letter-spacing: 2px; color: var(--ydim); text-decoration: none; }
+.back-link:hover { color: var(--y); }
+
+/* â”€â”€ Mobile: stack vertically â”€â”€ */
+@media (max-width: 540px) {
+  :root {
+    --gs: min(calc(100vw - 32px), 420px);
+  }
+  body { overflow-y: auto; height: auto; }
+  .game { flex-direction: column; align-items: center; }
+  .picks-panel { width: 100%; max-width: 420px; height: auto; }
+  .picks-grid  { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); height: 100px; }
+  .grid-wrap   { flex: 0 0 auto; }
+}
+</style>
+</head>
+<body>
+<!-- MARKUP -->
+
+<div class="hdr">
+  <div class="hdr-title">WELLINGBOROUGH LINE &nbsp;Â·&nbsp; LINE SPOTTER &nbsp;Â·&nbsp; LOUIE LINE</div>
+  <div class="hdr-clock" id="clock">--:--:--</div>
+</div>
+<div class="subtitle">CHOOSE 4 TYPES FROM YOUR 8 TILES â€” FILL A ROW OR COLUMN OF 5 TO WIN</div>
+
+<div class="game">
+
+  <div class="picks-panel">
+    <div class="panel-hdr">
+      YOUR PICKS
+      <span>LEFT: <span class="picks-count" id="picks-left">4</span></span>
+    </div>
+    <div class="picks-grid" id="picks-grid"></div>
+    <div class="status-strip" id="status">Tap any tile to reveal a train type and light up its matches on the board</div>
+  </div>
+
+  <div class="grid-wrap">
+    <div class="main-grid" id="main-grid"></div>
+    <div class="banner win"  id="win-banner">â˜… LINE COMPLETE â€” YOU WIN!</div>
+    <div class="banner lose" id="lose-banner">NO LINE THIS TIME â€” TRY AGAIN</div>
+    <button class="play-again" id="play-again" onclick="init()">â–¶ PLAY AGAIN</button>
+  </div>
+
+</div>
+
+<div class="back-links">
+  <a href="quizzes.html" class="back-link">â—„ QUIZ MENU</a>
+  <a href="index.html"   class="back-link">LIVE TRAIN BOARD â–º</a>
+</div>
+
+<script>
+const IMG = 'https://glwe-prog.github.io/trains/images/';
+
+// Only types with confirmed edited images in the repo
+const TYPES = {
+  EMR:    { label: 'East Midlands Rly', slug: 'livery_emr'           },
+  LNER:   { label: 'LNER',              slug: 'livery_lner'          },
+  XC:     { label: 'CrossCountry',      slug: 'livery_crosscountry'  },
+  CHILTN: { label: 'Chiltern Railways', slug: 'livery_chiltern'      },
+  NOR:    { label: 'Northern',          slug: 'livery_northern'      },
+  SCR:    { label: 'ScotRail',          slug: 'livery_scotrail'      },
+  STH:    { label: 'Southern',          slug: 'livery_southern'      },
+  GA:     { label: 'Greater Anglia',    slug: 'livery_greater_anglia'},
+};
+
+let picksLeft, matched, gameOver, BOARD;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateBoard() {
+  const keys = Object.keys(TYPES);
+  const sk = shuffle([...keys]);
+
+  // Two win lines, each using a disjoint set of 4 types
+  const wt1 = sk.slice(0, 4), wt2 = sk.slice(4, 8);
+  const wl1 = shuffle([...wt1, wt1[Math.floor(Math.random() * 4)]]);
+  const wl2 = shuffle([...wt2, wt2[Math.floor(Math.random() * 4)]]);
+
+  // Both parallel (2 rows OR 2 columns) â€” avoids intersection conflict
+  const useRows = Math.random() < 0.5;
+  const [i1, i2] = shuffle([0,1,2,3,4]);
+
+  const board = Array.from({ length: 5 }, () => Array(5).fill(null));
+  for (let j = 0; j < 5; j++) {
+    if (useRows) { board[i1][j] = wl1[j]; board[i2][j] = wl2[j]; }
+    else         { board[j][i1] = wl1[j]; board[j][i2] = wl2[j]; }
+  }
+
+  // Fill remaining 15 cells randomly â€” density of 8 types across 25 cells
+  // creates several extra winnable lines naturally
+  for (let r = 0; r < 5; r++)
+    for (let c = 0; c < 5; c++)
+      if (!board[r][c])
+        board[r][c] = keys[Math.floor(Math.random() * keys.length)];
+
+  return board;
+}
+
+function buildGrid() {
+  const g = document.getElementById('main-grid');
+  g.innerHTML = '';
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      const key  = BOARD[r][c];
+      const type = TYPES[key];
+      const d = document.createElement('div');
+      d.className = 'cell';
+      d.id = `c-${r}-${c}`;
+      d.innerHTML =
+        `<img src="${IMG}${type.slug}.jpg" alt="" loading="lazy" onerror="this.parentNode.classList.add('no-img')">` +
+        `<div class="cell-name">${type.label}</div>`;
+      g.appendChild(d);
+    }
+  }
+}
+
+function buildPicks() {
+  const g = document.getElementById('picks-grid');
+  g.innerHTML = '';
+  shuffle(Object.keys(TYPES)).forEach(key => {
+    const b = document.createElement('button');
+    b.className = 'pick-btn';
+    b.dataset.key = key;
+    b.innerHTML = `<span class="pick-q">?</span>`;
+    b.onclick = () => pick(b, key);
+    g.appendChild(b);
+  });
+}
+
+function pick(btn, key) {
+  if (picksLeft <= 0 || gameOver || btn.classList.contains('used')) return;
+  const type = TYPES[key];
+
+  btn.classList.add('used');
+  btn.innerHTML =
+    `<img class="pick-photo" src="${IMG}${type.slug}.jpg" alt="" onerror="this.style.display='none'">` +
+    `<div class="pick-name">${type.label}</div>`;
+  picksLeft--;
+  document.getElementById('picks-left').textContent = picksLeft;
+
+  let delay = 0;
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (BOARD[r][c] === key) {
+        matched.add(`${r},${c}`);
+        const cell = document.getElementById(`c-${r}-${c}`);
+        setTimeout(() => {
+          cell.classList.add('matched', 'pop');
+          cell.addEventListener('animationend', () => cell.classList.remove('pop'), { once: true });
+        }, delay);
+        delay += 90;
+      }
+    }
+  }
+
+  updateStatus();
+
+  if (picksLeft <= 0) {
+    gameOver = true;
+    document.querySelectorAll('.pick-btn:not(.used)').forEach(b => b.disabled = true);
+    setTimeout(checkWin, delay + 350);
+  }
+}
+
+function checkWin() {
+  let won = false;
+  for (let r = 0; r < 5; r++) {
+    if ([0,1,2,3,4].every(c => matched.has(`${r},${c}`))) {
+      [0,1,2,3,4].forEach(c => document.getElementById(`c-${r}-${c}`).classList.add('win-line'));
+      won = true;
+    }
+  }
+  for (let c = 0; c < 5; c++) {
+    if ([0,1,2,3,4].every(r => matched.has(`${r},${c}`))) {
+      [0,1,2,3,4].forEach(r => document.getElementById(`c-${r}-${c}`).classList.add('win-line'));
+      won = true;
+    }
+  }
+
+  if (won) {
+    document.getElementById('win-banner').classList.add('visible');
+    document.getElementById('status').textContent = `${matched.size} cells lit â€” line found!`;
+  } else {
+    let revealDelay = 0;
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 5; c++) {
+        if (!matched.has(`${r},${c}`)) {
+          const cell = document.getElementById(`c-${r}-${c}`);
+          setTimeout(() => cell.classList.add('revealed'), revealDelay);
+          revealDelay += 40;
+        }
+      }
+    }
+    document.getElementById('lose-banner').classList.add('visible');
+    document.getElementById('status').textContent = `${matched.size} cells lit â€” no complete line`;
+  }
+  document.getElementById('play-again').classList.add('visible');
+}
+
+function updateStatus() {
+  document.getElementById('status').textContent = picksLeft > 0
+    ? `${matched.size} cell${matched.size !== 1 ? 's' : ''} lit Â· ${picksLeft} pick${picksLeft !== 1 ? 's' : ''} left`
+    : `${matched.size} cells lit Â· checking for a lineâ€¦`;
+}
+
+function init() {
+  picksLeft = 4; matched = new Set(); gameOver = false;
+  BOARD = generateBoard();
+  buildGrid(); buildPicks();
+  document.getElementById('picks-left').textContent = '4';
+  document.getElementById('status').textContent = 'Tap any tile to reveal a train type and light up its matches on the board';
+  document.getElementById('win-banner').classList.remove('visible');
+  document.getElementById('lose-banner').classList.remove('visible');
+  document.getElementById('play-again').classList.remove('visible');
+}
+
+setInterval(() => {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
+}, 1000);
+document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
+init();
+</script>
+
+</body>
+</html>
