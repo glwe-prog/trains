@@ -345,8 +345,8 @@ function spawnNext() {
   }, 170);
 
   const spawnGap = LEVELS[levelFor(trainsSpawned)][0];
-  const jitter = (Math.random() - 0.5) * 300;
-  spawnTimer = setTimeout(spawnNext, Math.max(350, spawnGap + jitter));
+  const jitter = (Math.random() - 0.5) * spawnGap * 0.8;  // ±40% of gap
+  spawnTimer = setTimeout(spawnNext, Math.max(300, spawnGap + jitter));
 }
 
 // â”€â”€ Retreat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
