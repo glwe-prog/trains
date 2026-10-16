@@ -86,6 +86,7 @@ body::before {
   transition: border-color .12s;
   user-select: none; -webkit-user-select: none;
 }
+.hole.rising   { cursor: pointer; }
 .hole.active   { border-color: var(--y);  cursor: pointer; }
 .hole.hit      { border-color: var(--grn); }
 .hole.retreating { border-color: var(--div); }
@@ -373,7 +374,7 @@ function retreat(idx, wasHit) {
 
 // â”€â”€ Whack â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function whack(idx) {
-  if (!gameRunning || holeState[idx] !== 'active') return;
+  if (!gameRunning || (holeState[idx] !== 'active' && holeState[idx] !== 'rising')) return;
   clearTimeout(holeTimers[idx]);
 
   const lv = levelFor(trainsSpawned);
