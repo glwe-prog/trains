@@ -1,0 +1,745 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Caravan Hurl</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;600&display=swap">
+<style>
+/* Layout: masthead strip, then the riverbank (canvas) beside the referee's table; stacks on phones */
+:root {
+  --bg: #E9EDE2;
+  --panel: #F8FAF3;
+  --fg: #1C2620;
+  --muted: #5A685D;
+  --line: #CBD3C3;
+  --accent: #E4B22B;      /* referee's scorecard yellow */
+  --accent-ink: #2B2108;
+  --river: #2D6C71;
+  --good: #2E7A44;
+  --bad: #A9442F;
+  --display: "Alfa Slab One", Rockwell, "Roboto Slab", Georgia, serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121915; --panel: #1A231E; --fg: #E4E9DE; --muted: #9AA89C; --line: #2E3A32;
+    --accent: #EDBE3C; --accent-ink: #2B2108; --river: #5FA9AE; --good: #6BC184; --bad: #E27B62;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121915; --panel: #1A231E; --fg: #E4E9DE; --muted: #9AA89C; --line: #2E3A32;
+  --accent: #EDBE3C; --accent-ink: #2B2108; --river: #5FA9AE; --good: #6BC184; --bad: #E27B62;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 15px; line-height: 1.5;
+}
+.wrap {
+  max-width: 1240px; margin: 0 auto;
+  padding-block: 20px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px;
+}
+.mast { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
+.eyebrow {
+  margin: 0; font-family: var(--cond); font-weight: 700; font-size: 13px;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--river);
+}
+h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(32px, 6vw, 52px); line-height: 1; letter-spacing: .01em; text-wrap: balance; }
+.how { margin: 0; max-width: 46ch; color: var(--muted); font-size: 15px; }
+.how b { color: var(--fg); font-weight: 600; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+@media (max-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.pitch { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.stage {
+  position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9;
+  border-radius: 6px; overflow: hidden; border: 1px solid var(--line);
+  background: #BFD3DC;
+}
+canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: pointer; }
+canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.hud {
+  display: flex; flex-wrap: wrap; gap: 4px 20px;
+  font-family: var(--cond); font-size: 15px; font-weight: 500; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.hud b { color: var(--fg); font-weight: 700; }
+
+.ref {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0;
+}
+.ref-top { display: flex; align-items: center; gap: 14px; }
+.ref-top svg { flex: none; width: 76px; height: 104px; }
+.card {
+  flex: none; width: 92px; height: 116px; border-radius: 5px;
+  background: var(--accent); color: var(--accent-ink);
+  display: grid; place-content: center; text-align: center;
+  box-shadow: 0 2px 0 rgba(0,0,0,.18);
+  transform-origin: 50% 100%;
+}
+.card .num { font-family: var(--display); font-size: 56px; line-height: 1; }
+.card .of { font-family: var(--cond); font-weight: 700; font-size: 14px; letter-spacing: .1em; }
+.card.blank .num { opacity: .35; }
+.card.flip { animation: flip .55s cubic-bezier(.2,1.4,.4,1); }
+@keyframes flip { from { transform: rotateX(80deg) translateY(10px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .card.flip { animation: none; } }
+.ref-label { margin: 0; font-family: var(--cond); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.pips { display: flex; gap: 5px; margin-top: 6px; }
+.pips i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--accent); }
+.pips i.on { background: var(--accent); }
+.quote { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.35; min-height: 2.7em; }
+.quote::before { content: "\201C"; } .quote::after { content: "\201D"; }
+
+.crit { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.crit li {
+  display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: baseline;
+  padding: 7px 0; border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.crit .mark { font-weight: 700; color: var(--muted); }
+.crit .name { font-weight: 600; }
+.crit .name small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+.crit .val { font-family: var(--cond); font-weight: 700; font-size: 16px; color: var(--muted); text-align: right; }
+.crit li.ok .mark, .crit li.ok .val { color: var(--good); }
+.crit li.no .mark, .crit li.no .val { color: var(--bad); }
+
+.log h2 { margin: 0 0 6px; font-family: var(--cond); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.hist { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+.hist li {
+  font-family: var(--cond); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums;
+  padding: 2px 8px; border-radius: 3px; border: 1px solid var(--line);
+}
+.hist li.top { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.hist .empty { border: 0; padding: 2px 0; font-family: var(--body); font-weight: 400; color: var(--muted); }
+.best { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.best b { color: var(--fg); }
+.btn {
+  font: 700 16px var(--cond); letter-spacing: .06em; text-transform: uppercase;
+  padding: 10px 14px; border-radius: 4px; cursor: pointer;
+  background: var(--fg); color: var(--bg); border: 0;
+}
+.btn:hover { opacity: .88; }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn:disabled { opacity: .35; cursor: default; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <p class="eyebrow">Riverside Caravan Hurling Open &middot; Single-handed tourer class</p>
+      <h1>Caravan Hurl</h1>
+    </div>
+    <p class="how"><b>Hold</b> on the river (or Space) to build power, <b>let go</b> to throw. <b>Tap</b> while it's airborne to add a flip. The referee wants height, deep water, a flip and a big splash.</p>
+  </header>
+
+  <main class="grid">
+    <section class="pitch" aria-label="Riverbank">
+      <div class="stage" id="stage">
+        <canvas id="game" tabindex="0" aria-label="Caravan throwing game. Hold Space or press and hold to charge, release to throw, tap during flight to flip."></canvas>
+      </div>
+      <div class="hud">
+        <span>Caravan <b id="hudVan">–</b></span>
+        <span>MTPLM <b id="hudKg">–</b></span>
+        <span>Wind <b id="hudWind">–</b></span>
+        <span>Throw <b id="hudNo">1</b></span>
+      </div>
+    </section>
+
+    <aside class="ref" aria-label="Referee">
+      <div class="ref-top">
+        <svg viewBox="0 0 76 104" aria-hidden="true">
+          <defs>
+            <pattern id="stripes" width="8" height="8" patternUnits="userSpaceOnUse">
+              <rect width="8" height="8" fill="#F4F4F0"/><rect width="4" height="8" fill="#1E1E22"/>
+            </pattern>
+          </defs>
+          <rect x="24" y="76" width="10" height="26" rx="3" fill="#1E1E22"/>
+          <rect x="40" y="76" width="10" height="26" rx="3" fill="#1E1E22"/>
+          <path d="M18 44 Q37 34 56 44 L54 80 L20 80 Z" fill="url(#stripes)" stroke="#1E1E22" stroke-width="2"/>
+          <path d="M54 46 L68 18" stroke="#D9A882" stroke-width="7" stroke-linecap="round"/>
+          <path d="M20 47 L12 70" stroke="#D9A882" stroke-width="7" stroke-linecap="round"/>
+          <circle cx="37" cy="26" r="12" fill="#D9A882"/>
+          <path d="M25 22 Q37 8 49 22 Z" fill="#1E1E22"/>
+          <circle cx="33" cy="27" r="1.6" fill="#1E1E22"/><circle cx="42" cy="27" r="1.6" fill="#1E1E22"/>
+          <path d="M33 33 Q37 31 41 33" stroke="#1E1E22" stroke-width="1.6" fill="none"/>
+          <path d="M37 38 L37 52" stroke="#9AA3A8" stroke-width="1.2"/><rect x="34" y="51" width="7" height="4" rx="1.5" fill="#9AA3A8"/>
+        </svg>
+        <div>
+          <p class="ref-label">Referee's card</p>
+          <div class="card blank" id="card"><span class="num" id="cardNum">–</span><span class="of">OUT OF 5</span></div>
+        </div>
+      </div>
+      <div>
+        <p class="quote" id="quote" aria-live="polite">Off you go. Get it in the river and make it look good.</p>
+        <div class="pips" id="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <ol class="crit" id="crit"></ol>
+      <button class="btn" id="next" type="button" disabled>Next caravan</button>
+      <div class="log">
+        <h2>Today's throws</h2>
+        <ul class="hist" id="hist"><li class="empty">None yet.</li></ul>
+        <p class="best">Personal best: <b id="best">–</b></p>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+(() => {
+  // ---------- world (metres) ----------
+  const W = 960, H = 540, PX = 22, OX = 84, GY = 420;
+  const sx = m => OX + m * PX, sy = m => GY - m * PX;
+  const NEAR = 4, FAR = 28, WATER = -0.8, DEEP0 = 10, DEEP1 = 22;
+  const CW = 4.2, CH = 2.0, G = 9.81, HOLD_Y = 3.3;
+
+  const CARAVANS = [
+    { name: "1983 Wayfarer 2-berth", kg: 820, stripe: "#B5652B" },
+    { name: "1991 Hillcrest Deluxe", kg: 1050, stripe: "#3D6E8F" },
+    { name: "1978 Sunmead 450", kg: 760, stripe: "#C79A2A" },
+    { name: "1999 Coastline Grande", kg: 1240, stripe: "#7A3E5C" },
+    { name: "1987 Pennine Tourer", kg: 930, stripe: "#4C7A3A" },
+    { name: "1974 Bluebell Compact", kg: 700, stripe: "#2F5E9E" },
+  ];
+
+  const LINES = {
+    short: ["That's still on the bank. It has to reach the water.", "Landed in the car park. No score.", "Dry land. Blank card, I'm afraid."],
+    long: ["You cleared the whole river. Strong, but the river was the point.", "That's in the next field. Nothing for that.", "Over the river and into the nettles. No score."],
+    1: ["Technically wet. That's about all I can say.", "It's in the river, just. One."],
+    2: ["It got there. Lacked ambition.", "Fine. The ducks weren't bothered."],
+    3: ["Solid hurl. Needs a bit more theatre.", "Respectable. I've seen bigger splashes in a bath."],
+    4: ["Lovely stuff. Only the {miss} let it down.", "Big effort. Sort the {miss} and that's a five."],
+    5: ["Perfect hurl. Height, flip, deep water, proper splash.", "Textbook. I'll be telling people about that one."],
+  };
+
+  const CRIT = [
+    { k: "river", name: "In the river", need: "Between the banks" },
+    { k: "height", name: "Height", need: "9 m or more" },
+    { k: "deep", name: "Deep water", need: "10–22 m out" },
+    { k: "flip", name: "Flip", need: "At least one full turn" },
+    { k: "splash", name: "Splash", need: "6/10 or more" },
+  ];
+  const MISS = { height: "height", deep: "landing spot", flip: "lack of a flip", splash: "splash" };
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const canvas = $("game"), ctx = canvas.getContext("2d"), stage = $("stage");
+  const critEl = $("crit");
+  critEl.innerHTML = CRIT.map(c =>
+    `<li data-k="${c.k}"><span class="mark">·</span><span class="name">${c.name}<small>${c.need}</small></span><span class="val">–</span></li>`).join("");
+
+  let best = null;
+  try { const b = localStorage.getItem("caravanHurlBest"); if (b !== null) best = +b; } catch (e) {}
+  $("best").textContent = best === null ? "–" : best + " / 5";
+
+  // ---------- state ----------
+  let state = "aim", now = 0, aimT = 0, chargeT = 0, angle = 0.8, power = 0;
+  let van, cv, peak, totalRot, taps, wind, where, landX, splash, entryT, resultAt, resultT, score = null;
+  let throwNo = 0, history = [];
+  let parts = [], ripples = [], ducks = [];
+  const clouds = Array.from({ length: 5 }, (_, i) => ({ x: i * 220 + Math.random() * 120, y: 40 + Math.random() * 90, s: 0.7 + Math.random() * 0.7 }));
+  const hedge = Array.from({ length: 34 }, (_, i) => ({ x: i * 30 + Math.random() * 14, r: 14 + Math.random() * 12 }));
+
+  function newThrow() {
+    throwNo++;
+    van = CARAVANS[Math.floor(Math.random() * CARAVANS.length)];
+    wind = Math.round((Math.random() * 2.4 - 1.2) * 10) / 10;
+    cv = { x: 0, y: HOLD_Y, vx: 0, vy: 0, rot: 0, w: 0, settled: false };
+    state = "aim"; aimT = Math.random() * 2; power = 0; peak = HOLD_Y; totalRot = 0; taps = 0;
+    where = null; splash = 0; score = null; resultAt = null;
+    parts = []; ripples = [];
+    if (!ducks.length || ducks.every(d => d.fly && (d.y > 30 || d.x < -6 || d.x > 46))) {
+      ducks = [{ x: 14, vx: 0.35, y: WATER, fly: false }, { x: 19.5, vx: -0.3, y: WATER, fly: false }];
+    }
+    const mph = Math.round(Math.abs(wind) * 8);
+    $("hudVan").textContent = van.name;
+    $("hudKg").textContent = van.kg + " kg";
+    $("hudWind").textContent = mph === 0 ? "Still" : `${mph} mph ${wind > 0 ? "→" : "←"}`;
+    $("hudNo").textContent = throwNo;
+    $("next").disabled = true;
+  }
+
+  const vMax = () => 22 - (van.kg - 800) / 160;
+  const vMin = 6;
+
+  function press() {
+    if (state === "aim") { state = "charge"; chargeT = 0; }
+    else if (state === "flight" && taps < 8) {
+      cv.w += 2.4; taps++;
+      for (let i = 0; i < 6; i++) parts.push({ x: cv.x, y: cv.y, vx: (Math.random() - .5) * 4, vy: (Math.random() - .5) * 4, life: .5, max: .5, type: "puff" });
+    }
+    else if (state === "done" && now - resultT > 0.4) newThrow();
+  }
+  function release() {
+    if (state !== "charge") return;
+    const v = vMin + power * (vMax() - vMin);
+    cv.vx = v * Math.cos(angle); cv.vy = v * Math.sin(angle);
+    cv.w = (Math.random() * 0.6 + 0.15) * (Math.random() < .5 ? -1 : 1);
+    state = "flight";
+  }
+
+  canvas.addEventListener("pointerdown", e => { e.preventDefault(); canvas.focus({ preventScroll: true }); press(); });
+  window.addEventListener("pointerup", release);
+  window.addEventListener("pointercancel", release);
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
+  window.addEventListener("keydown", e => {
+    if (e.code !== "Space" && e.code !== "Enter") return;
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") return;
+    e.preventDefault(); if (!e.repeat) press();
+  });
+  window.addEventListener("keyup", e => { if (e.code === "Space" || e.code === "Enter") release(); });
+  $("next").addEventListener("click", () => { if (state === "done") newThrow(); });
+
+  // ---------- physics ----------
+  const halfExt = r => (CW / 2) * Math.abs(Math.sin(r)) + (CH / 2) * Math.abs(Math.cos(r));
+
+  function update(dt) {
+    now += dt;
+    clouds.forEach(c => { c.x += (6 + wind * 10) * dt * c.s; if (c.x > W + 120) c.x = -120; if (c.x < -140) c.x = W + 110; });
+
+    if (state === "aim") {
+      aimT += dt;
+      angle = (20 + 55 * (0.5 - 0.5 * Math.cos(aimT * Math.PI * 2 / 2.4))) * Math.PI / 180;
+    } else if (state === "charge") {
+      chargeT += dt;
+      power = 0.5 - 0.5 * Math.cos(chargeT * Math.PI * 2 / 1.6);
+      cv.y = HOLD_Y - power * 0.3;
+    } else if (state === "flight") {
+      cv.vy -= G * dt; cv.vx += wind * dt;
+      cv.x += cv.vx * dt; cv.y += cv.vy * dt;
+      const dr = cv.w * dt; cv.rot += dr; totalRot += Math.abs(dr);
+      peak = Math.max(peak, cv.y);
+      if (cv.x > 42) { cv.x = 42; cv.vx = -Math.abs(cv.vx) * 0.3; }
+      const overWater = cv.x >= NEAR && cv.x <= FAR;
+      const surf = overWater ? WATER : 0;
+      if (cv.y - halfExt(cv.rot) <= surf) overWater ? enterWater() : hitLand();
+    } else if (state === "water" || (state === "done" && where === "water")) {
+      const sink = Math.min(1.8, (now - entryT) * 0.1);
+      const target = WATER - 0.15 - sink;
+      cv.vy += ((target - cv.y) * 7 - cv.vy * 2.4) * dt;
+      cv.vx *= Math.pow(0.35, dt);
+      cv.x += cv.vx * dt; cv.y += cv.vy * dt;
+      cv.x = Math.min(FAR - 2.2, Math.max(NEAR + 2.2, cv.x));
+      const near = Math.round(cv.rot / Math.PI) * Math.PI;
+      cv.w += ((near - cv.rot) * 4 - cv.w * 2.5) * dt; cv.rot += cv.w * dt;
+      if (Math.random() < dt * 6) parts.push({ x: cv.x + (Math.random() - .5) * 3, y: cv.y, vx: 0, vy: 1.2, life: 1.2, max: 1.2, type: "bubble" });
+    } else if (state === "land" || (state === "done" && where !== "water")) {
+      if (!cv.settled) {
+        cv.vy -= G * dt; cv.x += cv.vx * dt; cv.y += cv.vy * dt;
+        cv.vx *= Math.pow(0.08, dt);
+        const near = Math.round(cv.rot / (Math.PI / 2)) * (Math.PI / 2);
+        cv.rot += (near - cv.rot) * Math.min(1, dt * 6);
+        const floor = halfExt(cv.rot);
+        if (cv.y < floor) { cv.y = floor; cv.vy = Math.abs(cv.vy) > 2 ? -cv.vy * 0.25 : 0; }
+        if (cv.x > NEAR - 2.3 && cv.x < NEAR + 1 && where === "short") cv.x = NEAR - 2.3;
+        if (cv.x < FAR + 2.3 && where === "long") cv.x = FAR + 2.3;
+        cv.x = Math.min(41.5, cv.x);
+        if (Math.abs(cv.vy) < 0.05 && Math.abs(cv.vx) < 0.05 && Math.abs(near - cv.rot) < 0.01) cv.settled = true;
+      }
+    }
+
+    if (resultAt !== null && now >= resultAt) { resultAt = null; showResult(); }
+
+    ducks.forEach(d => {
+      if (d.fly) { d.x += d.vx * dt; d.y += d.vy * dt; d.vy += 0.6 * dt; }
+      else { d.x += d.vx * dt; if (d.x < NEAR + 2 || d.x > FAR - 2) d.vx *= -1; d.y = WATER + Math.sin(now * 2 + d.x) * 0.05; }
+    });
+
+    parts = parts.filter(p => (p.life -= dt) > 0);
+    parts.forEach(p => {
+      if (p.type === "drop") { p.vy -= G * dt; if (p.y < WATER && p.vy < 0) p.life = 0; }
+      else if (p.type === "dust") { p.vy -= 2 * dt; p.vx *= Math.pow(0.3, dt); }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.type === "bubble" && p.y > WATER) p.life = 0;
+    });
+    ripples = ripples.filter(r => (r.life -= dt) > 0);
+  }
+
+  function enterWater() {
+    where = "water"; landX = cv.x; state = "water"; entryT = now;
+    const speed = Math.hypot(cv.vx, cv.vy);
+    const flat = Math.abs(Math.cos(cv.rot));
+    splash = Math.min(10, speed * (0.3 + 0.7 * flat) / 1.8);
+    const n = Math.round(20 + splash * 14);
+    for (let i = 0; i < n; i++) {
+      const s = (0.4 + Math.random()) * (2 + splash * 1.1);
+      const a = Math.PI / 2 + (Math.random() - .5) * (0.6 + flat * 1.2);
+      parts.push({ x: cv.x + (Math.random() - .5) * CW * (0.3 + flat * 0.7), y: WATER + 0.1, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 3, max: 3, type: "drop", r: 2 + Math.random() * 3 });
+    }
+    for (let i = 0; i < 3; i++) ripples.push({ x: cv.x, life: 2.2 + i * 0.5, max: 2.2 + i * 0.5, delay: i * 0.25 });
+    cv.vy *= 0.3; cv.vx *= 0.35; cv.w *= 0.3; cv.y = WATER + 0.1;
+    ducks.forEach(d => {
+      if (!d.fly && Math.abs(d.x - cv.x) < 10) { d.fly = true; d.vx = (d.x < cv.x ? -1 : 1) * (5 + Math.random() * 2); d.vy = 3 + Math.random() * 2; }
+    });
+    resultAt = now + 1.1;
+  }
+
+  function hitLand() {
+    where = cv.x < NEAR ? "short" : "long"; landX = cv.x; state = "land";
+    cv.y = halfExt(cv.rot); cv.vy = -cv.vy * 0.25; cv.vx *= 0.5; cv.w = 0;
+    for (let i = 0; i < 26; i++) parts.push({ x: cv.x + (Math.random() - .5) * CW, y: 0.1, vx: (Math.random() - .5) * 6, vy: Math.random() * 3, life: 1.4, max: 1.4, type: "dust" });
+    resultAt = now + 0.9;
+  }
+
+  // ---------- judging ----------
+  function showResult() {
+    const flips = Math.floor(totalRot / (Math.PI * 2) + 0.04);
+    const wet = where === "water";
+    const res = {
+      river: { ok: wet, val: wet ? "Yes" : where === "short" ? "Short" : "Over" },
+      height: { ok: peak >= 9, val: peak.toFixed(1) + " m" },
+      deep: { ok: wet && landX >= DEEP0 && landX <= DEEP1, val: landX.toFixed(1) + " m" },
+      flip: { ok: flips >= 1, val: flips === 1 ? "1 turn" : flips + " turns" },
+      splash: { ok: wet && splash >= 6, val: wet ? splash.toFixed(1) + "/10" : "None" },
+    };
+    score = wet ? CRIT.filter(c => res[c.k].ok).length : 0;
+
+    critEl.querySelectorAll("li").forEach(li => {
+      const r = res[li.dataset.k];
+      const counts = wet || li.dataset.k === "river";
+      li.className = !counts ? "" : r.ok ? "ok" : "no";
+      li.querySelector(".mark").textContent = !counts ? "·" : r.ok ? "✓" : "✗";
+      li.querySelector(".val").textContent = r.val;
+    });
+
+    let pool = wet ? LINES[score] : LINES[where];
+    let line = pool[Math.floor(Math.random() * pool.length)];
+    if (score === 4) {
+      const miss = CRIT.find(c => !res[c.k].ok);
+      line = line.replace("{miss}", MISS[miss.k]);
+    }
+    $("quote").textContent = line;
+
+    const card = $("card");
+    $("cardNum").textContent = score;
+    card.classList.remove("blank", "flip"); void card.offsetWidth; card.classList.add("flip");
+    $("pips").querySelectorAll("i").forEach((p, i) => p.classList.toggle("on", i < score));
+
+    history.unshift(score); history = history.slice(0, 12);
+    const top = Math.max(...history);
+    $("hist").innerHTML = history.map((s, i) => `<li class="${s === top && s > 0 ? "top" : ""}" title="Throw ${throwNo - i}">${s}/5</li>`).join("");
+    if (best === null || score > best) {
+      best = score; $("best").textContent = best + " / 5";
+      try { localStorage.setItem("caravanHurlBest", String(best)); } catch (e) {}
+    }
+    state = "done"; resultT = now;
+    $("next").disabled = false;
+  }
+
+  // ---------- drawing ----------
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+  }
+
+  function drawSky() {
+    const g = ctx.createLinearGradient(0, 0, 0, GY);
+    g.addColorStop(0, "#AFC6D2"); g.addColorStop(1, "#E6ECDF");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, GY + 30);
+    ctx.fillStyle = "rgba(255,255,255,.75)";
+    clouds.forEach(c => {
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y, 60 * c.s, 18 * c.s, 0, 0, Math.PI * 2);
+      ctx.ellipse(c.x + 30 * c.s, c.y - 12 * c.s, 34 * c.s, 18 * c.s, 0, 0, Math.PI * 2);
+      ctx.ellipse(c.x - 26 * c.s, c.y - 6 * c.s, 28 * c.s, 14 * c.s, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.fillStyle = "#A3B990";
+    ctx.beginPath(); ctx.moveTo(0, GY);
+    for (let x = 0; x <= W; x += 20) ctx.lineTo(x, GY - 70 - Math.sin(x / 140) * 26 - Math.sin(x / 57) * 8);
+    ctx.lineTo(W, GY); ctx.fill();
+    ctx.fillStyle = "#8AAA74";
+    ctx.beginPath(); ctx.moveTo(0, GY);
+    for (let x = 0; x <= W; x += 20) ctx.lineTo(x, GY - 34 - Math.sin(x / 90 + 2) * 14);
+    ctx.lineTo(W, GY); ctx.fill();
+    ctx.fillStyle = "#4F7440";
+    hedge.forEach(h => { ctx.beginPath(); ctx.arc(h.x, GY - 4, h.r, Math.PI, 0); ctx.fill(); });
+  }
+
+  function surfY(px) { return sy(WATER) + Math.sin(px / 26 + now * 2.2) * 1.6; }
+
+  function drawWaterBack() {
+    const top = sy(WATER), l = sx(NEAR), r = sx(FAR);
+    const g = ctx.createLinearGradient(0, top, 0, H);
+    g.addColorStop(0, "#4C8B8F"); g.addColorStop(1, "#1C4A50");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(l, H);
+    for (let x = l; x <= r; x += 8) ctx.lineTo(x, surfY(x));
+    ctx.lineTo(r, H); ctx.fill();
+    // deep channel shading on the bed
+    ctx.fillStyle = "rgba(10,40,45,.35)";
+    ctx.fillRect(sx(DEEP0), H - 40, sx(DEEP1) - sx(DEEP0), 40);
+  }
+
+  function drawWaterFront() {
+    const l = sx(NEAR), r = sx(FAR);
+    ctx.fillStyle = "rgba(28,78,84,.62)";
+    ctx.beginPath(); ctx.moveTo(l, H);
+    for (let x = l; x <= r; x += 8) ctx.lineTo(x, surfY(x) + 3);
+    ctx.lineTo(r, H); ctx.fill();
+    ctx.strokeStyle = "rgba(220,240,240,.7)"; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = l; x <= r; x += 8) x === l ? ctx.moveTo(x, surfY(x)) : ctx.lineTo(x, surfY(x));
+    ctx.stroke();
+    // ripples
+    ripples.forEach(rp => {
+      const age = rp.max - rp.life; if (age < 0) return;
+      const k = age / rp.max;
+      ctx.strokeStyle = `rgba(230,245,245,${0.7 * (1 - k)})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(sx(rp.x), sy(WATER) + 2, 20 + k * 160, 4 + k * 8, 0, 0, Math.PI * 2); ctx.stroke();
+    });
+    // channel markers
+    [DEEP0, DEEP1].forEach(m => {
+      const x = sx(m), y = surfY(x);
+      ctx.fillStyle = "#F2F2EE"; ctx.fillRect(x - 3, y - 26, 6, 30);
+      ctx.fillStyle = "#C9412D"; ctx.fillRect(x - 3, y - 26, 6, 7); ctx.fillRect(x - 3, y - 12, 6, 7);
+    });
+    // measuring tape along the bed
+    ctx.strokeStyle = "rgba(235,245,240,.55)"; ctx.fillStyle = "rgba(235,245,240,.8)";
+    ctx.lineWidth = 1.5; ctx.font = "600 12px 'Barlow Condensed', 'Arial Narrow', sans-serif"; ctx.textAlign = "center";
+    for (let m = NEAR + 2; m < FAR; m += 2) {
+      const x = sx(m), big = m % 4 === 0;
+      ctx.beginPath(); ctx.moveTo(x, H - 8); ctx.lineTo(x, H - (big ? 18 : 13)); ctx.stroke();
+      if (big) ctx.fillText(m + " m", x, H - 22);
+    }
+    ctx.fillStyle = "rgba(240,215,120,.9)";
+    ctx.font = "700 12px 'Barlow Condensed', 'Arial Narrow', sans-serif";
+    ctx.fillText("DEEP CHANNEL", (sx(DEEP0) + sx(DEEP1)) / 2, H - 40);
+  }
+
+  function drawBanks() {
+    // near bank
+    ctx.fillStyle = "#6B4F35";
+    ctx.beginPath(); ctx.moveTo(0, GY); ctx.lineTo(sx(NEAR), GY); ctx.lineTo(sx(NEAR) + 18, H); ctx.lineTo(0, H); ctx.fill();
+    ctx.fillStyle = "#5A7F3A"; ctx.fillRect(0, GY - 3, sx(NEAR) + 2, 9);
+    // far bank
+    ctx.fillStyle = "#6B4F35";
+    ctx.beginPath(); ctx.moveTo(W, GY); ctx.lineTo(sx(FAR), GY); ctx.lineTo(sx(FAR) - 18, H); ctx.lineTo(W, H); ctx.fill();
+    ctx.fillStyle = "#5A7F3A"; ctx.fillRect(sx(FAR) - 2, GY - 3, W, 9);
+    // reeds
+    ctx.strokeStyle = "#47672E"; ctx.lineWidth = 2;
+    [[NEAR, 1], [FAR, -1]].forEach(([m, d]) => {
+      for (let i = 0; i < 6; i++) {
+        const x = sx(m) + d * (4 + i * 3);
+        ctx.beginPath(); ctx.moveTo(x, sy(WATER) + 4); ctx.quadraticCurveTo(x + d * 3, sy(WATER) - 12, x + d * 6 + Math.sin(now + i) * 2, sy(WATER) - 22 - (i % 3) * 5); ctx.stroke();
+      }
+    });
+    // throwing line
+    ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.fillRect(sx(0) + 14, GY - 2, 3, 6);
+  }
+
+  function drawCaravan(c) {
+    const w = CW * PX, h = CH * PX;
+    ctx.save(); ctx.translate(sx(c.x), sy(c.y)); ctx.rotate(-c.rot);
+    // A-frame towbar (front faces the river)
+    ctx.strokeStyle = "#3A3A40"; ctx.lineWidth = 4; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(w / 2 - 6, h / 2 - 12); ctx.lineTo(w / 2 + 16, h / 2 - 6); ctx.stroke();
+    ctx.fillStyle = "#3A3A40"; ctx.beginPath(); ctx.arc(w / 2 + 17, h / 2 - 7, 3.5, 0, Math.PI * 2); ctx.fill();
+    // wheel
+    ctx.fillStyle = "#222"; ctx.beginPath(); ctx.arc(-4, h / 2 - 6, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#9A9AA0"; ctx.beginPath(); ctx.arc(-4, h / 2 - 6, 3.2, 0, Math.PI * 2); ctx.fill();
+    // body
+    rr(-w / 2, -h / 2, w, h - 8, 9);
+    ctx.fillStyle = "#F1ECDB"; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = "#6B6352"; ctx.stroke();
+    ctx.save(); rr(-w / 2, -h / 2, w, h - 8, 9); ctx.clip();
+    ctx.fillStyle = van.stripe; ctx.fillRect(-w / 2, 2, w, 7);
+    ctx.fillStyle = "rgba(0,0,0,.07)"; ctx.fillRect(-w / 2, h / 2 - 16, w, 8);
+    ctx.restore();
+    // front window, side window, door
+    ctx.fillStyle = "#9CC3D0"; ctx.strokeStyle = "#6B6352"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(w / 2 - 22, -h / 2 + 6); ctx.lineTo(w / 2 - 6, -h / 2 + 9); ctx.lineTo(w / 2 - 4, -3); ctx.lineTo(w / 2 - 22, -3); ctx.closePath(); ctx.fill(); ctx.stroke();
+    rr(-w / 2 + 10, -h / 2 + 7, 26, 13, 3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#E4DCC4"; rr(6, -h / 2 + 6, 15, h - 20, 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#6B6352"; ctx.fillRect(17, -2, 3, 2);
+    // roof vent
+    ctx.fillStyle = "#D8D2BE"; ctx.fillRect(-10, -h / 2 - 3, 14, 4);
+    ctx.restore();
+  }
+
+  function drawThrower() {
+    const x = sx(0), y = GY;
+    const crouch = state === "charge" ? power * 6 : 0;
+    const holding = state === "aim" || state === "charge";
+    const hip = y - 20 + crouch, sh = y - 38 + crouch;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#2E3138"; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(x - 9, y); ctx.lineTo(x - 2, hip); ctx.lineTo(x + 9, y); ctx.stroke();
+    ctx.strokeStyle = "#B8392A"; ctx.lineWidth = 13;
+    ctx.beginPath(); ctx.moveTo(x, hip); ctx.lineTo(x, sh); ctx.stroke();
+    ctx.strokeStyle = "#DDAA84"; ctx.lineWidth = 6;
+    ctx.beginPath();
+    if (holding) {
+      const hy = sy(cv.y - CH / 2) + 4;
+      ctx.moveTo(x - 4, sh); ctx.lineTo(x - 13, hy);
+      ctx.moveTo(x + 4, sh); ctx.lineTo(x + 13, hy);
+    } else {
+      ctx.moveTo(x - 4, sh); ctx.lineTo(x + 10, sh - 18);
+      ctx.moveTo(x + 4, sh); ctx.lineTo(x + 22, sh - 12);
+    }
+    ctx.stroke();
+    ctx.fillStyle = "#DDAA84"; ctx.beginPath(); ctx.arc(x, sh - 9, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#3B2A1E"; ctx.beginPath(); ctx.arc(x, sh - 11, 7, Math.PI, 0); ctx.fill();
+  }
+
+  function drawFarSide() {
+    // windsock
+    const px = sx(35), top = GY - 62;
+    ctx.strokeStyle = "#5C5C60"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(px, GY); ctx.lineTo(px, top); ctx.stroke();
+    const len = 10 + Math.abs(wind) * 22, droop = 16 - Math.min(14, Math.abs(wind) * 12), d = wind >= 0 ? 1 : -1;
+    const flap = Math.sin(now * 6) * 2;
+    ctx.fillStyle = "#E06A2C";
+    ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px + d * len, top + droop + flap); ctx.lineTo(px + d * len, top + droop + 7 + flap); ctx.lineTo(px, top + 12); ctx.fill();
+    ctx.fillStyle = "#F4F1E8";
+    ctx.beginPath(); ctx.moveTo(px + d * len * .45, top + droop * .45 + flap * .5); ctx.lineTo(px + d * len * .7, top + droop * .7 + flap * .7); ctx.lineTo(px + d * len * .7, top + droop * .7 + 9 + flap * .7); ctx.lineTo(px + d * len * .45, top + droop * .45 + 10); ctx.fill();
+    // referee
+    const rx = sx(31.6), y = GY;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#1E1E22"; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(rx - 6, y); ctx.lineTo(rx, y - 16); ctx.lineTo(rx + 6, y); ctx.stroke();
+    ctx.lineWidth = 11;
+    for (let i = 0; i < 4; i++) {
+      ctx.strokeStyle = i % 2 ? "#F4F4F0" : "#1E1E22";
+      ctx.beginPath(); ctx.moveTo(rx, y - 16 - i * 4.5); ctx.lineTo(rx, y - 20.5 - i * 4.5); ctx.stroke();
+    }
+    ctx.strokeStyle = "#D9A882"; ctx.lineWidth = 4;
+    ctx.beginPath();
+    const up = state === "done";
+    ctx.moveTo(rx + 3, y - 30); ctx.lineTo(up ? rx + 10 : rx + 8, up ? y - 46 : y - 20);
+    ctx.moveTo(rx - 3, y - 30); ctx.lineTo(rx - 7, y - 20);
+    ctx.stroke();
+    ctx.fillStyle = "#D9A882"; ctx.beginPath(); ctx.arc(rx, y - 38, 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#1E1E22"; ctx.beginPath(); ctx.arc(rx, y - 40, 5.5, Math.PI, 0); ctx.fill();
+    if (up && score !== null) {
+      ctx.fillStyle = "#E4B22B"; ctx.fillRect(rx + 2, y - 72, 22, 28);
+      ctx.strokeStyle = "rgba(0,0,0,.3)"; ctx.lineWidth = 1; ctx.strokeRect(rx + 2, y - 72, 22, 28);
+      ctx.fillStyle = "#2B2108"; ctx.font = "22px 'Alfa Slab One', Rockwell, Georgia, serif"; ctx.textAlign = "center";
+      ctx.fillText(score, rx + 13, y - 50);
+    }
+  }
+
+  function drawDucks() {
+    ducks.forEach(d => {
+      const x = sx(d.x), y = sy(d.y), f = d.vx >= 0 ? 1 : -1;
+      if (y < -20 || x < -20 || x > W + 20) return;
+      ctx.save(); ctx.translate(x, y); ctx.scale(f, 1);
+      ctx.fillStyle = "#7A5B3A"; ctx.beginPath(); ctx.ellipse(0, -4, 9, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#2F6B3F"; ctx.beginPath(); ctx.arc(8, -10, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#E3A23A"; ctx.beginPath(); ctx.moveTo(11, -10); ctx.lineTo(16, -9); ctx.lineTo(11, -8); ctx.fill();
+      if (d.fly) {
+        const flap = Math.sin(now * 22) * 9;
+        ctx.strokeStyle = "#7A5B3A"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(-2, -6); ctx.lineTo(-8, -10 - flap); ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
+
+  function drawParticles() {
+    parts.forEach(p => {
+      const a = Math.min(1, p.life / p.max * 1.5);
+      if (p.type === "drop") { ctx.fillStyle = `rgba(225,242,245,${a})`; ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), p.r, 0, Math.PI * 2); ctx.fill(); }
+      else if (p.type === "dust") { ctx.fillStyle = `rgba(150,120,85,${a * .7})`; ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), 5 + (1 - a) * 8, 0, Math.PI * 2); ctx.fill(); }
+      else if (p.type === "bubble") { ctx.strokeStyle = `rgba(220,240,245,${a * .8})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), 3, 0, Math.PI * 2); ctx.stroke(); }
+      else if (p.type === "puff") { ctx.fillStyle = `rgba(255,255,255,${a * .6})`; ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), 6 * (1.5 - a), 0, Math.PI * 2); ctx.fill(); }
+    });
+  }
+
+  function drawAim() {
+    const cx = sx(cv.x), cy = sy(cv.y), len = 70 + (state === "charge" ? power * 50 : 0);
+    const ex = cx + Math.cos(angle) * len, ey = cy - Math.sin(angle) * len;
+    ctx.strokeStyle = "rgba(28,38,32,.75)"; ctx.lineWidth = 3; ctx.setLineDash([7, 6]);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(28,38,32,.85)";
+    ctx.save(); ctx.translate(ex, ey); ctx.rotate(-angle);
+    ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-6, -7); ctx.lineTo(-6, 7); ctx.fill(); ctx.restore();
+    // power bar
+    const bx = 22, bt = GY - 130, bh = 110;
+    ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.fillRect(bx - 2, bt - 2, 16, bh + 4);
+    const g = ctx.createLinearGradient(0, bt + bh, 0, bt);
+    g.addColorStop(0, "#5D9A3E"); g.addColorStop(.6, "#E4B22B"); g.addColorStop(1, "#C9412D");
+    ctx.fillStyle = g; ctx.fillRect(bx, bt + bh * (1 - power), 12, bh * power);
+    ctx.strokeStyle = "rgba(28,38,32,.6)"; ctx.lineWidth = 1; ctx.strokeRect(bx - 2, bt - 2, 16, bh + 4);
+    ctx.fillStyle = "#1C2620"; ctx.font = "700 11px 'Barlow Condensed', 'Arial Narrow', sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("POWER", bx + 6, bt - 7);
+    ctx.fillText(Math.round(angle * 180 / Math.PI) + "°", cx + Math.cos(angle) * 40 + 16, cy - Math.sin(angle) * 40 + 4);
+  }
+
+  function banner(text) {
+    ctx.font = "700 20px 'Barlow Condensed', 'Arial Narrow', sans-serif"; ctx.textAlign = "center";
+    const w = ctx.measureText(text).width + 28;
+    ctx.fillStyle = "rgba(28,38,32,.78)"; rr(W / 2 - w / 2, 16, w, 34, 4); ctx.fill();
+    ctx.fillStyle = "#F4F1E6"; ctx.fillText(text, W / 2, 40);
+  }
+
+  function draw() {
+    drawSky();
+    drawWaterBack();
+    drawFarSide();
+    drawDucks();
+    drawCaravan(cv);
+    drawWaterFront();
+    drawBanks();
+    drawThrower();
+    drawParticles();
+
+    if (sy(cv.y) < -10) {
+      const x = sx(cv.x);
+      ctx.fillStyle = "rgba(28,38,32,.8)";
+      ctx.beginPath(); ctx.moveTo(x, 6); ctx.lineTo(x - 8, 20); ctx.lineTo(x + 8, 20); ctx.fill();
+      ctx.font = "700 14px 'Barlow Condensed', 'Arial Narrow', sans-serif"; ctx.textAlign = "center";
+      ctx.fillText(cv.y.toFixed(0) + " m", x, 36);
+    }
+    if (state === "flight") {
+      ctx.fillStyle = "rgba(28,38,32,.85)"; ctx.font = "700 15px 'Barlow Condensed', 'Arial Narrow', sans-serif"; ctx.textAlign = "left";
+      ctx.fillText(`HEIGHT ${Math.max(0, cv.y).toFixed(1)} m   ·   TURNS ${(totalRot / (Math.PI * 2)).toFixed(1)}   ·   FLIPS ADDED ${taps}/8`, 16, H - 12 - 0);
+    }
+
+    if (state === "aim" || state === "charge") drawAim();
+    if (state === "aim") banner("Hold to power up");
+    else if (state === "charge") banner("Let go to throw");
+    else if (state === "flight") banner(taps < 8 ? "Tap to flip it" : "No more flips");
+    else if (state === "done") banner("Tap for the next caravan");
+  }
+
+  // ---------- loop ----------
+  function fit() {
+    const r = stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(r.width * dpr)); canvas.height = Math.max(1, Math.round(r.height * dpr));
+  }
+  window.addEventListener("resize", fit);
+
+  let last = performance.now();
+  function frame(t) {
+    const dt = Math.min(0.033, (t - last) / 1000); last = t;
+    update(dt);
+    const k = canvas.width / W;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    draw();
+    requestAnimationFrame(frame);
+  }
+  fit();
+  newThrow();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

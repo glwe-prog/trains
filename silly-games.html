@@ -1,0 +1,204 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Silly Games</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;800&display=swap">
+
+<style>
+  /* ── Tokens ─────────────────────────────────────────────────────────────
+     Layout: playful grid of tilted cards on a bright, dotty background.
+     Single-theme: deliberately commits to carnival colours.
+  */
+  :root {
+    --bg:     #FFF8E7;
+    --dots:   #FFE4A0;
+    --card1:  #FF6B6B;
+    --card2:  #4ECDC4;
+    --card3:  #FFE66D;
+    --card4:  #A78BFA;
+    --card5:  #F97316;
+    --ink:    #1A1A2E;
+    --cream:  #FFFFFF;
+    --shadow: rgba(26,26,46,0.18);
+    color-scheme: light;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(var(--dots) 2px, transparent 2px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    font-family: 'Nunito', 'Segoe UI', sans-serif;
+    min-height: 100%;
+    padding-block: 24px 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  /* ── Header ──────────────────────────────────────────────────────────── */
+  .header {
+    text-align: center;
+    margin-bottom: 36px;
+    position: relative;
+  }
+
+  .header-badge {
+    display: inline-block;
+    background: var(--card1);
+    color: var(--cream);
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 8vw, 3.5rem);
+    letter-spacing: 2px;
+    padding: 10px 32px 14px;
+    border-radius: 50px;
+    box-shadow: 6px 6px 0 var(--ink);
+    border: 3px solid var(--ink);
+    transform: rotate(-1.5deg);
+    line-height: 1;
+  }
+
+  .header-sub {
+    margin-top: 16px;
+    font-size: clamp(0.85rem, 2.5vw, 1.05rem);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+    opacity: 0.65;
+  }
+
+  /* ── Grid ────────────────────────────────────────────────────────────── */
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 24px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* ── Cards ───────────────────────────────────────────────────────────── */
+  .game-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 3px solid var(--ink);
+    border-radius: 20px;
+    padding: 22px 20px 18px;
+    box-shadow: 5px 5px 0 var(--ink);
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .game-card:nth-child(5n+1) { background: var(--card1); transform: rotate(-1.2deg); }
+  .game-card:nth-child(5n+2) { background: var(--card2); transform: rotate(0.8deg); }
+  .game-card:nth-child(5n+3) { background: var(--card3); }
+  .game-card:nth-child(5n+4) { background: var(--card4); color: var(--cream); transform: rotate(-0.6deg); }
+  .game-card:nth-child(5n+5) { background: var(--card5); color: var(--cream); transform: rotate(1deg); }
+
+  .game-card:hover,
+  .game-card:focus-visible {
+    transform: rotate(0deg) translateY(-4px) !important;
+    box-shadow: 7px 9px 0 var(--ink);
+    outline: none;
+  }
+
+  .card-icon {
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+
+  .card-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1.1rem, 3vw, 1.35rem);
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  .card-desc {
+    font-size: clamp(0.75rem, 2vw, 0.88rem);
+    font-weight: 600;
+    line-height: 1.45;
+    opacity: 0.82;
+    flex: 1;
+  }
+
+  .card-cta {
+    display: inline-block;
+    margin-top: 6px;
+    background: var(--ink);
+    color: var(--cream);
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    padding: 6px 16px;
+    border-radius: 50px;
+    align-self: flex-start;
+  }
+
+  /* ── Coming soon placeholder ─────────────────────────────────────────── */
+  .game-card.coming-soon {
+    opacity: 0.55;
+    pointer-events: none;
+    cursor: default;
+  }
+
+  .game-card.coming-soon .card-cta {
+    background: var(--ink);
+    opacity: 0.5;
+  }
+
+  /* ── Footer ──────────────────────────────────────────────────────────── */
+  .footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    opacity: 0.5;
+  }
+
+  .footer a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-badge">🎪 Silly Games</div>
+  <p class="header-sub">No trains required. Just chaos.</p>
+</div>
+
+<div class="game-grid">
+
+  <a class="game-card" href="caravan-hurl.html">
+    <div class="card-icon">🚐</div>
+    <div class="card-title">Caravan Hurl</div>
+    <div class="card-desc">Wind up and hurl a caravan as far as you can. Power, angle, chaos.</div>
+    <div class="card-cta">PLAY</div>
+  </a>
+
+  <div class="game-card coming-soon">
+    <div class="card-icon">🎮</div>
+    <div class="card-title">More Nonsense Coming</div>
+    <div class="card-desc">Another ridiculous game will appear here eventually.</div>
+    <div class="card-cta">SOON</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <a href="index.html">← Back to trains</a>
+</div>
+
+</body>
+</html>
