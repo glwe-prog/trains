@@ -64,16 +64,28 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 .hud b { color: var(--fg); font-weight: 700; }
 
 .ref { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ref-label { margin: 0; font-family: var(--cond); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+.stagebox { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.st-name { margin: 0; font-family: var(--display); font-size: 21px; line-height: 1.1; }
+.st-bar { display: flex; gap: 4px; }
+.st-bar i { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+.st-bar i.done { background: var(--good); }
+.st-bar i.cur { background: var(--accent); }
+.slots { display: flex; gap: 6px; }
+.slots span { width: 36px; height: 32px; border-radius: 4px; border: 1px solid var(--line); display: grid; place-content: center; font-family: var(--cond); font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.slots span.full { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.slots span.zero { color: var(--bad); border-color: var(--bad); }
+.st-total { margin: 0; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.st-total b { color: var(--fg); }
+.st-msg { margin: 0; font-weight: 600; font-size: 14px; }
+.st-msg.pass { color: var(--good); }
+.st-msg.fail { color: var(--bad); }
+
 .ref-top { display: flex; align-items: center; gap: 14px; }
 .ref-top svg { flex: none; width: 76px; height: 104px; }
-.ref-label { margin: 0 0 4px; font-family: var(--cond); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.bat { position: relative; width: 112px; height: 136px; }
-.bat .disc {
-  position: absolute; top: 0; left: 0; width: 112px; height: 112px; border-radius: 50%;
-  background: #F6F6F1; border: 9px solid var(--accent);
-  display: grid; place-content: center; text-align: center; color: #17202A;
-  box-shadow: 0 2px 0 rgba(0,0,0,.2);
-}
+.bat { position: relative; width: 112px; height: 136px; margin-top: 4px; }
+.bat .disc { position: absolute; top: 0; left: 0; width: 112px; height: 112px; border-radius: 50%; background: #F6F6F1; border: 9px solid var(--accent); display: grid; place-content: center; text-align: center; color: #17202A; box-shadow: 0 2px 0 rgba(0,0,0,.2); }
 .bat .handle { position: absolute; left: 50px; top: 106px; width: 12px; height: 30px; border-radius: 0 0 4px 4px; background: #2B2F36; }
 .bat .num { font-family: var(--display); font-size: 46px; line-height: 1; }
 .bat .of { font-family: var(--cond); font-weight: 700; font-size: 11px; letter-spacing: .1em; }
@@ -95,13 +107,9 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 .crit .val { font-family: var(--cond); font-weight: 700; font-size: 16px; color: var(--muted); text-align: right; }
 .crit li.ok .mark, .crit li.ok .val { color: var(--good); }
 .crit li.no .mark, .crit li.no .val { color: var(--bad); }
+.crit li.pen .name { font-style: italic; }
 
-.log h2 { margin: 0 0 6px; font-family: var(--cond); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.hist { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
-.hist li { font-family: var(--cond); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--line); }
-.hist li.top { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.hist .empty { border: 0; padding: 2px 0; font-family: var(--body); font-weight: 400; color: var(--muted); }
-.best { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.best { margin: 0; font-size: 14px; color: var(--muted); }
 .best b { color: var(--fg); }
 .btn { font: 700 16px var(--cond); letter-spacing: .06em; text-transform: uppercase; padding: 10px 14px; border-radius: 4px; cursor: pointer; background: var(--fg); color: var(--bg); border: 0; }
 .btn:hover { opacity: .88; }
@@ -113,10 +121,10 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 <div class="wrap">
   <header class="mast">
     <div>
-      <p class="eyebrow">Netherbank Station &middot; Platform 1 &middot; Single-car units only</p>
+      <p class="eyebrow">Single-car units only &middot; Four stages, five throws each</p>
       <h1>Train <span>Toss</span></h1>
     </div>
-    <p class="how"><b>Hold</b> (or Space) to build power, <b>let go</b> to throw. In the air, <b>tap the left or right half</b> (or &larr; &rarr;) to tilt it level. Land it wheels-down on the rails, gently, and let it roll to a stop at the stop board.</p>
+    <p class="how"><b>Hold</b> (or Space) to build power, <b>let go</b> to throw. In the air, <b>tap the left or right half</b> (or &larr; &rarr;) to tilt it level. Land it wheels-down on the rails, gently, and let it roll to a stop at the platform. Score enough over five throws to unlock the next stage.</p>
   </header>
 
   <main class="grid">
@@ -125,14 +133,23 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
         <canvas id="game" tabindex="0" aria-label="Train throwing game. Hold Space to charge, release to throw, use left and right arrows in flight to tilt."></canvas>
       </div>
       <div class="hud">
+        <span>Stage <b id="hudStage">–</b></span>
+        <span>Throw <b id="hudNo">1/5</b></span>
         <span>Unit <b id="hudUnit">–</b></span>
         <span>Length <b id="hudLen">–</b></span>
         <span>Weight <b id="hudT">–</b></span>
-        <span>Throw <b id="hudNo">1</b></span>
       </div>
     </section>
 
     <aside class="ref" aria-label="Dispatcher">
+      <div class="stagebox">
+        <p class="ref-label">Stage <span id="stNum">1</span> of 4</p>
+        <p class="st-name" id="stName">Netherbank</p>
+        <div class="st-bar" id="stBar"><i></i><i></i><i></i><i></i></div>
+        <div class="slots" id="slots"><span>–</span><span>–</span><span>–</span><span>–</span><span>–</span></div>
+        <p class="st-total">Stage total <b id="stTotal">0</b> / 25 &middot; need <b id="stNeed">12</b> to unlock the next stage</p>
+        <p class="st-msg" id="stMsg" hidden></p>
+      </div>
       <div class="ref-top">
         <svg viewBox="0 0 76 104" aria-hidden="true">
           <rect x="24" y="76" width="10" height="26" rx="3" fill="#2B2F36"/>
@@ -159,11 +176,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
       </div>
       <ol class="crit" id="crit"></ol>
       <button class="btn" id="next" type="button" disabled>Next unit</button>
-      <div class="log">
-        <h2>Today's throws</h2>
-        <ul class="hist" id="hist"><li class="empty">None yet.</li></ul>
-        <p class="best">Personal best: <b id="best">–</b></p>
-      </div>
+      <p class="best">Best throw <b id="best">–</b> &middot; Furthest stage <b id="furthest">1</b></p>
     </aside>
   </main>
 </div>
@@ -173,8 +186,15 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
   // ---------- world (metres) ----------
   const W = 960, H = 540, PX = 11, OX = 150, GY = 470;
   const sx = m => OX + m * PX, sy = m => GY - m * PX;
-  const G = 9.81, RAIL = 1.5, TRACK0 = 34, BUF = 70.5, MARK = 56, PLAT0 = 42, PLAT1 = 68;
-  const BODY = 3.0, WHEEL = 0.9, RAILED_Y = RAIL + WHEEL + BODY / 2, HOLD_Y = 4.7;
+  const G = 9.81, RAIL = 1.5, BODY = 3.0, WHEEL = 0.9, RAILED_Y = RAIL + WHEEL + BODY / 2, HOLD_Y = 4.7;
+  const TOP_Y = GY / PX;
+
+  const STAGES = [
+    { name: "Netherbank", station: "NETHERBANK", need: 12, track0: 34, end: 70.5, buffers: true, mark: 56, plat: [42, 68], doors: false, tol: 3, decel: 7, aim: [10, 60], ground: "emb" },
+    { name: "Overhead wires", station: "KILNWORTH", need: 10, track0: 34, end: 70.5, buffers: true, mark: 56, plat: [42, 68], doors: false, tol: 3, decel: 4, aim: [4, 55], ground: "emb", wires: { x0: 50, x1: 74, h: 7.4 } },
+    { name: "The viaduct", station: "HIGH ARCHES", need: 10, track0: 30, end: 70.5, buffers: true, mark: 58, plat: [46, 68], doors: false, tol: 3, decel: 6, aim: [10, 60], ground: "viaduct" },
+    { name: "Short platform", station: "TUNNEL END", need: 9, track0: 34, end: 90, buffers: false, mark: 56, plat: [47.5, 64.5], doors: true, decel: 6, aim: [6, 60], ground: "emb", tunnel: { x: 66, h: 6.8 } },
+  ];
 
   const UNITS = [
     { cls: "Class 139", nick: "Parry People Mover", L: 8.7, t: 12.5, bogie: false, body: "#8E2333", trim: "#E9DDBF", num: () => "139 00" + (1 + Math.floor(Math.random() * 2)) },
@@ -185,63 +205,102 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 
   const LINES = {
     off: ["That's not the railway. That's a field.", "Missed the line completely. The cows are unimpressed.", "Nowhere near the track. No score."],
+    valley: ["Short of the viaduct and into the valley. No score.", "That's a long way down. No score."],
+    hill: ["Straight into the hillside above the tunnel. No score.", "You hit the hill. The tunnel was right there."],
     derail: ["It's near the track, I'll give you that. It is not on it.", "Derailed. The engineers will be here all week."],
-    buffers: ["Straight into the buffer stops. They did their job, at least.", "Overshot the platform and hit the buffers. Passengers please alight carefully."],
+    buffers: ["Straight into the buffer stops. They did their job, at least.", "Overshot the platform and hit the buffers."],
+    tunnel: ["Rolled straight into the tunnel. Nobody can get off in there.", "Lovely landing, then it vanished into the tunnel."],
+    0: ["The wires cost you everything. Zero.", "Nothing left after the wire strike."],
     1: ["It's on railway land. That's the kindest thing I can say.", "One. The timetable is ruined."],
     2: ["It's on the line, roughly. Lots to work on.", "Two. I've seen worse, but not today."],
     3: ["Decent. Not one for the brochure, though.", "Three. The passengers have mixed feelings."],
     4: ["Very tidy. Only the {miss} let you down.", "Nearly perfect. Sort out the {miss} and that's a five."],
-    5: ["Wheels on the rails, stopped at the board. Perfect.", "Textbook. Doors opening. Mind the gap."],
+    5: ["Wheels on the rails, stopped right where I wanted it. Perfect.", "Textbook. Doors opening. Mind the gap."],
   };
-
-  const CRIT = [
-    { k: "line", name: "On the line", need: "Both wheelsets on the track" },
-    { k: "wheels", name: "Wheels down", need: "Not upside down" },
-    { k: "level", name: "Level", need: "Within 10° at touchdown" },
-    { k: "soft", name: "Soft touchdown", need: "Under 11 m/s downward" },
-    { k: "mark", name: "Stopped at the board", need: "Within 3 m of the stop board" },
-  ];
   const MISS = { wheels: "upside-down landing", level: "tilt", soft: "heavy landing", mark: "stopping position" };
 
   // ---------- DOM ----------
   const $ = id => document.getElementById(id);
   const canvas = $("game"), ctx = canvas.getContext("2d"), stage = $("stage"), critEl = $("crit");
-  critEl.innerHTML = CRIT.map(c =>
-    `<li data-k="${c.k}"><span class="mark">·</span><span class="name">${c.name}<small>${c.need}</small></span><span class="val">–</span></li>`).join("");
 
-  let best = null;
-  try { const b = localStorage.getItem("trainTossBest"); if (b !== null) best = +b; } catch (e) {}
-  $("best").textContent = best === null ? "–" : best + " / 5";
+  let best = null, furthest = 1;
+  try {
+    const b = localStorage.getItem("trainTossBest"); if (b !== null) best = +b;
+    const f = localStorage.getItem("trainTossFurthest"); if (f !== null) furthest = +f;
+  } catch (e) {}
+  const save = (k, v) => { try { localStorage.setItem(k, String(v)); } catch (e) {} };
+  const showBest = () => { $("best").textContent = best === null ? "–" : best + "/5"; $("furthest").textContent = furthest; };
 
   // ---------- state ----------
+  let S, stageIdx = 0, stageScores = [], stageOver = false, stagePassed = false, CRIT = [];
   let state = "aim", now = 0, aimT = 0, chargeT = 0, angle = 0.5, power = 0;
-  let unit, unitNo, cv, peak, touch, railed, hitBuffers, resultAt, resultT, score = null, lastContact = 0, settleT = 0;
-  let throwNo = 0, history = [], parts = [];
+  let unit, unitNo, cv, peak, touch, railed, hitBuffers, hillHit, wireHit, wireT = -10, resultAt, resultT, score = null, lastContact = 0, settleT = 0;
+  let parts = [];
   const clouds = Array.from({ length: 5 }, (_, i) => ({ x: i * 220 + Math.random() * 120, y: 30 + Math.random() * 90, s: 0.7 + Math.random() * 0.7 }));
   const houses = Array.from({ length: 22 }, (_, i) => ({ x: 380 + i * 30, h: 26 + (i % 3) * 6 + Math.random() * 6 }));
   const trees = Array.from({ length: 14 }, (_, i) => ({ x: i * 28 + Math.random() * 10, r: 12 + Math.random() * 10 }));
 
   const bogieOff = () => unit.L / 2 - Math.max(1.8, unit.L * 0.15);
+  const doorOff = () => Math.min(unit.L / 2 - 2.6, 8);
+
+  function startStage(i) {
+    stageIdx = i; S = STAGES[i];
+    stageScores = []; stageOver = false; stagePassed = false;
+    CRIT = [
+      { k: "line", name: "On the line", need: "Both wheelsets on the track" },
+      { k: "wheels", name: "Wheels down", need: "Not upside down" },
+      { k: "level", name: "Level", need: "Within 10° at touchdown" },
+      { k: "soft", name: "Soft touchdown", need: "Under 11 m/s downward" },
+      S.doors ? { k: "mark", name: "Doors on the platform", need: "Both doors alongside the platform" }
+              : { k: "mark", name: "Stopped at the board", need: `Within ${S.tol} m of the stop board` },
+    ];
+    if (S.wires) CRIT.push({ k: "wires", name: "Clear of the wires", need: "Touch them and lose 2 points", pen: true });
+    critEl.innerHTML = CRIT.map(c =>
+      `<li data-k="${c.k}" class="${c.pen ? "pen" : ""}"><span class="mark">·</span><span class="name">${c.name}<small>${c.need}</small></span><span class="val">–</span></li>`).join("");
+    $("stNum").textContent = i + 1; $("stName").textContent = S.name; $("stNeed").textContent = S.need;
+    $("stBar").querySelectorAll("i").forEach((b, j) => b.className = j < i ? "done" : j === i ? "cur" : "");
+    $("stMsg").hidden = true;
+    $("quote").textContent = i === 0 ? "Platform 1 is clear. Bring it in on the rails and stop at the board." : `Stage ${i + 1}: ${S.name}. Same rules, new problems.`;
+    $("bat").classList.add("blank"); $("batNum").textContent = "–";
+    $("pips").querySelectorAll("i").forEach(p => p.classList.remove("on"));
+    drawSlots();
+  }
+
+  function drawSlots() {
+    const el = $("slots").children;
+    for (let i = 0; i < 5; i++) {
+      const s = stageScores[i];
+      el[i].textContent = s === undefined ? "–" : s;
+      el[i].className = s === undefined ? "" : s === 0 ? "zero" : "full";
+    }
+    $("stTotal").textContent = stageScores.reduce((a, b) => a + b, 0);
+  }
 
   function newThrow() {
-    throwNo++;
     unit = UNITS[Math.floor(Math.random() * UNITS.length)];
     unitNo = unit.num();
     cv = { x: 0, y: HOLD_Y, vx: 0, vy: 0, rot: 0, w: 0 };
     state = "aim"; aimT = Math.random() * 2; power = 0; peak = HOLD_Y;
-    touch = null; railed = false; hitBuffers = false; score = null; resultAt = null; parts = []; settleT = 0;
+    touch = null; railed = false; hitBuffers = false; hillHit = false; wireHit = false;
+    score = null; resultAt = null; parts = []; settleT = 0;
+    $("hudStage").textContent = `${stageIdx + 1} · ${S.name}`;
+    $("hudNo").textContent = `${stageScores.length + 1}/5`;
     $("hudUnit").textContent = `${unit.cls} ${unit.nick}`;
     $("hudLen").textContent = unit.L.toFixed(1) + " m";
     $("hudT").textContent = unit.t.toFixed(1) + " t";
-    $("hudNo").textContent = throwNo;
-    $("next").disabled = true;
+    $("next").disabled = true; $("next").textContent = "Next unit";
   }
 
   const vMax = () => 32 - unit.t * 0.08, vMin = 10;
 
+  function advance() {
+    if (state !== "done" || now - resultT < 0.4) return;
+    if (stageOver) startStage(stagePassed ? (stageIdx + 1) % STAGES.length : stageIdx);
+    newThrow();
+  }
   function press() {
     if (state === "aim") { state = "charge"; chargeT = 0; }
-    else if (state === "done" && now - resultT > 0.4) newThrow();
+    else advance();
   }
   function release() {
     if (state !== "charge") return;
@@ -277,15 +336,24 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     e.preventDefault(); if (!e.repeat) press();
   });
   window.addEventListener("keyup", e => { if (e.code === "Space" || e.code === "Enter") release(); });
-  $("next").addEventListener("click", () => { if (state === "done") newThrow(); });
+  $("next").addEventListener("click", advance);
 
   // ---------- geometry ----------
   function surface(x) {
-    if (x < 31 || x > 75) return 0;
+    if (S.ground === "viaduct") return x <= 16 ? 0 : x < 30 ? -6 : RAIL;
+    if (x < 31) return 0;
     if (x < 34) return (x - 31) / 3 * RAIL;
-    if (x > 72) return (75 - x) / 3 * RAIL;
+    if (S.tunnel) return RAIL;
+    if (x > 72) return x < 75 ? (75 - x) / 3 * RAIL : 0;
     return RAIL;
   }
+  function hillEdge(y) {
+    const t = S.tunnel, base = t.x - 0.5;
+    return y <= t.h + 3 ? base : base + (y - t.h - 3) / (TOP_Y - t.h - 3) * 5.5;
+  }
+  const inHill = p => S.tunnel && p.y >= S.tunnel.h && p.x >= hillEdge(p.y);
+  const inWires = p => S.wires && p.y > S.wires.h && p.x >= S.wires.x0 && p.x <= S.wires.x1;
+
   // rot > 0 is clockwise on screen (nose down when heading right)
   function toWorld(c, lx, ly) {
     const cs = Math.cos(c.rot), sn = Math.sin(c.rot);
@@ -293,7 +361,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
   }
   function pts(c) {
     const b = bogieOff(), lo = -(BODY / 2 + WHEEL), h = BODY / 2, L2 = unit.L / 2;
-    return [toWorld(c, b, lo), toWorld(c, -b, lo), toWorld(c, L2, -h), toWorld(c, -L2, -h), toWorld(c, L2, h), toWorld(c, -L2, h)];
+    return [toWorld(c, b, lo), toWorld(c, -b, lo), toWorld(c, L2, -h), toWorld(c, -L2, -h), toWorld(c, L2, h), toWorld(c, -L2, h), toWorld(c, 0, h)];
   }
   const pen = c => Math.min(...pts(c).map(p => p.y - surface(p.x)));
   const normDeg = r => Math.atan2(Math.sin(r), Math.cos(r)) * 180 / Math.PI;
@@ -305,7 +373,8 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 
     if (state === "aim") {
       aimT += dt;
-      angle = (10 + 50 * (0.5 - 0.5 * Math.cos(aimT * Math.PI * 2 / 2.4))) * Math.PI / 180;
+      const [a0, a1] = S.aim;
+      angle = (a0 + (a1 - a0) * (0.5 - 0.5 * Math.cos(aimT * Math.PI * 2 / 2.4))) * Math.PI / 180;
     } else if (state === "charge") {
       chargeT += dt;
       power = 0.5 - 0.5 * Math.cos(chargeT * Math.PI * 2 / 1.6);
@@ -315,21 +384,29 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
       cv.w *= Math.pow(0.75, dt); cv.rot += cv.w * dt;
       peak = Math.max(peak, cv.y);
       if (cv.x > 82) { cv.x = 82; cv.vx = -Math.abs(cv.vx) * 0.2; }
-      if (pen(cv) <= 0) touchdown();
+      const P = pts(cv);
+      if (S.wires && !wireHit) {
+        const wp = P.find(inWires);
+        if (wp) { wireHit = true; wireT = now; for (let i = 0; i < 40; i++) parts.push({ x: wp.x, y: S.wires.h, vx: (Math.random() - .5) * 12, vy: (Math.random() - .2) * 8, life: .7, max: .7, type: "spark" }); }
+      }
+      if (S.tunnel && P.some(inHill)) crashHill();
+      else if (pen(cv) <= 0) touchdown();
     } else if (state === "rail" || (state === "done" && railed)) {
-      const dec = 7 * dt;
+      const dec = S.decel * dt;
       cv.vx = cv.vx > 0 ? Math.max(0, cv.vx - dec) : Math.min(0, cv.vx + dec);
       cv.x += cv.vx * dt;
       if (Math.abs(cv.vx) > 0.8 && Math.random() < dt * 30) sparks(1);
-      if (cv.x + unit.L / 2 >= BUF && cv.vx > 0) {
+      if (S.buffers && cv.x + unit.L / 2 >= S.end && cv.vx > 0) {
         if (cv.vx > 1) { hitBuffers = true; sparks(14); }
-        cv.x = BUF - unit.L / 2; cv.vx = -cv.vx * 0.15;
+        cv.x = S.end - unit.L / 2; cv.vx = -cv.vx * 0.15;
       }
-      if (cv.x - bogieOff() < TRACK0) { railed = false; state = "derail"; cv.w = -0.4; }
+      cv.x = Math.min(cv.x, 88);
+      if (cv.x - bogieOff() < S.track0) { railed = false; state = "derail"; cv.w = -0.4; }
       if (state === "rail" && cv.vx === 0 && resultAt === null) resultAt = now + 0.6;
     } else if (state === "derail" || (state === "done" && !railed)) {
       cv.vy -= G * dt; cv.x += cv.vx * dt; cv.y += cv.vy * dt; cv.rot += cv.w * dt;
       cv.x = Math.max(-8, Math.min(80, cv.x));
+      if (S.tunnel && pts(cv).some(inHill)) { cv.vx = -Math.abs(cv.vx) * 0.3 - 0.5; cv.x -= 0.05; }
       const p = pen(cv);
       if (p < 0) {
         cv.y -= p;
@@ -363,12 +440,23 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
       parts.push({ x: bx, y: RAIL + 0.1, vx: -Math.sign(cv.vx || 1) * (2 + Math.random() * 5), vy: 1 + Math.random() * 3, life: .4, max: .4, type: "spark" });
     }
   }
+  function dust(x, y, n) {
+    for (let i = 0; i < n; i++) parts.push({ x: x + (Math.random() - .5) * unit.L, y: y + 0.2, vx: (Math.random() - .5) * 7, vy: Math.random() * 3, life: 1.5, max: 1.5, type: "dust" });
+  }
+
+  function crashHill() {
+    hillHit = true; railed = false; state = "derail";
+    const a = normDeg(cv.rot);
+    touch = { t: now, x: cv.x, vy: Math.abs(cv.vy), angle: a, line: false, upright: Math.cos(cv.rot) > 0, level: Math.abs(a) <= 10, soft: false };
+    cv.vx = -2; cv.vy = Math.min(cv.vy, 0); cv.w = (Math.random() - .5) * 2;
+    dust(cv.x + unit.L / 2, cv.y, 30);
+  }
 
   function touchdown() {
     const p = pts(cv), a = normDeg(cv.rot);
     touch = {
       t: now, x: cv.x, vy: Math.abs(cv.vy), angle: a,
-      line: [p[0].x, p[1].x].every(x => x >= TRACK0 && x <= BUF),
+      line: [p[0].x, p[1].x].every(x => x >= S.track0 && x <= S.end),
       upright: Math.cos(cv.rot) > 0,
       level: Math.abs(a) <= 10,
     };
@@ -382,34 +470,47 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
       railed = false; state = "derail";
       cv.y -= pen(cv);
       cv.vy = Math.abs(cv.vy) * 0.2; cv.vx *= 0.5; cv.w = cv.w * 0.5 + (Math.random() - .5) * 1.5;
-      const ground = surface(cv.x);
-      for (let i = 0; i < 30; i++) parts.push({ x: cv.x + (Math.random() - .5) * unit.L, y: ground + 0.2, vx: (Math.random() - .5) * 7, vy: Math.random() * 3, life: 1.5, max: 1.5, type: "dust" });
+      dust(cv.x, surface(cv.x), 30);
     }
   }
 
   // ---------- judging ----------
   function showResult() {
-    const off = cv.x - MARK;
+    const off = cv.x - S.mark, d = doorOff();
+    const intoTunnel = S.tunnel && railed && cv.x + unit.L / 2 > S.tunnel.x + 0.5;
+    let markOk = false, markVal;
+    if (!railed) markVal = "Derailed";
+    else if (hitBuffers) markVal = "Buffers";
+    else if (S.doors) { markOk = cv.x - d >= S.plat[0] && cv.x + d <= S.plat[1]; markVal = markOk ? "Yes" : intoTunnel ? "In the tunnel" : "Off the end"; }
+    else { markOk = Math.abs(off) <= S.tol; markVal = (off >= 0 ? "+" : "") + off.toFixed(1) + " m"; }
     const res = {
-      line: { ok: touch.line, val: touch.line ? "Yes" : "Missed" },
+      line: { ok: touch.line, val: touch.line ? "Yes" : hillHit ? "Hill" : "Missed" },
       wheels: { ok: touch.upright, val: touch.upright ? "Yes" : "Upside down" },
       level: { ok: touch.level, val: Math.abs(touch.angle).toFixed(0) + "°" },
       soft: { ok: touch.soft, val: touch.vy.toFixed(1) + " m/s" },
-      mark: { ok: railed && !hitBuffers && Math.abs(off) <= 3, val: !railed ? "Derailed" : hitBuffers ? "Buffers" : (off >= 0 ? "+" : "") + off.toFixed(1) + " m" },
+      mark: { ok: markOk, val: markVal },
+      wires: { ok: !wireHit, val: wireHit ? "−2" : "Clear" },
     };
-    score = touch.line ? CRIT.filter(c => res[c.k].ok).length : 0;
+    const raw = CRIT.filter(c => !c.pen && res[c.k].ok).length;
+    score = touch.line ? Math.max(0, raw - (wireHit ? 2 : 0)) : 0;
 
     critEl.querySelectorAll("li").forEach(li => {
-      const r = res[li.dataset.k];
-      const counts = touch.line || li.dataset.k === "line";
-      li.className = !counts ? "" : r.ok ? "ok" : "no";
+      const k = li.dataset.k, r = res[k];
+      const counts = touch.line || k === "line" || k === "wires";
+      li.className = (k === "wires" ? "pen " : "") + (!counts ? "" : r.ok ? "ok" : "no");
       li.querySelector(".mark").textContent = !counts ? "·" : r.ok ? "✓" : "✗";
       li.querySelector(".val").textContent = r.val;
     });
 
-    let pool = !touch.line ? LINES.off : hitBuffers ? LINES.buffers : !railed ? LINES.derail : LINES[score];
+    let pool;
+    if (!touch.line) pool = hillHit ? LINES.hill : (S.ground === "viaduct" && touch.x > 14 && touch.x < 32) ? LINES.valley : LINES.off;
+    else if (hitBuffers) pool = LINES.buffers;
+    else if (!railed) pool = LINES.derail;
+    else if (intoTunnel) pool = LINES.tunnel;
+    else pool = LINES[score];
     let line = pool[Math.floor(Math.random() * pool.length)];
-    if (line.includes("{miss}")) line = line.replace("{miss}", MISS[CRIT.find(c => !res[c.k].ok).k]);
+    if (line.includes("{miss}")) { const m = CRIT.find(c => !c.pen && !res[c.k].ok); line = m ? line.replace("{miss}", MISS[m.k]) : "Very tidy, apart from the wires."; }
+    if (wireHit && touch.line && score > 0) line += " And you hit the wires. Minus two.";
     $("quote").textContent = line;
 
     const bat = $("bat");
@@ -417,13 +518,27 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     bat.classList.remove("blank", "flip"); void bat.offsetWidth; bat.classList.add("flip");
     $("pips").querySelectorAll("i").forEach((p, i) => p.classList.toggle("on", i < score));
 
-    history.unshift(score); history = history.slice(0, 12);
-    const top = Math.max(...history);
-    $("hist").innerHTML = history.map((s, i) => `<li class="${s === top && s > 0 ? "top" : ""}" title="Throw ${throwNo - i}">${s}/5</li>`).join("");
-    if (best === null || score > best) {
-      best = score; $("best").textContent = best + " / 5";
-      try { localStorage.setItem("trainTossBest", String(best)); } catch (e) {}
+    if (best === null || score > best) { best = score; save("trainTossBest", best); }
+    stageScores.push(score); drawSlots();
+    if (stageScores.length === 5) {
+      stageOver = true;
+      const total = stageScores.reduce((a, b) => a + b, 0);
+      stagePassed = total >= S.need;
+      const msg = $("stMsg"); msg.hidden = false;
+      if (stagePassed) {
+        const last = stageIdx === STAGES.length - 1;
+        msg.className = "st-msg pass";
+        msg.textContent = last ? `${total}/25. All four stages cleared. Right away!` : `${total}/25. Stage cleared. Next: ${STAGES[stageIdx + 1].name}.`;
+        if (!last) furthest = Math.max(furthest, stageIdx + 2);
+        save("trainTossFurthest", furthest);
+        $("next").textContent = last ? "Start again" : "Next stage";
+      } else {
+        msg.className = "st-msg fail";
+        msg.textContent = `${total}/25. You needed ${S.need}. Try the stage again.`;
+        $("next").textContent = "Retry stage";
+      }
     }
+    showBest();
     state = "done"; resultT = now;
     $("next").disabled = false;
   }
@@ -454,8 +569,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     ctx.beginPath(); ctx.moveTo(0, GY);
     for (let x = 0; x <= W; x += 20) ctx.lineTo(x, GY - 60 - Math.sin(x / 150) * 22 - Math.sin(x / 61) * 7);
     ctx.lineTo(W, GY); ctx.fill();
-    // terraced houses behind the station
-    houses.forEach(h => {
+    if (S.ground !== "viaduct") houses.forEach(h => {
       ctx.fillStyle = "#9A7362"; ctx.fillRect(h.x, GY - 40 - h.h, 30, h.h + 40);
       ctx.fillStyle = "#5E5552";
       ctx.beginPath(); ctx.moveTo(h.x - 1, GY - 40 - h.h); ctx.lineTo(h.x + 15, GY - 52 - h.h); ctx.lineTo(h.x + 31, GY - 40 - h.h); ctx.fill();
@@ -464,44 +578,75 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     });
     ctx.fillStyle = "#5C7D45";
     trees.forEach(t => { ctx.beginPath(); ctx.arc(t.x, GY - 6, t.r, Math.PI, 0); ctx.fill(); });
-    // field
     ctx.fillStyle = "#7FA05B"; ctx.fillRect(0, GY - 2, W, H - GY + 2);
     ctx.fillStyle = "#73954F";
     for (let y = GY + 10; y < H; y += 14) ctx.fillRect(0, y, W, 3);
+    if (S.ground === "viaduct") {
+      ctx.fillStyle = "#93B6C4"; ctx.fillRect(sx(16), GY - 2, W - sx(16), H - GY + 2);
+      ctx.fillStyle = "#86A7B8"; ctx.beginPath(); ctx.moveTo(sx(16), H);
+      for (let x = sx(16); x <= W; x += 20) ctx.lineTo(x, GY + 10 - Math.sin(x / 70) * 8);
+      ctx.lineTo(W, H); ctx.fill();
+      ctx.fillStyle = "#5D7E48"; ctx.fillRect(sx(16), sy(-5.5), W - sx(16), H);
+      ctx.fillStyle = "#4F86A0"; ctx.fillRect(sx(16), sy(-5.8), W - sx(16), 4);
+      ctx.fillStyle = "#6B5440"; ctx.fillRect(sx(16) - 4, GY - 2, 6, H - GY + 2);
+    }
   }
 
   function drawPlatform() {
-    const l = sx(PLAT0), r = sx(PLAT1), top = sy(RAIL + 1.0);
-    // canopy
+    const [p0, p1] = S.plat, l = sx(p0), r = sx(p1), top = sy(RAIL + 1.0);
     ctx.fillStyle = "#3D4B5C";
-    for (let m = PLAT0 + 2; m <= PLAT1 - 1; m += 6) ctx.fillRect(sx(m) - 2, sy(8), 4, top - sy(8));
+    for (let m = p0 + 2; m <= p1 - 1; m += 6) ctx.fillRect(sx(m) - 2, sy(8), 4, top - sy(8));
     ctx.fillStyle = "#56677A"; ctx.fillRect(l + 6, sy(8.6), r - l - 12, 9);
     ctx.fillStyle = "#3D4B5C"; ctx.fillRect(l + 6, sy(8.6) + 9, r - l - 12, 3);
-    // running-in board
-    const bx = sx(50), by = sy(6.5);
-    ctx.fillStyle = "#1F3B63"; ctx.fillRect(bx - 50, by, 100, 20);
-    ctx.fillStyle = "#F4F6F7"; ctx.font = condFont(13); ctx.textAlign = "center";
-    ctx.fillText("NETHERBANK", bx, by + 15);
-    ctx.fillStyle = "#3D4B5C"; ctx.fillRect(bx - 40, by + 20, 3, top - by - 20); ctx.fillRect(bx + 37, by + 20, 3, top - by - 20);
-    // platform slab
+    const bx = sx(p0 + 7), by = sy(6.5);
+    ctx.font = condFont(13); ctx.textAlign = "center";
+    const bw = ctx.measureText(S.station).width + 24;
+    ctx.fillStyle = "#1F3B63"; ctx.fillRect(bx - bw / 2, by, bw, 20);
+    ctx.fillStyle = "#F4F6F7"; ctx.fillText(S.station, bx, by + 15);
+    ctx.fillStyle = "#3D4B5C"; ctx.fillRect(bx - bw / 2 + 8, by + 20, 3, top - by - 20); ctx.fillRect(bx + bw / 2 - 11, by + 20, 3, top - by - 20);
     ctx.fillStyle = "#9CA3A8"; ctx.fillRect(l, top, r - l, sy(RAIL) - top);
     ctx.fillStyle = "#B8BEC2"; ctx.fillRect(l, top, r - l, 4);
     ctx.fillStyle = "#F2C230"; ctx.fillRect(l, top + 5, r - l, 2);
   }
 
+  function drawViaduct() {
+    const brick = "#9A5440";
+    for (let p = 30; p < 82; p += 7) {
+      ctx.fillStyle = brick; ctx.fillRect(sx(p) - 0.8 * PX, sy(-1), 1.6 * PX, sy(-6) - sy(-1) + 6);
+      const inL = p + 0.8, inR = p + 6.2, r = (inR - inL) / 2, cxm = (inL + inR) / 2;
+      ctx.beginPath();
+      ctx.moveTo(sx(inL), sy(RAIL)); ctx.lineTo(sx(inR), sy(RAIL)); ctx.lineTo(sx(inR), sy(-1));
+      ctx.arc(sx(cxm), sy(-1), r * PX, 0, Math.PI, true);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = "#7E4232"; ctx.fillRect(sx(29.2), sy(RAIL) - 2, W, 6);
+    ctx.strokeStyle = "rgba(255,220,200,.15)"; ctx.lineWidth = 1;
+    for (let y = sy(RAIL) + 8; y < H; y += 7) { ctx.beginPath(); ctx.moveTo(sx(29.2), y); ctx.lineTo(W, y); ctx.stroke(); }
+  }
+
   function drawEmbankment() {
+    const tun = !!S.tunnel, right = tun ? W : sx(75);
     ctx.fillStyle = "#6A7F45";
-    ctx.beginPath(); ctx.moveTo(sx(31), GY); ctx.lineTo(sx(34), sy(RAIL)); ctx.lineTo(sx(72), sy(RAIL)); ctx.lineTo(sx(75), GY); ctx.fill();
-    ctx.fillStyle = "#8A8780"; ctx.fillRect(sx(33.6), sy(RAIL) - 1, sx(72.2) - sx(33.6), 7);
-    // sleepers and rail
+    ctx.beginPath(); ctx.moveTo(sx(31), GY); ctx.lineTo(sx(34), sy(RAIL));
+    if (tun) { ctx.lineTo(W, sy(RAIL)); ctx.lineTo(W, GY); }
+    else { ctx.lineTo(sx(72), sy(RAIL)); ctx.lineTo(sx(75), GY); }
+    ctx.fill();
+    ctx.fillStyle = "#8A8780"; ctx.fillRect(sx(33.6), sy(RAIL) - 1, (tun ? W : sx(72.2)) - sx(33.6), 7);
+    void right;
+  }
+
+  function drawTrack() {
+    const t0 = S.track0, t1 = S.buffers ? S.end + 1.1 : 90;
+    ctx.fillStyle = S.ground === "viaduct" ? "#8A8780" : "transparent";
+    if (S.ground === "viaduct") ctx.fillRect(sx(t0 - 0.4), sy(RAIL) - 1, W, 5);
     ctx.fillStyle = "#5A4636";
-    for (let m = TRACK0; m <= 71.5; m += 0.9) ctx.fillRect(sx(m), sy(RAIL) - 3, 5, 3);
-    ctx.fillStyle = "#6E747A"; ctx.fillRect(sx(TRACK0), sy(RAIL) - 5, sx(71.6) - sx(TRACK0), 3);
-    ctx.fillStyle = "#C6CCD1"; ctx.fillRect(sx(TRACK0), sy(RAIL) - 5, sx(71.6) - sx(TRACK0), 1);
+    for (let m = t0; m <= t1; m += 0.9) ctx.fillRect(sx(m), sy(RAIL) - 3, 5, 3);
+    ctx.fillStyle = "#6E747A"; ctx.fillRect(sx(t0), sy(RAIL) - 5, sx(t1) - sx(t0), 3);
+    ctx.fillStyle = "#C6CCD1"; ctx.fillRect(sx(t0), sy(RAIL) - 5, sx(t1) - sx(t0), 1);
   }
 
   function drawBuffers() {
-    const x = sx(BUF), base = sy(RAIL);
+    const x = sx(S.end), base = sy(RAIL);
     ctx.fillStyle = "#B72E2A";
     ctx.beginPath(); ctx.moveTo(x + 2, base - 22); ctx.lineTo(x + 14, base - 22); ctx.lineTo(x + 24, base - 3); ctx.lineTo(x + 8, base - 3); ctx.closePath(); ctx.fill();
     ctx.fillRect(x + 1, base - 26, 5, 23);
@@ -510,20 +655,70 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     ctx.fillStyle = "#E23B2E"; ctx.beginPath(); ctx.arc(x + 4, base - 30, 3, 0, Math.PI * 2); ctx.fill();
   }
 
+  function drawMasts() {
+    const w = S.wires;
+    ctx.fillStyle = "#7C858D";
+    for (let m = w.x0; m <= w.x1 + 0.1; m += 8) {
+      ctx.fillRect(sx(m) - 2, sy(w.h + 1.8), 4, sy(RAIL) - sy(w.h + 1.8));
+      ctx.fillRect(sx(m) - 2, sy(w.h + 1.4), 18, 3);
+    }
+  }
+  function drawWires() {
+    const w = S.wires;
+    ctx.strokeStyle = wireHit && now - wireT < 2 ? "#F2C230" : "#2E3238"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(sx(w.x0), sy(w.h)); ctx.lineTo(sx(w.x1), sy(w.h)); ctx.stroke();
+    ctx.beginPath();
+    for (let m = w.x0; m < w.x1; m += 8) {
+      ctx.moveTo(sx(m), sy(w.h + 1.3));
+      ctx.quadraticCurveTo(sx(m + 4), sy(w.h + 0.5), sx(m + 8), sy(w.h + 1.3));
+    }
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let m = w.x0 + 1; m < w.x1; m += 1.6) {
+      const k = ((m - w.x0) % 8) / 8, top = w.h + 1.3 - 0.8 * 4 * k * (1 - k) * 1;
+      ctx.moveTo(sx(m), sy(top)); ctx.lineTo(sx(m), sy(w.h));
+    }
+    ctx.stroke();
+    ctx.fillStyle = "#F2C230"; ctx.font = condFont(11); ctx.textAlign = "left";
+    ctx.fillText("25 kV · DANGER", sx(w.x0) + 4, sy(w.h + 1.9));
+  }
+
+  function hillPath() {
+    const t = S.tunnel;
+    ctx.beginPath();
+    ctx.moveTo(sx(t.x - 0.5), sy(t.h));
+    ctx.lineTo(sx(t.x - 0.5), sy(t.h + 3));
+    ctx.lineTo(sx(t.x + 5), 0);
+    ctx.lineTo(W, 0); ctx.lineTo(W, sy(t.h)); ctx.closePath();
+  }
+  function drawTunnelBack() {
+    const t = S.tunnel;
+    ctx.fillStyle = "#0E1012"; ctx.fillRect(sx(t.x), sy(t.h), W - sx(t.x), sy(RAIL) - sy(t.h));
+  }
+  function drawTunnelFront() {
+    const t = S.tunnel;
+    ctx.fillStyle = "rgba(10,11,13,.86)"; ctx.fillRect(sx(t.x + 0.4), sy(t.h), W - sx(t.x + 0.4), sy(RAIL) - sy(t.h) - 4);
+    hillPath(); ctx.fillStyle = "#5E7D45"; ctx.fill();
+    ctx.fillStyle = "#4C6A37";
+    for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.arc(sx(t.x + 7 + i * 1.6), sy(t.h + 9 + (i % 3) * 2), 10, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = "#A39C8E"; ctx.fillRect(sx(t.x - 0.6), sy(t.h + 1.2), 1.4 * PX, sy(RAIL) - sy(t.h + 1.2));
+    ctx.fillRect(sx(t.x - 0.6), sy(t.h + 1.5), W - sx(t.x - 0.6), 0.4 * PX);
+  }
+
   function drawStopBoard() {
-    const x = sx(MARK), base = sy(RAIL) + 12;
+    const x = sx(S.mark), base = sy(RAIL) + 12;
     ctx.fillStyle = "#3A3F45"; ctx.fillRect(x - 1.5, base - 44, 3, 44);
     ctx.fillStyle = "#F6F6F1"; ctx.fillRect(x - 10, base - 66, 20, 24);
     ctx.strokeStyle = "#17202A"; ctx.lineWidth = 1.5; ctx.strokeRect(x - 10, base - 66, 20, 24);
     ctx.fillStyle = "#17202A"; ctx.font = "18px 'Archivo Black', 'Arial Black', sans-serif"; ctx.textAlign = "center";
     ctx.fillText("1", x, base - 47);
-    ctx.fillStyle = "rgba(242,194,48,.85)"; ctx.fillRect(sx(MARK - 3), sy(RAIL) + 6, sx(MARK + 3) - sx(MARK - 3), 2);
+    if (!S.doors) { ctx.fillStyle = "rgba(242,194,48,.85)"; ctx.fillRect(sx(S.mark - S.tol), sy(RAIL) + 6, sx(S.mark + S.tol) - sx(S.mark - S.tol), 2); }
   }
 
   function drawTrain(c) {
     const Lp = unit.L * PX, Hp = BODY * PX, b = bogieOff() * PX, wr = WHEEL / 2 * PX;
     ctx.save(); ctx.translate(sx(c.x), sy(c.y)); ctx.rotate(c.rot);
-    // running gear
     const wy = Hp / 2 + wr;
     [b, -b].forEach(bx => {
       ctx.fillStyle = "#2B2F36";
@@ -536,26 +731,21 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
       }
     });
     ctx.fillStyle = "#3A3F45"; ctx.fillRect(-Lp / 2 + 14, Hp / 2 - 1, Lp - 28, 4);
-    // body
     rr(-Lp / 2, -Hp / 2, Lp, Hp, 7);
     ctx.fillStyle = unit.body; ctx.fill();
     ctx.save(); rr(-Lp / 2, -Hp / 2, Lp, Hp, 7); ctx.clip();
     ctx.fillStyle = "#8E959B"; ctx.fillRect(-Lp / 2, -Hp / 2, Lp, 4);
     ctx.fillStyle = unit.trim; ctx.fillRect(-Lp / 2, Hp / 2 - 9, Lp, 3);
-    // window band
     ctx.fillStyle = "#1C2530"; ctx.fillRect(-Lp / 2 + 18, -Hp / 2 + 8, Lp - 36, 10);
     ctx.fillStyle = "rgba(160,200,220,.35)";
     for (let x = -Lp / 2 + 22; x < Lp / 2 - 24; x += 15) ctx.fillRect(x, -Hp / 2 + 9, 11, 8);
-    // yellow warning ends with cab windows
     ctx.fillStyle = "#F2C230";
     ctx.fillRect(Lp / 2 - 14, -Hp / 2, 14, Hp); ctx.fillRect(-Lp / 2, -Hp / 2, 14, Hp);
     ctx.fillStyle = "#1C2530"; ctx.fillRect(Lp / 2 - 12, -Hp / 2 + 6, 9, 11); ctx.fillRect(-Lp / 2 + 3, -Hp / 2 + 6, 9, 11);
     ctx.restore();
-    // doors
-    const d = Math.min(unit.L / 2 - 2.6, 8) * PX;
+    const d = doorOff() * PX;
     ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 1.2;
     [d, -d].forEach(dx => { ctx.strokeRect(dx - 7, -Hp / 2 + 6, 14, Hp - 9); ctx.beginPath(); ctx.moveTo(dx, -Hp / 2 + 6); ctx.lineTo(dx, Hp / 2 - 3); ctx.stroke(); });
-    // lamps and number
     ctx.fillStyle = "#FFF6D0"; ctx.beginPath(); ctx.arc(Lp / 2 - 4, Hp / 2 - 6, 2.2, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#E23B2E"; ctx.beginPath(); ctx.arc(-Lp / 2 + 4, Hp / 2 - 6, 2.2, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = condFont(9); ctx.textAlign = "left";
@@ -649,7 +839,6 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 
   function drawFlightHud() {
     const tilt = normDeg(cv.rot), ok = Math.abs(tilt) <= 10;
-    // spirit level
     const lx = W / 2, ly = 76;
     ctx.fillStyle = "rgba(23,32,42,.78)"; rr(lx - 90, ly - 14, 180, 28, 14); ctx.fill();
     ctx.fillStyle = ok ? "#7FD08F" : "#F2C230";
@@ -657,9 +846,8 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     ctx.beginPath(); ctx.ellipse(bxp, ly, 12, 8, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = "rgba(255,255,255,.6)"; ctx.lineWidth = 1.5;
     ctx.strokeRect(lx - 20, ly - 10, 40, 20);
-    ctx.fillStyle = "#F4F6F7"; ctx.font = condFont(14); ctx.textAlign = "center";
-    ctx.fillText(`TILT ${tilt >= 0 ? "+" : ""}${tilt.toFixed(0)}°`, lx, ly + 34);
-    // tap zones
+    ctx.fillStyle = "#17202A"; ctx.font = condFont(14); ctx.textAlign = "center";
+    ctx.fillText(`TILT ${tilt >= 0 ? "+" : ""}${tilt.toFixed(0)}°`, lx, ly + 32);
     ctx.fillStyle = "rgba(23,32,42,.5)"; ctx.font = "28px 'Archivo Black', 'Arial Black', sans-serif";
     ctx.fillText("↺", 40, H / 2); ctx.fillText("↻", W - 40, H / 2);
   }
@@ -673,10 +861,15 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 
   function draw() {
     drawScenery();
+    if (S.ground === "viaduct") drawViaduct(); else drawEmbankment();
+    if (S.tunnel) drawTunnelBack();
     drawPlatform();
-    drawEmbankment();
-    drawBuffers();
+    if (S.wires) drawMasts();
+    drawTrack();
+    if (S.buffers) drawBuffers();
     drawTrain(cv);
+    if (S.tunnel) drawTunnelFront();
+    if (S.wires) drawWires();
     drawStopBoard();
     drawDispatcher();
     drawThrower();
@@ -688,12 +881,21 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
       ctx.beginPath(); ctx.moveTo(x, 6); ctx.lineTo(x - 8, 20); ctx.lineTo(x + 8, 20); ctx.fill();
       ctx.font = condFont(14); ctx.textAlign = "center"; ctx.fillText(cv.y.toFixed(0) + " m", x, 36);
     }
+    if (now - wireT < 1.2) {
+      ctx.font = "30px 'Archivo Black', 'Arial Black', sans-serif"; ctx.textAlign = "center";
+      ctx.fillStyle = `rgba(242,194,48,${1 - (now - wireT) / 1.2})`;
+      ctx.fillText("WIRE STRIKE −2", W / 2, 130);
+    }
     if (state === "aim" || state === "charge") drawAim();
     if (state === "flight") drawFlightHud();
-    if (state === "aim") banner("Hold to power up");
+    if (state === "aim") banner(stageScores.length === 0 ? `Stage ${stageIdx + 1}: ${S.name} · Hold to power up` : "Hold to power up");
     else if (state === "charge") banner("Let go to throw");
     else if (state === "flight") banner("Tap left or right to tilt it level");
-    else if (state === "done") banner("Tap for the next unit");
+    else if (state === "done") {
+      if (!stageOver) banner("Tap for the next unit");
+      else if (stagePassed) banner(stageIdx === STAGES.length - 1 ? "All stages cleared · Tap to start again" : `Stage cleared · Tap for ${STAGES[stageIdx + 1].name}`);
+      else banner(`Needed ${S.need} · Tap to retry the stage`);
+    }
   }
 
   // ---------- loop ----------
@@ -714,6 +916,8 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     requestAnimationFrame(frame);
   }
   fit();
+  showBest();
+  startStage(0);
   newThrow();
   requestAnimationFrame(frame);
 })();
