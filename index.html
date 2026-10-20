@@ -741,7 +741,7 @@ ${locLine}<div class="row3">
       // BDM northbound: slow trains that stop at / pass through Bedford
       const bdmNorthUids = new Set();
       const northFromBDM = (bdmData.services || [])
-        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isNorthboundFromBDM(s))
+        .filter(s => isNorthboundFromBDM(s))
         .map(s => {
           const uid = s.scheduleMetadata?.uniqueIdentity;
           if (uid) bdmNorthUids.add(uid);
@@ -759,8 +759,7 @@ ${locLine}<div class="row3">
       const northFromKET = (ketData.services || [])
         .filter(s => {
           const uid = s.scheduleMetadata?.uniqueIdentity;
-          return s.scheduleMetadata?.operator?.code === EMR_CODE
-              && isNorthboundFromKET(s)
+          return isNorthboundFromKET(s)
               && !bdmNorthUids.has(uid);   // skip trains already covered by BDM board
         })
         .map(s => {
@@ -774,7 +773,7 @@ ${locLine}<div class="row3">
         .sort((a, b) => toMins(a.stationTime) - toMins(b.stationTime));
 
       cachedSouth = (ketData.services || [])
-        .filter(s => s.scheduleMetadata?.operator?.code === EMR_CODE && isSouthbound(s))
+        .filter(s => isSouthbound(s))
         .map(s => {
           const uid = s.scheduleMetadata?.uniqueIdentity;
           return buildEnriched(s, SOUTH_STA.offsetMins, SOUTH_STA.crs, false,
