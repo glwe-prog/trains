@@ -125,7 +125,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
       <p class="eyebrow">Swinging hoops &middot; Four levels, five throws each</p>
       <h1>Chuck a <span>Duck</span></h1>
     </div>
-    <p class="how"><b>Drag back</b> from anywhere to aim and <b>let go</b> to throw. A plain <b>tap</b> (or Space) throws again with the same aim, so you can concentrate on timing. <b>Tap in the air</b> to flap, up to 3 times. The hoops come to rest along the perfect arc.</p>
+    <p class="how"><b>Hold</b> (or Space) to build power and <b>let go</b> to lock it. Then <b>drag up or down</b> (or &uarr; &darr;) to set the angle and <b>tap</b> to throw. Your aim carries over, so after that it is all timing: tap on the beat. <b>Tap in the air</b> to flap, up to 3 times. The hoops come to rest along the perfect arc.</p>
   </header>
 
   <main class="grid">
@@ -138,7 +138,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
         <span>Throw <b id="hudNo">1/5</b></span>
         <span>Aim <b id="hudAim">–</b></span>
         <span>Swing <b id="hudSwing">–</b></span>
-        <button class="mini" id="resetAim" type="button">Reset aim</button>
+        <button class="mini" id="resetAim" type="button">New power</button>
       </div>
     </section>
 
@@ -274,6 +274,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     $("pips").querySelectorAll("i").forEach(p => p.classList.remove("on"));
     $("hudSwing").textContent = `${L.P.toFixed(1)} s, ±${L.A}°`;
     lastTrail = [];
+    aimPhase = "power"; charging = false;
     cardT = clock;
     drawSlots();
   }
@@ -301,7 +302,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
   function updAim() { $("hudAim").textContent = `${Math.round(aim.ang)}°, ${speedOf(aim.pow).toFixed(1)} m/s`; }
 
   function throwDuck() {
-    if (state !== "aim" || clock - cardT < 1.1) return;
+    if (state !== "aim" || aimPhase !== "angle" || clock - cardT < 1.1) return;
     const a = aim.ang * Math.PI / 180, v = speedOf(aim.pow);
     duck.vx = v * Math.cos(a); duck.vy = v * Math.sin(a);
     state = "flight";
@@ -321,42 +322,51 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 
   // ---------- input ----------
   const toLogical = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; };
+  // Two-step aim: hold to build power and let go to lock it, then drag up/down (or arrows) for angle and tap to throw.
+  let aimPhase = "power", charging = false, chargeT = 0;
+  function startCharge() { if (state !== "aim" || aimPhase !== "power" || clock - cardT < 1.1) return; charging = true; chargeT = 0; }
+  function lockPower() { if (!charging) return; charging = false; aim.pow = Math.round(aim.pow * 80) / 80; aimPhase = "angle"; updAim(); }
   canvas.addEventListener("pointerdown", e => {
     e.preventDefault(); canvas.focus({ preventScroll: true });
-    if (state === "aim") { drag = { start: toLogical(e), moved: false }; try { canvas.setPointerCapture(e.pointerId); } catch (_) {} }
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    if (state === "aim") {
+      if (aimPhase === "power") startCharge();
+      else drag = { y0: toLogical(e).y, ang0: aim.ang, moved: false };
+    }
     else if (state === "flight") flap();
     else if (state === "done") advance();
   });
   canvas.addEventListener("pointermove", e => {
     if (!drag || state !== "aim") return;
-    const p = toLogical(e), dx = drag.start.x - p.x, dy = p.y - drag.start.y, len = Math.hypot(dx, dy);
-    if (!drag.moved && len < 28) return; // small finger slips during a tap keep the current aim
+    const dy = drag.y0 - toLogical(e).y;
+    if (!drag.moved && Math.abs(dy) < 14) return; // small finger slips during a tap keep the angle
     drag.moved = true;
-    // snap to 0.5° and 0.25 m/s steps so a good throw can be repeated exactly
-    aim.pow = Math.round(Math.min(1, len / 180) * 80) / 80;
-    aim.ang = Math.round(Math.max(5, Math.min(80, Math.atan2(dy, Math.max(0.01, dx)) * 180 / Math.PI)) * 2) / 2;
+    aim.ang = Math.round(Math.max(5, Math.min(80, drag.ang0 + dy * 0.2)) * 2) / 2;
     updAim();
   });
-  const endDrag = () => { if (!drag) return; drag = null; throwDuck(); };
-  canvas.addEventListener("pointerup", endDrag);
-  canvas.addEventListener("pointercancel", () => { drag = null; });
+  canvas.addEventListener("pointerup", () => {
+    if (charging) { lockPower(); return; }
+    if (!drag) return;
+    const tap = !drag.moved; drag = null;
+    if (tap) throwDuck();
+  });
+  canvas.addEventListener("pointercancel", () => { drag = null; lockPower(); });
   canvas.addEventListener("contextmenu", e => e.preventDefault());
   window.addEventListener("keydown", e => {
     if (document.activeElement && document.activeElement.tagName === "BUTTON") return;
-    if (state === "aim" && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+    if (state === "aim" && (e.code === "ArrowUp" || e.code === "ArrowDown")) {
       e.preventDefault();
-      if (e.code === "ArrowUp") aim.ang = Math.min(80, aim.ang + 0.5);
-      if (e.code === "ArrowDown") aim.ang = Math.max(5, aim.ang - 0.5);
-      if (e.code === "ArrowRight") aim.pow = Math.min(1, Math.round(aim.pow * 80 + 1) / 80);
-      if (e.code === "ArrowLeft") aim.pow = Math.max(0, Math.round(aim.pow * 80 - 1) / 80);
+      aim.ang = Math.max(5, Math.min(80, aim.ang + (e.code === "ArrowUp" ? 0.5 : -0.5)));
       updAim(); return;
     }
     if (e.code !== "Space" && e.code !== "Enter") return;
     e.preventDefault(); if (e.repeat) return;
-    if (state === "aim") throwDuck(); else if (state === "flight") flap(); else advance();
+    if (state === "aim") { if (aimPhase === "power") startCharge(); else throwDuck(); }
+    else if (state === "flight") flap(); else advance();
   });
+  window.addEventListener("keyup", e => { if ((e.code === "Space" || e.code === "Enter") && charging) lockPower(); });
   $("next").addEventListener("click", advance);
-  $("resetAim").addEventListener("click", () => { aim.ang = 40; aim.pow = 0.55; updAim(); canvas.focus({ preventScroll: true }); });
+  $("resetAim").addEventListener("click", () => { if (state === "aim") { aimPhase = "power"; charging = false; drag = null; } canvas.focus({ preventScroll: true }); });
 
   // ---------- physics ----------
   const cross = (a, b) => a.x * b.y - a.y * b.x;
@@ -429,6 +439,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 
   function update(dt) {
     clock += dt;
+    if (charging) { chargeT += dt; aim.pow = 0.5 - 0.5 * Math.cos(chargeT * Math.PI * 2 / 2.4); updAim(); }
     clouds.forEach(c => { c.x += 8 * dt * c.s; if (c.x > W + 120) c.x = -120; });
     hoops.forEach(h => { h.jig *= Math.pow(0.15, dt); });
 
@@ -810,7 +821,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
       ctx.fillStyle = dark() ? "rgba(245,245,240,.9)" : "rgba(28,38,32,.85)"; ctx.font = cond(15); ctx.textAlign = "left";
       ctx.fillText(`HOOPS ${passed}/${hoops.length}   ·   FLAPS LEFT ${MAXFLAPS - flaps}`, 16, H - 12);
     }
-    if (state === "aim") banner(drag && drag.moved ? "Let go to throw" : "Drag back to aim · tap to throw");
+    if (state === "aim") banner(aimPhase === "power" ? (charging ? "Let go to set the power" : "Hold to build power") : `Drag up or down for angle (${aim.ang}°) · tap to throw`);
     else if (state === "flight") banner(flaps < MAXFLAPS ? "Tap to flap" : "No flaps left");
     else if (state === "done") {
       if (!levelOver) banner("Tap for the next duck");

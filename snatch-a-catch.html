@@ -120,7 +120,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
       <p class="eyebrow">Coarse fishing &middot; Four swims, five casts each</p>
       <h1>Snatch a <span>Catch</span></h1>
     </div>
-    <p class="how"><b>Hold</b> (or Space) and let go to cast. When the float <b>dips, tap fast</b> to strike. Then <b>hold</b> to wind up and <b>let go</b> to snatch the fish out of the water and over your shoulder. Land it in the toilet. Further casts catch bigger fish, but they're further from the loo.</p>
+    <p class="how"><b>Hold</b> (or Space) and let go to cast. When the float <b>dips, tap fast</b> to strike. Then <b>hold and let go</b> to set the snatch power, <b>drag up or down</b> (or &uarr; &darr;) for the angle, and <b>tap</b> to snatch the fish over your shoulder. Land it in the toilet. Further casts catch bigger fish, but they're further from the loo.</p>
   </header>
 
   <main class="grid">
@@ -237,6 +237,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
   let power = 0, chargeT = 0, wind = 0;
   let bob, fishInfo, shadow, biteAt, biteT, misses, reaction, hookT, fish, touches, outcome, entrySpeed, resultAt, resultT, score = null, wetT = -10;
   let parts = [], floaters = [], gulls = [], gullAt = 0;
+  let snAng = 55, sDrag = null;
   const clouds = Array.from({ length: 5 }, (_, i) => ({ x: i * 220 + Math.random() * 120, y: 30 + Math.random() * 70, s: 0.6 + Math.random() * 0.6 }));
 
   const anglerX = () => L.shore + 2;
@@ -287,7 +288,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     $("quote").textContent = i === 0 ? "Fish goes in the pan. Not on my boots, not back in the pond. In the pan." : `Swim ${i + 1}: ${L.name}. Same pan, new problems.`;
     $("card").classList.add("blank"); $("cardNum").textContent = "–";
     $("pips").querySelectorAll("i").forEach(p => p.classList.remove("on"));
-    gulls = []; gullAt = clock + 1.5;
+    gulls = []; gullAt = clock + 1.5; snAng = L.ang;
     cardT = clock;
     drawSlots();
   }
@@ -330,11 +331,12 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
       for (let i = 0; i < 10; i++) parts.push({ x: bob.x, y: 0.1, vx: (Math.random() - .5) * 3, vy: 1 + Math.random() * 2, life: .7, max: .7, type: "drop", r: 2 });
     }
     else if (state === "ready") { state = "snatchCharge"; chargeT = 0; }
+    else if (state === "snatchAngle") snatch();
     else if (state === "done") advance();
   }
   function release() {
     if (state === "castCharge") cast();
-    else if (state === "snatchCharge") snatch();
+    else if (state === "snatchCharge") { power = Math.round(power * 80) / 80; state = "snatchAngle"; }
   }
   function advance() {
     if (state !== "done" || clock - resultT < 0.4) return;
@@ -342,11 +344,28 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     if (levelOver) startLevel(levelPassed ? (levelIdx + 1) % LEVELS.length : levelIdx);
     newCast();
   }
-  canvas.addEventListener("pointerdown", e => { e.preventDefault(); canvas.focus({ preventScroll: true }); press(); });
-  window.addEventListener("pointerup", release);
+  const toLogicalY = e => { const r = canvas.getBoundingClientRect(); return (e.clientY - r.top) / r.height * H; };
+  // after the snatch power is locked: drag up/down for angle, tap to snatch
+  canvas.addEventListener("pointerdown", e => {
+    e.preventDefault(); canvas.focus({ preventScroll: true });
+    if (state === "snatchAngle") { sDrag = { y0: toLogicalY(e), a0: snAng, moved: false }; try { canvas.setPointerCapture(e.pointerId); } catch (_) {} return; }
+    press();
+  });
+  canvas.addEventListener("pointermove", e => {
+    if (!sDrag || state !== "snatchAngle") return;
+    const dy = sDrag.y0 - toLogicalY(e);
+    if (!sDrag.moved && Math.abs(dy) < 14) return;
+    sDrag.moved = true;
+    snAng = Math.round(Math.max(30, Math.min(78, sDrag.a0 + dy * 0.2)) * 2) / 2;
+  });
+  window.addEventListener("pointerup", () => {
+    if (sDrag) { const tap = !sDrag.moved; sDrag = null; if (tap && state === "snatchAngle") snatch(); return; }
+    release();
+  });
   window.addEventListener("pointercancel", release);
   canvas.addEventListener("contextmenu", e => e.preventDefault());
   window.addEventListener("keydown", e => {
+    if (state === "snatchAngle" && (e.code === "ArrowUp" || e.code === "ArrowDown")) { e.preventDefault(); snAng = Math.max(30, Math.min(78, snAng + (e.code === "ArrowUp" ? 0.5 : -0.5))); return; }
     if (e.code !== "Space" && e.code !== "Enter") return;
     if (document.activeElement && document.activeElement.tagName === "BUTTON") return;
     e.preventDefault(); if (!e.repeat) press();
@@ -371,7 +390,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
   let lastSnatch = null;
   function snatch() {
     lastSnatch = power;
-    const a = L.ang * Math.PI / 180, v = (7 + power * 15) * (1 - 0.025 * fishInfo.kg);
+    const a = snAng * Math.PI / 180, v = (7 + power * 15) * (1 - 0.025 * fishInfo.kg);
     fish = { x: bob.x, y: 0.1, vx: v * Math.cos(a), vy: v * Math.sin(a), rot: 0, w: 9 + Math.random() * 4, lx: bob.x, ly: 0.1 };
     for (let i = 0; i < 24; i++) parts.push({ x: bob.x, y: 0.1, vx: (Math.random() - .3) * 4, vy: 2 + Math.random() * 4, life: 1, max: 1, type: "drop", r: 2 + Math.random() * 2 });
     state = "flight";
@@ -470,7 +489,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     } else if (state === "hooked") {
       if (Math.random() < dt * 20) parts.push({ x: bob.x + (Math.random() - .5) * 0.6, y: 0.05, vx: (Math.random() - .5) * 2, vy: 1 + Math.random() * 1.5, life: .5, max: .5, type: "drop", r: 1.5 });
       if (clock - hookT > 0.6) state = "ready";
-    } else if (state === "ready") {
+    } else if (state === "ready" || state === "snatchAngle") {
       if (Math.random() < dt * 12) parts.push({ x: bob.x + (Math.random() - .5) * 0.6, y: 0.05, vx: (Math.random() - .5) * 2, vy: 1 + Math.random() * 1.5, life: .5, max: .5, type: "drop", r: 1.5 });
     } else if (state === "snatchCharge") { chargeT += dt; power = 0.5 - 0.5 * Math.cos(chargeT * Math.PI * 2 / 3.0); }
     else if (state === "flight") {
@@ -705,7 +724,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     if (end) {
       ctx.strokeStyle = dark() ? "rgba(230,230,230,.6)" : "rgba(40,40,40,.55)"; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(sx(tip.x), sy(tip.y));
-      const tight = state === "hooked" || state === "ready" || state === "snatchCharge" || state === "flight";
+      const tight = state === "hooked" || state === "ready" || state === "snatchCharge" || state === "snatchAngle" || state === "flight";
       ctx.quadraticCurveTo((sx(tip.x) + sx(end.x)) / 2, (sy(tip.y) + sy(end.y)) / 2 + (tight ? 4 : 28), sx(end.x), sy(end.y)); ctx.stroke();
     }
   }
@@ -715,7 +734,7 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
     let x = bob.x, y = 0;
     if (state === "castFly") { const k = Math.min(1, (clock - bob.t0) / bob.dur); x = bob.x0 + (bob.x - bob.x0) * k; y = bob.y0 * (1 - k) + Math.sin(k * Math.PI) * (1.5 + bob.c * 0.25); }
     else if (state === "bite") y = -0.35 + Math.sin(clock * 30) * 0.05;
-    else if (state === "hooked" || state === "ready" || state === "snatchCharge") y = -0.2 + Math.sin(clock * 25) * 0.12;
+    else if (state === "hooked" || state === "ready" || state === "snatchCharge" || state === "snatchAngle") y = -0.2 + Math.sin(clock * 25) * 0.12;
     else if (clock - bob.jerk < 0.3) y = 0.3;
     else y = Math.sin(clock * 2.5) * 0.04;
     const px = sx(x), py = sy(y);
@@ -835,12 +854,19 @@ canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 
     if (state === "castCharge") drawMeter("CAST");
     if (state === "snatchCharge") drawMeter("SNATCH");
+    if (state === "snatchAngle") {
+      drawMeter("SNATCH");
+      const a = snAng * Math.PI / 180, v = (7 + power * 15) * (1 - 0.025 * fishInfo.kg), vx = v * Math.cos(a), vy = v * Math.sin(a);
+      ctx.fillStyle = dark() ? "rgba(255,255,255,.85)" : "rgba(26,36,40,.75)";
+      for (let t = 0.05; t <= 0.45; t += 0.05) { ctx.beginPath(); ctx.arc(sx(bob.x + vx * t + wind * t * t / 2), sy(vy * t - G * t * t / 2), 2.6 * (1 - t), 0, Math.PI * 2); ctx.fill(); }
+    }
     if (fish && sy(fish.y) < -10) { const x = sx(fish.x); ctx.fillStyle = "rgba(26,36,40,.8)"; ctx.beginPath(); ctx.moveTo(x, 6); ctx.lineTo(x - 8, 20); ctx.lineTo(x + 8, 20); ctx.fill(); }
 
     const B = {
       castAim: "Hold to cast", castCharge: "Let go to cast", castFly: "…", wait: "Wait for the float to dip",
       bite: "STRIKE! Tap now", hooked: `Hooked! ${fishInfo ? fishInfo.name + ", " + fishInfo.kg.toFixed(2) + " kg" : ""}`,
-      ready: `Hold to wind up the snatch · toilet ${bob ? (L.toilet - bob.x).toFixed(1) : ""} m`, snatchCharge: "Let go to snatch!", flight: "Go on, go on…",
+      ready: `Hold to wind up the snatch · toilet ${bob ? (L.toilet - bob.x).toFixed(1) : ""} m`, snatchCharge: "Let go to set the power",
+      snatchAngle: `Drag up or down for angle (${snAng}°) · tap to snatch`, flight: "Go on, go on…",
     };
     if (B[state]) banner(B[state]);
     else if (state === "done") {
