@@ -1,0 +1,843 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Chuck a Duck</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;600&display=swap">
+<style>
+/* Layout: masthead strip, then the throwing ground (canvas) beside the judge's panel; stacks on phones */
+:root {
+  --bg: #ECF0E6;
+  --panel: #FAFBF6;
+  --fg: #1C2620;
+  --muted: #59675C;
+  --line: #CAD3C2;
+  --accent: #E9A417;      /* duck-bill yellow */
+  --accent-ink: #2A1E04;
+  --mallard: #2B6A45;     /* drake-head green */
+  --good: #2E7A44;
+  --bad: #A9442F;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111814; --panel: #19221C; --fg: #E4EADF; --muted: #9AA99D; --line: #2D3A31;
+    --accent: #F2B33A; --accent-ink: #2A1E04; --mallard: #6CC08E; --good: #6BC184; --bad: #E27B62;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111814; --panel: #19221C; --fg: #E4EADF; --muted: #9AA99D; --line: #2D3A31;
+  --accent: #F2B33A; --accent-ink: #2A1E04; --mallard: #6CC08E; --good: #6BC184; --bad: #E27B62;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap {
+  max-width: 1240px; margin: 0 auto;
+  padding-block: 20px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px;
+}
+.mast { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
+.eyebrow { margin: 0; font-family: var(--cond); font-weight: 700; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--mallard); }
+h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(36px, 6.5vw, 58px); line-height: .95; letter-spacing: .01em; text-wrap: balance; }
+h1 span { color: var(--accent); }
+.how { margin: 0; max-width: 50ch; color: var(--muted); }
+.how b { color: var(--fg); font-weight: 600; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+@media (max-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.pitch { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.stage { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); background: #A8CBE0; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: crosshair; }
+canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.hud { display: flex; flex-wrap: wrap; gap: 4px 20px; font-family: var(--cond); font-size: 15px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hud b { color: var(--fg); font-weight: 700; }
+
+.ref { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ref-label { margin: 0; font-family: var(--cond); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.stagebox { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.st-name { margin: 0; font-family: var(--display); font-size: 24px; line-height: 1.05; }
+.st-name small { font-family: var(--cond); font-weight: 700; font-size: 15px; color: var(--muted); letter-spacing: .04em; }
+.st-bar { display: flex; gap: 4px; }
+.st-bar i { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+.st-bar i.done { background: var(--good); }
+.st-bar i.cur { background: var(--accent); }
+.slots { display: flex; gap: 6px; }
+.slots span { width: 36px; height: 32px; border-radius: 4px; border: 1px solid var(--line); display: grid; place-content: center; font-family: var(--cond); font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.slots span.full { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.slots span.zero { color: var(--bad); border-color: var(--bad); }
+.st-total { margin: 0; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.st-total b { color: var(--fg); }
+.st-msg { margin: 0; font-weight: 600; font-size: 14px; }
+.st-msg.pass { color: var(--good); }
+.st-msg.fail { color: var(--bad); }
+
+.ref-top { display: flex; align-items: center; gap: 14px; }
+.ref-top svg { flex: none; width: 80px; height: 104px; }
+.card { flex: none; width: 92px; height: 116px; border-radius: 5px; background: var(--accent); color: var(--accent-ink); display: grid; place-content: center; text-align: center; box-shadow: 0 2px 0 rgba(0,0,0,.18); transform-origin: 50% 100%; margin-top: 4px; }
+.card .num { font-family: var(--display); font-size: 60px; line-height: 1; }
+.card .of { font-family: var(--cond); font-weight: 700; font-size: 14px; letter-spacing: .1em; }
+.card.blank .num { opacity: .35; }
+.card.flip { animation: flip .55s cubic-bezier(.2,1.4,.4,1); }
+@keyframes flip { from { transform: rotateX(80deg) translateY(10px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .card.flip { animation: none; } }
+.pips { display: flex; gap: 5px; margin-top: 6px; }
+.pips i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--accent); }
+.pips i.on { background: var(--accent); }
+.quote { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.35; min-height: 2.7em; }
+.quote::before { content: "\201C"; } .quote::after { content: "\201D"; }
+
+.crit { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.crit li { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.crit .mark { font-weight: 700; color: var(--muted); }
+.crit .name { font-weight: 600; }
+.crit .name small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+.crit .val { font-family: var(--cond); font-weight: 700; font-size: 16px; color: var(--muted); text-align: right; }
+.crit li.ok .mark, .crit li.ok .val { color: var(--good); }
+.crit li.no .mark, .crit li.no .val { color: var(--bad); }
+
+.best { margin: 0; font-size: 14px; color: var(--muted); }
+.best b { color: var(--fg); }
+.btn { font: 700 16px var(--cond); letter-spacing: .06em; text-transform: uppercase; padding: 10px 14px; border-radius: 4px; cursor: pointer; background: var(--fg); color: var(--bg); border: 0; }
+.btn:hover { opacity: .88; }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn:disabled { opacity: .35; cursor: default; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <p class="eyebrow">Swinging hoops &middot; Four levels, five throws each</p>
+      <h1>Chuck a <span>Duck</span></h1>
+    </div>
+    <p class="how"><b>Drag back</b> from anywhere to aim and <b>let go</b> to throw. A plain <b>tap</b> (or Space) throws again with the same aim, so you can concentrate on timing. <b>Tap in the air</b> to flap, up to 3 times. The hoops come to rest along the perfect arc.</p>
+  </header>
+
+  <main class="grid">
+    <section class="pitch" aria-label="Throwing ground">
+      <div class="stage" id="stage">
+        <canvas id="game" tabindex="0" aria-label="Duck throwing game. Arrow keys aim, Space throws, Space in flight flaps."></canvas>
+      </div>
+      <div class="hud">
+        <span>Level <b id="hudLevel">–</b></span>
+        <span>Throw <b id="hudNo">1/5</b></span>
+        <span>Aim <b id="hudAim">–</b></span>
+        <span>Swing <b id="hudSwing">–</b></span>
+      </div>
+    </section>
+
+    <aside class="ref" aria-label="Judge">
+      <div class="stagebox">
+        <p class="ref-label">Level <span id="stNum">1</span> of 4</p>
+        <p class="st-name" id="stName">Village green</p>
+        <div class="st-bar" id="stBar"><i></i><i></i><i></i><i></i></div>
+        <div class="slots" id="slots"><span>–</span><span>–</span><span>–</span><span>–</span><span>–</span></div>
+        <p class="st-total">Level total <b id="stTotal">0</b> / 25 &middot; need <b id="stNeed">12</b> to unlock the next level</p>
+        <p class="st-msg" id="stMsg" hidden></p>
+      </div>
+      <div class="ref-top">
+        <svg viewBox="0 0 80 104" aria-hidden="true">
+          <path d="M30 100 L28 88 M44 100 L46 88" stroke="#E58A1F" stroke-width="4" stroke-linecap="round"/>
+          <path d="M22 94 L34 94 M40 94 L52 94" stroke="#E58A1F" stroke-width="4" stroke-linecap="round"/>
+          <ellipse cx="38" cy="74" rx="24" ry="17" fill="#F4F2EA" stroke="#B9B4A6" stroke-width="2"/>
+          <path d="M22 70 Q34 60 50 70 Q40 80 22 70 Z" fill="#DCD8CC"/>
+          <path d="M44 62 Q48 40 46 26" stroke="#F4F2EA" stroke-width="11" stroke-linecap="round" fill="none"/>
+          <circle cx="46" cy="22" r="9" fill="#F4F2EA" stroke="#B9B4A6" stroke-width="2"/>
+          <path d="M53 20 L66 23 L53 27 Z" fill="#E58A1F"/>
+          <circle cx="48" cy="19" r="1.8" fill="#1C2620"/>
+          <path d="M58 66 L72 48" stroke="#DCD8CC" stroke-width="7" stroke-linecap="round"/>
+          <rect x="66" y="30" width="12" height="16" rx="2" fill="#E9A417"/>
+        </svg>
+        <div>
+          <p class="ref-label">The judge's card</p>
+          <div class="card blank" id="card"><span class="num" id="cardNum">–</span><span class="of">OUT OF 5</span></div>
+        </div>
+      </div>
+      <div>
+        <p class="quote" id="quote" aria-live="polite">Through the hoop, please. And mind the duck.</p>
+        <div class="pips" id="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <ol class="crit" id="crit"></ol>
+      <button class="btn" id="next" type="button" disabled>Next duck</button>
+      <p class="best">Best throw <b id="best">–</b> &middot; Furthest level <b id="furthest">1</b></p>
+    </aside>
+  </main>
+</div>
+
+<script>
+(() => {
+  // ---------- world (metres) ----------
+  const W = 960, H = 540, PX = 24, OX = 80, GY = 470;
+  const sx = m => OX + m * PX, sy = m => GY - m * PX;
+  const G = 9.81, BEAM = 15, REL = { x: 0.6, y: 2.2 }, DR = 0.35, POND = [29, 35.5], MAXFLAPS = 3;
+
+  // Each level's hoops rest on the arc of one ideal throw (v, ang) and swing in a wave timed to it:
+  // released on a beat (every half swing), the ideal duck meets every hoop at the bottom of its swing.
+  const LEVELS = [
+    { name: "Village green", need: 12, hoops: [16], v: 17, ang: 40, P: 2.6, A: 20, R: 1.3, preview: 0.7, theme: "green", hoopCols: ["#C8372D", "#F6F3EA"] },
+    { name: "Fairground", need: 11, hoops: [12.5, 22], v: 17, ang: 42, P: 2.5, A: 22, R: 1.25, preview: 0.55, theme: "fair", hoopCols: ["#2F5FB3", "#F5C534"] },
+    { name: "Farmyard at dusk", need: 10, hoops: [10.5, 18.5, 26], v: 17.5, ang: 38, P: 2.4, A: 24, R: 1.2, preview: 0.45, theme: "dusk", hoopCols: ["#E8742A", "#FBEFD9"] },
+    { name: "Moonlit pond", need: 9, hoops: [11, 18, 25], v: 17, ang: 45, P: 2.1, A: 26, R: 1.15, preview: 0.35, theme: "night", hoopCols: ["#7FE3F0", "#F4FBFF"] },
+  ];
+
+  const LINES = {
+    none: ["Nowhere near the hoop. The duck is unimpressed.", "Missed it entirely. Quack.", "That hoop is still waiting."],
+    poof: ["Poof. Feathers everywhere. The duck is fine, just embarrassed.", "Clipped the hoop and went off like a pillow fight.", "That's a duck-shaped cloud of feathers. No score for style."],
+    tangle: ["Tangled in the rope. Somebody untangle that duck.", "Caught on the rope. Not the idea at all."],
+    some: ["Some of the hoops, not all of them. One point.", "Partway there. The rest of the hoops felt left out."],
+    1: ["Through, technically. That's about it.", "One. The duck has seen better throws."],
+    2: ["Through, but scruffy. Two.", "It made it. Nobody's impressed."],
+    3: ["Decent chuck. Room for polish.", "Three. The duck would like a word about the landing."],
+    4: ["Lovely. Only the {miss} let it down.", "Nearly perfect. Sort out the {miss} for a five."],
+    5: ["Through every hoop, dead centre, straight into the pond. Perfect.", "Textbook chuck. The duck is delighted."],
+  };
+  const MISS = { clean: "rim clip", centre: "line through the middle", pond: "landing", noflap: "flapping" };
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const canvas = $("game"), ctx = canvas.getContext("2d"), stage = $("stage"), critEl = $("crit");
+
+  let best = null, furthest = 1;
+  try {
+    const b = localStorage.getItem("chuckDuckBest"); if (b !== null) best = +b;
+    const f = localStorage.getItem("chuckDuckFurthest"); if (f !== null) furthest = +f;
+  } catch (e) {}
+  const save = (k, v) => { try { localStorage.setItem(k, String(v)); } catch (e) {} };
+  const showBest = () => { $("best").textContent = best === null ? "–" : best + "/5"; $("furthest").textContent = furthest; };
+
+  // ---------- state ----------
+  let L, levelIdx = 0, levelScores = [], levelOver = false, levelPassed = false, CRIT = [], hoops = [];
+  let state = "aim", clock = 0, cardT = 0, autoAt = null;
+  const aim = { ang: 40, pow: 0.55 };
+  let drag = null, duck, flaps, rimHits, tangled, landed, passed, resultAt, resultT, score = null, flapT = -10, tangleT = 0;
+  let parts = [], floaters = [], trail = [], lastTrail = [];
+  const clouds = Array.from({ length: 5 }, (_, i) => ({ x: i * 220 + Math.random() * 120, y: 30 + Math.random() * 70, s: 0.6 + Math.random() * 0.6 }));
+  const stars = Array.from({ length: 70 }, () => ({ x: Math.random() * W, y: Math.random() * 300, r: Math.random() * 1.4 + 0.4, p: Math.random() * 6 }));
+  const reeds = Array.from({ length: 12 }, (_, i) => ({ x: POND[0] - 0.4 + (i < 6 ? i * 0.15 : 6.6 + (i - 6) * 0.15), h: 0.9 + Math.random() * 0.8 }));
+
+  const speedOf = p => 6 + p * 20;
+
+  function buildHoops() {
+    const a = L.ang * Math.PI / 180, vx = L.v * Math.cos(a), vy = L.v * Math.sin(a);
+    return L.hoops.map((x, i) => {
+      const t = (x - REL.x) / vx, y = REL.y + vy * t - G * t * t / 2;
+      return { i, px: x, Lc: BEAM - y, phase: t, done: false, passed: false, missed: false, clonked: false, off: 0, flash: -10, jig: 0 };
+    });
+  }
+  function theta(h, t = clock) {
+    const w = Math.PI * 2 / L.P;
+    return (L.A * Math.PI / 180) * Math.sin(w * (t - h.phase)) + h.jig;
+  }
+  function geom(h, t = clock) {
+    const th = theta(h, t), d = { x: Math.sin(th), y: -Math.cos(th) };
+    const c = { x: h.px + d.x * h.Lc, y: BEAM + d.y * h.Lc };
+    return { th, d, c, A: { x: c.x - d.x * L.R, y: c.y - d.y * L.R }, B: { x: c.x + d.x * L.R, y: c.y + d.y * L.R } };
+  }
+
+  function startLevel(i) {
+    levelIdx = i; L = LEVELS[i];
+    levelScores = []; levelOver = false; levelPassed = false; autoAt = null;
+    hoops = buildHoops();
+    const n = L.hoops.length;
+    CRIT = [
+      { k: "all", name: n === 1 ? "Through the hoop" : "Through every hoop", need: n === 1 ? "In one clean pass" : `All ${n} in one throw` },
+      { k: "clean", name: "Clean", need: "No rims, ropes or beams touched" },
+      { k: "centre", name: "Dead centre", need: "Middle of every hoop" },
+      { k: "pond", name: "Into the pond", need: "Lands in the water" },
+      { k: "noflap", name: "No flapping", need: "Didn't need to flap" },
+    ];
+    critEl.innerHTML = CRIT.map(c =>
+      `<li data-k="${c.k}"><span class="mark">·</span><span class="name">${c.name}<small>${c.need}</small></span><span class="val">–</span></li>`).join("");
+    $("stNum").textContent = i + 1;
+    $("stName").innerHTML = `${L.name} <small>${n} ${n === 1 ? "hoop" : "hoops"}</small>`;
+    $("stNeed").textContent = L.need;
+    $("stBar").querySelectorAll("i").forEach((b, j) => b.className = j < i ? "done" : j === i ? "cur" : "");
+    $("stMsg").hidden = true;
+    $("quote").textContent = i === 0 ? "Through the hoop, please. And mind the duck." : `Level ${i + 1}: ${L.name}. ${n} hoops now. Watch the rhythm.`;
+    $("card").classList.add("blank"); $("cardNum").textContent = "–";
+    $("pips").querySelectorAll("i").forEach(p => p.classList.remove("on"));
+    $("hudSwing").textContent = `${L.P.toFixed(1)} s, ±${L.A}°`;
+    lastTrail = [];
+    cardT = clock;
+    drawSlots();
+  }
+
+  function drawSlots() {
+    const el = $("slots").children;
+    for (let i = 0; i < 5; i++) {
+      const s = levelScores[i];
+      el[i].textContent = s === undefined ? "–" : s;
+      el[i].className = s === undefined ? "" : s === 0 ? "zero" : "full";
+    }
+    $("stTotal").textContent = levelScores.reduce((a, b) => a + b, 0);
+  }
+
+  function newThrow() {
+    duck = { x: REL.x, y: REL.y, vx: 0, vy: 0, rot: 0 };
+    hoops.forEach(h => Object.assign(h, { done: false, passed: false, missed: false, clonked: false, off: 0 }));
+    state = "aim"; flaps = 0; rimHits = 0; tangled = false; landed = null; passed = 0; score = null; resultAt = null;
+    parts = []; floaters = []; trail = [];
+    $("hudLevel").textContent = `${levelIdx + 1} · ${L.name}`;
+    $("hudNo").textContent = `${levelScores.length + 1}/5`;
+    updAim();
+    $("next").disabled = true; $("next").textContent = "Next duck";
+  }
+  function updAim() { $("hudAim").textContent = `${Math.round(aim.ang)}°, ${speedOf(aim.pow).toFixed(1)} m/s`; }
+
+  function throwDuck() {
+    if (state !== "aim" || clock - cardT < 1.1) return;
+    const a = aim.ang * Math.PI / 180, v = speedOf(aim.pow);
+    duck.vx = v * Math.cos(a); duck.vy = v * Math.sin(a);
+    state = "flight";
+  }
+  function flap() {
+    if (state !== "flight" || flaps >= MAXFLAPS) return;
+    flaps++; flapT = clock;
+    duck.vy = Math.max(duck.vy, 0) + 4.2;
+    for (let i = 0; i < 5; i++) feather(duck.x, duck.y, 2);
+  }
+  function advance() {
+    if (state !== "done" || clock - resultT < 0.4) return;
+    autoAt = null;
+    if (levelOver) startLevel(levelPassed ? (levelIdx + 1) % LEVELS.length : levelIdx);
+    newThrow();
+  }
+
+  // ---------- input ----------
+  const toLogical = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; };
+  canvas.addEventListener("pointerdown", e => {
+    e.preventDefault(); canvas.focus({ preventScroll: true });
+    if (state === "aim") { drag = { start: toLogical(e), moved: false }; try { canvas.setPointerCapture(e.pointerId); } catch (_) {} }
+    else if (state === "flight") flap();
+    else if (state === "done") advance();
+  });
+  canvas.addEventListener("pointermove", e => {
+    if (!drag || state !== "aim") return;
+    const p = toLogical(e), dx = drag.start.x - p.x, dy = p.y - drag.start.y, len = Math.hypot(dx, dy);
+    if (len < 8) return;
+    drag.moved = true;
+    // snap to 0.5° and 0.25 m/s steps so a good throw can be repeated exactly
+    aim.pow = Math.round(Math.min(1, len / 180) * 80) / 80;
+    aim.ang = Math.round(Math.max(5, Math.min(80, Math.atan2(dy, Math.max(0.01, dx)) * 180 / Math.PI)) * 2) / 2;
+    updAim();
+  });
+  const endDrag = () => { if (!drag) return; drag = null; throwDuck(); };
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", () => { drag = null; });
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
+  window.addEventListener("keydown", e => {
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") return;
+    if (state === "aim" && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+      e.preventDefault();
+      if (e.code === "ArrowUp") aim.ang = Math.min(80, aim.ang + 0.5);
+      if (e.code === "ArrowDown") aim.ang = Math.max(5, aim.ang - 0.5);
+      if (e.code === "ArrowRight") aim.pow = Math.min(1, Math.round(aim.pow * 80 + 1) / 80);
+      if (e.code === "ArrowLeft") aim.pow = Math.max(0, Math.round(aim.pow * 80 - 1) / 80);
+      updAim(); return;
+    }
+    if (e.code !== "Space" && e.code !== "Enter") return;
+    e.preventDefault(); if (e.repeat) return;
+    if (state === "aim") throwDuck(); else if (state === "flight") flap(); else advance();
+  });
+  $("next").addEventListener("click", advance);
+
+  // ---------- physics ----------
+  const cross = (a, b) => a.x * b.y - a.y * b.x;
+  function segHit(p0, p1, A, B) {
+    const r = { x: p1.x - p0.x, y: p1.y - p0.y }, s = { x: B.x - A.x, y: B.y - A.y };
+    const den = cross(r, s); if (Math.abs(den) < 1e-9) return null;
+    const q = { x: A.x - p0.x, y: A.y - p0.y };
+    const t = cross(q, s) / den, u = cross(q, r) / den;
+    return t >= 0 && t <= 1 ? { t, u } : null;
+  }
+  function feather(x, y, n) {
+    for (let i = 0; i < n; i++) parts.push({ x, y, vx: (Math.random() - .5) * 4, vy: Math.random() * 2, life: 1.6, max: 1.6, type: "feather", rot: Math.random() * 6, spin: (Math.random() - .5) * 8, c: Math.random() < .5 ? "#F4F1E8" : "#8A6A4A" });
+  }
+  function floater(text, x, y, col) { floaters.push({ text, x, y, t: clock, col }); }
+
+  // Hitting a hoop: the duck goes off in a cartoon puff of feathers (it's fine, just embarrassed)
+  function clonk(h, E) {
+    rimHits++; h.done = true; h.clonked = true; h.jig = (duck.x < E.x ? 1 : -1) * 0.3;
+    for (let i = 0; i < 14; i++) parts.push({ x: duck.x + (Math.random() - .5) * 0.8, y: duck.y + (Math.random() - .5) * 0.8, vx: (Math.random() - .5) * 3, vy: (Math.random() - .5) * 3, life: 0.7, max: 0.7, type: "cloud", r: 10 + Math.random() * 12 });
+    for (let i = 0; i < 45; i++) {
+      const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 6;
+      parts.push({ x: duck.x, y: duck.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 3 + Math.random() * 2, max: 5, type: "feather", rot: Math.random() * 6, spin: (Math.random() - .5) * 10, c: ["#F4F1E8", "#8A6A4A", "#8C7B66", "#2B6A45"][i % 4] });
+    }
+    floater("POOF!", duck.x, duck.y + 1.2, "#FFFFFF");
+    hoops.forEach(o => { if (!o.done) { o.done = true; o.missed = true; } });
+    landed = "poof"; state = "landed"; duck.vx = 0; duck.vy = 0;
+    lastTrail = trail.slice();
+    resultAt = clock + 1.6;
+  }
+
+  function checkHoops(prev, tPrev) {
+    if (duck.y + DR > BEAM - 0.25 && duck.vy > 0) { duck.vy = -Math.abs(duck.vy) * 0.3; rimHits++; feather(duck.x, duck.y, 6); floater("BONK", duck.x, BEAM - 1, "#F2C230"); }
+    for (const h of hoops) {
+      if (h.done) continue;
+      const g = geom(h);
+      for (const E of [g.A, g.B]) if (Math.hypot(duck.x - E.x, duck.y - E.y) < 0.3) { clonk(h, E); return; }
+      if (duck.x > Math.max(g.A.x, g.B.x) + 1.2) { h.done = true; h.missed = true; continue; }
+      // crossing = the duck changed sides of the hoop line between the previous and current step (both moving)
+      const gp = geom(h, tPrev), side = (P, Q) => cross({ x: Q.B.x - Q.A.x, y: Q.B.y - Q.A.y }, { x: P.x - Q.A.x, y: P.y - Q.A.y });
+      const s0 = side(prev, gp), s1 = side(duck, g);
+      if (s0 === 0 || (s0 > 0) === (s1 > 0)) continue;
+      const ab = { x: g.B.x - g.A.x, y: g.B.y - g.A.y }, hit = { u: ((duck.x - g.A.x) * ab.x + (duck.y - g.A.y) * ab.y) / (ab.x * ab.x + ab.y * ab.y) };
+      const ropeU = -(h.Lc - L.R) / (2 * L.R);
+      if (hit.u >= 0 && hit.u <= 1) {
+        h.done = true; h.passed = true; h.off = Math.abs(hit.u - 0.5) * 2; h.flash = clock; passed++;
+        floater(h.off <= 0.4 ? "DEAD CENTRE" : "THROUGH", g.c.x, g.c.y + L.R + 0.7, h.off <= 0.4 ? "#7FD08F" : "#FFFFFF");
+      } else if (hit.u < 0 && hit.u >= ropeU) {
+        tangled = true; state = "tangle"; tangleT = clock; duck.vx = 0; duck.vy = 0; h.done = true; h.missed = true; h.jig = 0.2;
+        feather(duck.x, duck.y, 10); floater("TANGLED", duck.x, duck.y + 1, "#F2C230");
+        return;
+      }
+    }
+  }
+
+  function land() {
+    hoops.forEach(h => { if (!h.done) { h.done = true; h.missed = true; } });
+    if (duck.x >= POND[0] && duck.x <= POND[1]) {
+      landed = "pond"; duck.y = 0.05;
+      for (let i = 0; i < 40; i++) { const a = Math.PI / 2 + (Math.random() - .5) * 1.6, s = 2 + Math.random() * 5; parts.push({ x: duck.x, y: 0.1, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1.4, max: 1.4, type: "drop", r: 2 + Math.random() * 2 }); }
+      duck.vx *= 0.25; duck.vy = 0;
+    } else {
+      landed = duck.x > 37.5 || duck.x < -3 ? "away" : "ground";
+      duck.y = DR; duck.vx *= 0.3; duck.vy = 0;
+      feather(duck.x, duck.y, 6);
+    }
+    state = "landed";
+    lastTrail = trail.slice();
+    resultAt = clock + 1.0;
+  }
+
+  function update(dt) {
+    clock += dt;
+    clouds.forEach(c => { c.x += 8 * dt * c.s; if (c.x > W + 120) c.x = -120; });
+    hoops.forEach(h => { h.jig *= Math.pow(0.15, dt); });
+
+    if (state === "flight") {
+      // sub-step the hoops' swing together with the duck so a fast hoop can't skip past it between frames
+      const n = 8, hdt = dt / n, t0 = clock - dt;
+      for (let k = 0; k < n && state === "flight"; k++) {
+        clock = t0 + (k + 1) * hdt;
+        const prev = { x: duck.x, y: duck.y };
+        duck.vy -= G * hdt; duck.x += duck.vx * hdt; duck.y += duck.vy * hdt;
+        checkHoops(prev, clock - hdt);
+        if (state === "flight" && (duck.y <= DR || duck.x > 38 || duck.x < -4)) land();
+      }
+      clock = t0 + dt;
+      duck.rot = Math.atan2(duck.vy, duck.vx);
+      if (trail.length === 0 || Math.hypot(duck.x - trail[trail.length - 1].x, duck.y - trail[trail.length - 1].y) > 0.5) trail.push({ x: duck.x, y: duck.y });
+    } else if (state === "tangle") {
+      if (clock - tangleT > 0.7) { hoops.forEach(h => { h.done = true; if (!h.passed) h.missed = true; }); state = "flight"; duck.vx = -0.5; }
+    } else if (state === "landed" || state === "done") {
+      if (landed === "pond") { duck.vx *= Math.pow(0.4, dt); duck.x = Math.min(POND[1] - 0.6, Math.max(POND[0] + 0.6, duck.x + duck.vx * dt)); duck.y = 0.05 + Math.sin(clock * 3) * 0.05; duck.rot *= Math.pow(0.02, dt); }
+      else { duck.vx *= Math.pow(0.05, dt); duck.x += duck.vx * dt; duck.rot *= Math.pow(0.02, dt); }
+    }
+
+    if (resultAt !== null && clock >= resultAt) { resultAt = null; showResult(); }
+    if (autoAt !== null && clock >= autoAt) advance();
+
+    parts = parts.filter(p => (p.life -= dt) > 0);
+    parts.forEach(p => {
+      if (p.type === "drop") p.vy -= G * dt;
+      else if (p.type === "feather") { p.vy -= 1.2 * dt; p.vx *= Math.pow(0.4, dt); p.rot += p.spin * dt; if (p.y < 0.05) { p.y = 0.05; p.vy = 0; p.vx = 0; p.spin = 0; } }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    });
+    floaters = floaters.filter(f => clock - f.t < 1.4);
+  }
+
+  // ---------- judging ----------
+  function showResult() {
+    const n = hoops.length, all = passed === n;
+    const res = {
+      all: { ok: all, val: `${passed}/${n}` },
+      clean: { ok: rimHits === 0 && !tangled, val: tangled ? "Tangled" : rimHits ? `${rimHits} touch${rimHits > 1 ? "es" : ""}` : "Yes" },
+      centre: { ok: all && hoops.every(h => h.off <= 0.4), val: passed ? Math.round(Math.max(...hoops.filter(h => h.passed).map(h => h.off)) * 100) + "% out" : "–" },
+      pond: { ok: landed === "pond", val: landed === "pond" ? "Splash" : landed === "poof" ? "Poof" : landed === "away" ? "Flew off" : "Grass" },
+      noflap: { ok: flaps === 0, val: flaps === 0 ? "None" : `${flaps} flap${flaps > 1 ? "s" : ""}` },
+    };
+    score = all ? CRIT.filter(c => res[c.k].ok).length : passed > 0 ? 1 : 0;
+
+    critEl.querySelectorAll("li").forEach(li => {
+      const k = li.dataset.k, r = res[k], counts = all || k === "all";
+      li.className = !counts ? "" : r.ok ? "ok" : "no";
+      li.querySelector(".mark").textContent = !counts ? "·" : r.ok ? "✓" : "✗";
+      li.querySelector(".val").textContent = r.val;
+    });
+
+    const pool = landed === "poof" ? LINES.poof : all ? LINES[score] : tangled && passed === 0 ? LINES.tangle : passed > 0 ? LINES.some : LINES.none;
+    let line = pool[Math.floor(Math.random() * pool.length)];
+    if (line.includes("{miss}")) line = line.replace("{miss}", MISS[CRIT.find(c => !res[c.k].ok).k]);
+    $("quote").textContent = line;
+
+    const card = $("card");
+    $("cardNum").textContent = score;
+    card.classList.remove("blank", "flip"); void card.offsetWidth; card.classList.add("flip");
+    $("pips").querySelectorAll("i").forEach((p, i) => p.classList.toggle("on", i < score));
+
+    if (best === null || score > best) { best = score; save("chuckDuckBest", best); }
+    levelScores.push(score); drawSlots();
+    if (levelScores.length === 5) {
+      levelOver = true;
+      const total = levelScores.reduce((a, b) => a + b, 0);
+      levelPassed = total >= L.need;
+      const msg = $("stMsg"); msg.hidden = false;
+      if (levelPassed) {
+        const last = levelIdx === LEVELS.length - 1;
+        msg.className = "st-msg pass";
+        msg.textContent = last ? `${total}/25. All four levels cleared. Champion chucker.` : `${total}/25. Level cleared. Next: ${LEVELS[levelIdx + 1].name}.`;
+        if (!last) { furthest = Math.max(furthest, levelIdx + 2); save("chuckDuckFurthest", furthest); }
+        $("next").textContent = last ? "Start again" : "Next level";
+        autoAt = clock + 2.8;
+      } else {
+        msg.className = "st-msg fail";
+        msg.textContent = `${total}/25. You needed ${L.need}. Try the level again.`;
+        $("next").textContent = "Retry level";
+      }
+    }
+    showBest();
+    state = "done"; resultT = clock;
+    $("next").disabled = false;
+  }
+
+  // ---------- drawing ----------
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+  }
+  const cond = s => `700 ${s}px 'Barlow Condensed', 'Arial Narrow', sans-serif`;
+  const disp = s => `${s}px 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', sans-serif`;
+  const dark = () => L.theme === "dusk" || L.theme === "night";
+
+  const THEMES = {
+    green: { sky: ["#93BEDA", "#E6F0E0"], hill1: "#9DBE84", hill2: "#7FAA62", ground: "#6E9E4A", stripe: "#679646", pond: ["#4C8E95", "#22555B"] },
+    fair: { sky: ["#F0B56A", "#FBE7C3"], hill1: "#C9B37A", hill2: "#A9A062", ground: "#8DA552", stripe: "#839B4B", pond: ["#4F8B8F", "#25565A"] },
+    dusk: { sky: ["#5A3B78", "#F0915A"], hill1: "#5D4A5E", hill2: "#45394A", ground: "#4F5E3A", stripe: "#495734", pond: ["#5B5C7E", "#2B2C48"] },
+    night: { sky: ["#0B1730", "#2A4068"], hill1: "#1C2B3E", hill2: "#14202F", ground: "#1F3326", stripe: "#1B2E22", pond: ["#24476A", "#0E2135"] },
+  };
+
+  function drawBackground() {
+    const T = THEMES[L.theme];
+    const g = ctx.createLinearGradient(0, 0, 0, GY);
+    g.addColorStop(0, T.sky[0]); g.addColorStop(1, T.sky[1]);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, GY);
+
+    if (L.theme === "night") {
+      stars.forEach(s => { ctx.fillStyle = `rgba(255,255,240,${0.5 + 0.5 * Math.sin(clock * 2 + s.p)})`; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); });
+      ctx.fillStyle = "#F4F0DC"; ctx.beginPath(); ctx.arc(820, 80, 30, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = T.sky[0]; ctx.beginPath(); ctx.arc(808, 72, 26, 0, Math.PI * 2); ctx.fill();
+    } else if (L.theme === "dusk") {
+      ctx.fillStyle = "rgba(255,190,110,.9)"; ctx.beginPath(); ctx.arc(700, GY - 70, 40, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = "rgba(255,255,255,.75)";
+      clouds.forEach(c => {
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y, 56 * c.s, 16 * c.s, 0, 0, Math.PI * 2);
+        ctx.ellipse(c.x + 28 * c.s, c.y - 11 * c.s, 30 * c.s, 16 * c.s, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    ctx.fillStyle = T.hill1;
+    ctx.beginPath(); ctx.moveTo(0, GY);
+    for (let x = 0; x <= W; x += 20) ctx.lineTo(x, GY - 70 - Math.sin(x / 150) * 24 - Math.sin(x / 57) * 7);
+    ctx.lineTo(W, GY); ctx.fill();
+
+    if (L.theme === "green") {
+      // church and cottages
+      ctx.fillStyle = "#8C8A80"; ctx.fillRect(640, GY - 120, 34, 90); ctx.beginPath(); ctx.moveTo(636, GY - 120); ctx.lineTo(657, GY - 190); ctx.lineTo(678, GY - 120); ctx.fill();
+      ctx.fillRect(674, GY - 80, 70, 50);
+      [[300, "#E7DCC2"], [350, "#DCCDAE"], [400, "#E7DCC2"]].forEach(([x, c]) => { ctx.fillStyle = c; ctx.fillRect(x, GY - 62, 46, 32); ctx.fillStyle = "#8A5A3C"; ctx.beginPath(); ctx.moveTo(x - 4, GY - 62); ctx.lineTo(x + 23, GY - 84); ctx.lineTo(x + 50, GY - 62); ctx.fill(); });
+    } else if (L.theme === "fair") {
+      const cx = 760, cy = GY - 150, r = 100;
+      ctx.strokeStyle = "rgba(90,70,80,.7)"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+      for (let i = 0; i < 12; i++) {
+        const a = clock * 0.25 + i * Math.PI / 6;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); ctx.stroke();
+        ctx.fillStyle = i % 2 ? "#D8473A" : "#3C6CB5"; ctx.fillRect(cx + Math.cos(a) * r - 7, cy + Math.sin(a) * r, 14, 12);
+      }
+      ctx.beginPath(); ctx.moveTo(cx - 50, GY - 30); ctx.lineTo(cx, cy); ctx.lineTo(cx + 50, GY - 30); ctx.stroke();
+      [[260, 90], [420, 70]].forEach(([x, w]) => {
+        for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? "#F4F0E6" : "#D8473A"; ctx.beginPath(); ctx.moveTo(x + w / 2, GY - 120); ctx.lineTo(x + i * w / 6, GY - 40); ctx.lineTo(x + (i + 1) * w / 6, GY - 40); ctx.fill(); }
+        ctx.fillStyle = "#F4F0E6"; ctx.fillRect(x, GY - 40, w, 14);
+      });
+    } else if (L.theme === "dusk") {
+      ctx.fillStyle = "#3A2230";
+      ctx.fillRect(560, GY - 110, 130, 80);
+      ctx.beginPath(); ctx.moveTo(550, GY - 110); ctx.lineTo(625, GY - 160); ctx.lineTo(700, GY - 110); ctx.fill();
+      ctx.fillStyle = "#F2B45E"; ctx.fillRect(612, GY - 90, 26, 18);
+      ctx.strokeStyle = "#3A2230"; ctx.lineWidth = 3;
+      for (let x = 200; x < 520; x += 26) { ctx.beginPath(); ctx.moveTo(x, GY - 2); ctx.lineTo(x, GY - 34); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(200, GY - 26); ctx.lineTo(520, GY - 26); ctx.moveTo(200, GY - 14); ctx.lineTo(520, GY - 14); ctx.stroke();
+    } else {
+      ctx.fillStyle = "#0C1520";
+      [[150, 70], [230, 90], [520, 80], [620, 110], [700, 70]].forEach(([x, h]) => { ctx.beginPath(); ctx.moveTo(x - 30, GY); ctx.lineTo(x, GY - h - 40); ctx.lineTo(x + 30, GY); ctx.fill(); });
+    }
+
+    ctx.fillStyle = T.hill2;
+    ctx.beginPath(); ctx.moveTo(0, GY);
+    for (let x = 0; x <= W; x += 20) ctx.lineTo(x, GY - 26 - Math.sin(x / 90 + 2) * 10);
+    ctx.lineTo(W, GY); ctx.fill();
+    ctx.fillStyle = T.ground; ctx.fillRect(0, GY - 2, W, H - GY + 2);
+    ctx.fillStyle = T.stripe;
+    for (let y = GY + 10; y < H; y += 14) ctx.fillRect(0, y, W, 3);
+  }
+
+  function drawGantry() {
+    const wood = dark() ? "#3B2F28" : "#7A5A3C", woodDk = dark() ? "#2A211C" : "#5C4229";
+    ctx.fillStyle = wood;
+    [-2.6, 36.6].forEach(m => ctx.fillRect(sx(m) - 7, sy(BEAM), 14, GY - sy(BEAM)));
+    ctx.fillRect(sx(-2.9), sy(BEAM) - 6, sx(36.9) - sx(-2.9), 14);
+    ctx.fillStyle = woodDk; ctx.fillRect(sx(-2.9), sy(BEAM) + 6, sx(36.9) - sx(-2.9), 3);
+    if (L.theme === "fair") {
+      for (let x = sx(-2.5); x < sx(36.5); x += 22) {
+        ctx.fillStyle = ["#D8473A", "#F5C534", "#3C6CB5", "#4C9A5A"][Math.round(x / 22) % 4];
+        ctx.beginPath(); ctx.moveTo(x, sy(BEAM) + 8); ctx.lineTo(x + 16, sy(BEAM) + 8); ctx.lineTo(x + 8, sy(BEAM) + 22); ctx.fill();
+      }
+    }
+  }
+
+  function drawHoop(h, half) {
+    const g = geom(h), cx = sx(g.c.x), cy = sy(g.c.y), ang = Math.atan2(-g.d.y, g.d.x);
+    const [c1, c2] = L.hoopCols, lit = clock - h.flash < 0.6;
+    if (half === "back") {
+      ctx.strokeStyle = dark() ? "#C9B79A" : "#6E5A44"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(sx(h.px), sy(BEAM)); ctx.lineTo(sx(g.A.x), sy(g.A.y)); ctx.stroke();
+      ctx.fillStyle = "#2B2B2E"; ctx.beginPath(); ctx.arc(sx(h.px), sy(BEAM), 4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang);
+    if (L.theme === "night") { ctx.shadowColor = c1; ctx.shadowBlur = 14; }
+    const a0 = half === "back" ? Math.PI : 0, a1 = half === "back" ? Math.PI * 2 : Math.PI;
+    ctx.lineWidth = 7; ctx.lineCap = "butt";
+    ctx.strokeStyle = lit ? "#7FD08F" : c1; ctx.globalAlpha = half === "back" ? 0.75 : 1;
+    ctx.beginPath(); ctx.ellipse(0, 0, L.R * PX, L.R * PX * 0.32, 0, a0, a1); ctx.stroke();
+    if (!lit) { ctx.strokeStyle = c2; ctx.setLineDash([7, 7]); ctx.beginPath(); ctx.ellipse(0, 0, L.R * PX, L.R * PX * 0.32, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.restore();
+  }
+
+  function drawPond(front) {
+    const T = THEMES[L.theme], l = sx(POND[0]), r = sx(POND[1]), top = GY - 1;
+    if (!front) {
+      const g = ctx.createLinearGradient(0, top, 0, H);
+      g.addColorStop(0, T.pond[0]); g.addColorStop(1, T.pond[1]);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(l, top); ctx.lineTo(r, top); ctx.quadraticCurveTo(r - 10, H - 6, (l + r) / 2, H - 4); ctx.quadraticCurveTo(l + 10, H - 6, l, top); ctx.fill();
+      ctx.fillStyle = dark() ? "#2E5A3A" : "#4F8F47";
+      [[l + 30, top + 4], [l + 90, top + 3]].forEach(([x, y]) => { ctx.beginPath(); ctx.ellipse(x, y, 12, 4, 0, 0.3, Math.PI * 2); ctx.fill(); });
+      if (L.theme === "night") { ctx.fillStyle = "rgba(244,240,220,.35)"; ctx.fillRect((l + r) / 2 - 18, top + 6, 36, 3); }
+    } else {
+      ctx.fillStyle = "rgba(30,70,80,.45)"; ctx.fillRect(l + 4, top + 5, r - l - 8, H - top - 8);
+      ctx.strokeStyle = "rgba(230,245,245,.7)"; ctx.lineWidth = 2;
+      ctx.beginPath(); for (let x = l; x <= r; x += 8) { const y = top + 1 + Math.sin(x / 14 + clock * 2) * 1.2; x === l ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke();
+      ctx.strokeStyle = dark() ? "#2C4A2E" : "#4C6B33"; ctx.lineWidth = 2;
+      reeds.forEach((rd, i) => { const x = sx(rd.x); ctx.beginPath(); ctx.moveTo(x, top + 4); ctx.quadraticCurveTo(x + 2, top - rd.h * PX * 0.5, x + 4 + Math.sin(clock + i) * 2, top - rd.h * PX); ctx.stroke(); });
+    }
+  }
+
+  function drawDuck(d, held) {
+    ctx.save(); ctx.translate(sx(d.x), sy(d.y)); ctx.rotate(-(held ? 0 : d.rot));
+    const flapping = clock - flapT < 0.35;
+    ctx.fillStyle = "#E58A1F";
+    if (!held && state === "flight") { ctx.beginPath(); ctx.moveTo(-10, 6); ctx.lineTo(-18, 9); ctx.lineTo(-16, 4); ctx.fill(); }
+    ctx.fillStyle = "#8C7B66"; ctx.beginPath(); ctx.ellipse(0, 0, 13, 8.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#D9D3C6"; ctx.beginPath(); ctx.ellipse(-2, 3, 10, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#2B2B30"; ctx.beginPath(); ctx.moveTo(-12, -2); ctx.lineTo(-18, -5); ctx.lineTo(-13, 2); ctx.fill();
+    ctx.fillStyle = "#F4F1E8"; ctx.fillRect(7, -6, 4, 4);
+    ctx.fillStyle = "#2B6A45"; ctx.beginPath(); ctx.arc(12, -8, 6.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#F0B530"; ctx.beginPath(); ctx.moveTo(17, -9); ctx.lineTo(25, -7); ctx.lineTo(17, -5); ctx.fill();
+    ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(14, -10, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#6E5E4C";
+    ctx.beginPath();
+    if (flapping) { const f = Math.sin((clock - flapT) * 40) * 12; ctx.moveTo(-6, -2); ctx.lineTo(4, -2); ctx.lineTo(-4, -14 - f); }
+    else { ctx.ellipse(-2, -1, 8, 4, -0.2, 0, Math.PI * 2); }
+    ctx.fill();
+    ctx.fillStyle = "#3D6FB0"; ctx.fillRect(-4, -2, 5, 2);
+    ctx.restore();
+    if (landed === "ground" && (state === "landed" || state === "done")) {
+      for (let i = 0; i < 3; i++) { const a = clock * 4 + i * 2.1; ctx.fillStyle = "#F5C534"; ctx.font = disp(12); ctx.textAlign = "center"; ctx.fillText("*", sx(d.x) + Math.cos(a) * 14, sy(d.y) - 16 + Math.sin(a) * 4); }
+    }
+  }
+
+  function drawThrower() {
+    const x = sx(-0.4), y = GY;
+    const holding = state === "aim";
+    const pull = holding && drag && drag.moved ? aim.pow : 0;
+    ctx.lineCap = "round";
+    ctx.fillStyle = "#2F5E36"; ctx.fillRect(x - 10, y - 12, 8, 12); ctx.fillRect(x + 2, y - 12, 8, 12);
+    ctx.strokeStyle = "#4A4038"; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(x - 6, y - 12); ctx.lineTo(x - 1, y - 22); ctx.lineTo(x + 6, y - 12); ctx.stroke();
+    ctx.strokeStyle = "#556B3A"; ctx.lineWidth = 14;
+    ctx.beginPath(); ctx.moveTo(x, y - 24); ctx.lineTo(x, y - 40); ctx.stroke();
+    ctx.strokeStyle = "#DDAA84"; ctx.lineWidth = 6;
+    ctx.beginPath();
+    if (holding) { ctx.moveTo(x + 4, y - 38); ctx.lineTo(sx(REL.x) - 6 - pull * 14, sy(REL.y) + 6 + pull * 6); }
+    else { ctx.moveTo(x + 4, y - 38); ctx.lineTo(x + 24, y - 52); }
+    ctx.moveTo(x - 4, y - 38); ctx.lineTo(x - 12, y - 26);
+    ctx.stroke();
+    ctx.fillStyle = "#DDAA84"; ctx.beginPath(); ctx.arc(x, y - 48, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#6B5440"; ctx.beginPath(); ctx.ellipse(x + 2, y - 53, 10, 4, -0.1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y - 52, 7, Math.PI, 0); ctx.fill();
+  }
+
+  function drawJudge() {
+    const x = sx(27.6), y = GY, up = state === "done";
+    ctx.strokeStyle = "#E58A1F"; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(x - 4, y); ctx.lineTo(x - 3, y - 8); ctx.moveTo(x + 4, y); ctx.lineTo(x + 3, y - 8); ctx.stroke();
+    ctx.fillStyle = "#F4F2EA"; ctx.beginPath(); ctx.ellipse(x, y - 15, 13, 9, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#F4F2EA"; ctx.lineWidth = 6; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x + 6, y - 20); ctx.quadraticCurveTo(x + 9, y - 32, x + 7, y - 40); ctx.stroke();
+    ctx.fillStyle = "#F4F2EA"; ctx.beginPath(); ctx.arc(x + 7, y - 42, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#E58A1F"; ctx.beginPath(); ctx.moveTo(x + 11, y - 43); ctx.lineTo(x + 18, y - 41); ctx.lineTo(x + 11, y - 39); ctx.fill();
+    ctx.fillStyle = "#1C2620"; ctx.beginPath(); ctx.arc(x + 8, y - 44, 1.2, 0, Math.PI * 2); ctx.fill();
+    if (up && score !== null) {
+      ctx.strokeStyle = "#DCD8CC"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x - 6, y - 18); ctx.lineTo(x - 14, y - 38); ctx.stroke();
+      ctx.fillStyle = "#E9A417"; ctx.fillRect(x - 27, y - 66, 22, 28);
+      ctx.fillStyle = "#2A1E04"; ctx.font = disp(22); ctx.textAlign = "center"; ctx.fillText(score, x - 16, y - 44);
+    }
+  }
+
+  function drawParticles() {
+    parts.forEach(p => {
+      const a = Math.min(1, p.life / p.max * 1.5);
+      if (p.type === "drop") { ctx.fillStyle = `rgba(225,242,245,${a})`; ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), p.r, 0, Math.PI * 2); ctx.fill(); }
+      else if (p.type === "cloud") { ctx.fillStyle = `rgba(250,248,240,${a * .85})`; ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), p.r * (1.6 - a * 0.6), 0, Math.PI * 2); ctx.fill(); }
+      else if (p.type === "feather") { ctx.save(); ctx.globalAlpha = a; ctx.translate(sx(p.x), sy(p.y)); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.beginPath(); ctx.ellipse(0, 0, 5, 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+    });
+    floaters.forEach(f => {
+      const k = (clock - f.t) / 1.4;
+      ctx.globalAlpha = 1 - k; ctx.fillStyle = f.col; ctx.font = disp(20); ctx.textAlign = "center";
+      ctx.fillText(f.text, sx(f.x), sy(f.y) - k * 30);
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  function drawAim() {
+    const a = aim.ang * Math.PI / 180, v = speedOf(aim.pow);
+    let x = REL.x, y = REL.y, vx = v * Math.cos(a), vy = v * Math.sin(a);
+    ctx.fillStyle = dark() ? "rgba(255,255,255,.85)" : "rgba(28,38,32,.75)";
+    for (let t = 0; t <= L.preview; t += 0.05) {
+      const px = REL.x + vx * t, py = REL.y + vy * t - G * t * t / 2;
+      ctx.beginPath(); ctx.arc(sx(px), sy(py), 2.6 * (1 - t / L.preview * 0.6), 0, Math.PI * 2); ctx.fill();
+    }
+    void x; void y;
+    if (drag && drag.moved) {
+      ctx.strokeStyle = "rgba(160,110,60,.9)"; ctx.lineWidth = 3;
+      const bx = sx(REL.x) - Math.cos(a) * aim.pow * 40, by = sy(REL.y) + Math.sin(a) * aim.pow * 40;
+      ctx.beginPath(); ctx.moveTo(sx(REL.x), sy(REL.y)); ctx.lineTo(bx, by); ctx.stroke();
+    }
+    const bxp = 22, bt = GY - 150, bh = 110;
+    ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.fillRect(bxp - 2, bt - 2, 16, bh + 4);
+    const g = ctx.createLinearGradient(0, bt + bh, 0, bt);
+    g.addColorStop(0, "#5D9A3E"); g.addColorStop(.6, "#E9A417"); g.addColorStop(1, "#C9412D");
+    ctx.fillStyle = g; ctx.fillRect(bxp, bt + bh * (1 - aim.pow), 12, bh * aim.pow);
+    ctx.strokeStyle = "rgba(28,38,32,.6)"; ctx.lineWidth = 1; ctx.strokeRect(bxp - 2, bt - 2, 16, bh + 4);
+    ctx.fillStyle = dark() ? "#F4F1E6" : "#1C2620"; ctx.font = cond(11); ctx.textAlign = "center";
+    ctx.fillText("POWER", bxp + 6, bt - 7);
+  }
+
+  function drawTrail(tr, col) {
+    if (tr.length < 2) return;
+    ctx.fillStyle = col;
+    tr.forEach((p, i) => { if (i % 2 === 0) { ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), 1.8, 0, Math.PI * 2); ctx.fill(); } });
+  }
+
+  function banner(text) {
+    ctx.font = cond(20); ctx.textAlign = "center";
+    const w = ctx.measureText(text).width + 28;
+    ctx.fillStyle = "rgba(20,28,24,.8)"; rr(W / 2 - w / 2, 16, w, 34, 4); ctx.fill();
+    ctx.fillStyle = "#F4F1E6"; ctx.fillText(text, W / 2, 40);
+  }
+
+  function drawTitleCard() {
+    const k = (clock - cardT) / 2.2;
+    if (k >= 1) return;
+    const alpha = k < 0.75 ? 1 : 1 - (k - 0.75) / 0.25;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "rgba(14,20,16,.72)"; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#E9A417"; ctx.font = cond(22);
+    ctx.fillText(`LEVEL ${levelIdx + 1} OF ${LEVELS.length}`, W / 2, H / 2 - 50);
+    ctx.fillStyle = "#F4F1E6"; ctx.font = disp(64);
+    ctx.fillText(L.name, W / 2, H / 2 + 14);
+    const n = L.hoops.length;
+    ctx.font = cond(22); ctx.fillText(`${n} ${n === 1 ? "hoop" : "hoops"} · need ${L.need} from 5 throws`, W / 2, H / 2 + 52);
+    ctx.globalAlpha = 1;
+  }
+
+  function draw() {
+    drawBackground();
+    drawGantry();
+    hoops.forEach(h => drawHoop(h, "back"));
+    drawPond(false);
+    drawTrail(lastTrail, dark() ? "rgba(255,255,255,.22)" : "rgba(28,38,32,.18)");
+    drawTrail(trail, dark() ? "rgba(255,255,255,.5)" : "rgba(28,38,32,.35)");
+    drawJudge();
+    drawThrower();
+    if (landed !== "poof") drawDuck(duck, state === "aim");
+    hoops.forEach(h => drawHoop(h, "front"));
+    if (landed === "pond") drawPond(true); else { ctx.save(); drawPond(true); ctx.restore(); }
+    drawParticles();
+
+    if (sy(duck.y) < -10) {
+      const x = sx(duck.x);
+      ctx.fillStyle = dark() ? "rgba(255,255,255,.85)" : "rgba(28,38,32,.8)";
+      ctx.beginPath(); ctx.moveTo(x, 6); ctx.lineTo(x - 8, 20); ctx.lineTo(x + 8, 20); ctx.fill();
+    }
+    if (state === "aim") drawAim();
+    if (state === "flight" || state === "tangle") {
+      ctx.fillStyle = dark() ? "rgba(245,245,240,.9)" : "rgba(28,38,32,.85)"; ctx.font = cond(15); ctx.textAlign = "left";
+      ctx.fillText(`HOOPS ${passed}/${hoops.length}   ·   FLAPS LEFT ${MAXFLAPS - flaps}`, 16, H - 12);
+    }
+    if (state === "aim") banner(drag && drag.moved ? "Let go to throw" : "Drag back to aim · tap to throw");
+    else if (state === "flight") banner(flaps < MAXFLAPS ? "Tap to flap" : "No flaps left");
+    else if (state === "done") {
+      if (!levelOver) banner("Tap for the next duck");
+      else if (levelPassed) banner(levelIdx === LEVELS.length - 1 ? "Champion · starting again" : `Level cleared · ${LEVELS[levelIdx + 1].name} next`);
+      else banner(`Needed ${L.need} · Tap to retry the level`);
+    }
+    drawTitleCard();
+  }
+
+  // ---------- loop ----------
+  function fit() {
+    const r = stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(r.width * dpr)); canvas.height = Math.max(1, Math.round(r.height * dpr));
+  }
+  window.addEventListener("resize", fit);
+
+  let last = performance.now();
+  function frame(t) {
+    const dt = Math.min(0.033, (t - last) / 1000); last = t;
+    update(dt);
+    const k = canvas.width / W;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    draw();
+    requestAnimationFrame(frame);
+  }
+  fit();
+  showBest();
+  startLevel(0);
+  newThrow();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
