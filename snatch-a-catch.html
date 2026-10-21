@@ -1,0 +1,885 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Snatch a Catch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;600&display=swap">
+<style>
+/* Layout: masthead strip, then the bank (canvas) beside the plumber's panel; stacks on phones */
+:root {
+  --bg: #EAF0F1;
+  --panel: #F9FBFB;
+  --fg: #1A2428;
+  --muted: #56666C;
+  --line: #C6D3D6;
+  --accent: #2E86C8;      /* toilet-water blue */
+  --accent-ink: #FFFFFF;
+  --float: #D8452C;       /* fishing-float red */
+  --good: #2E7A44;
+  --bad: #A9442F;
+  --display: "Bowlby One", "Arial Black", Impact, sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F171A; --panel: #172124; --fg: #E2EAEC; --muted: #96A6AB; --line: #2A383C;
+    --accent: #5AA8E2; --accent-ink: #0F171A; --float: #F06A50; --good: #6BC184; --bad: #E27B62;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F171A; --panel: #172124; --fg: #E2EAEC; --muted: #96A6AB; --line: #2A383C;
+  --accent: #5AA8E2; --accent-ink: #0F171A; --float: #F06A50; --good: #6BC184; --bad: #E27B62;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap {
+  max-width: 1240px; margin: 0 auto;
+  padding-block: 20px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px;
+}
+.mast { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
+.eyebrow { margin: 0; font-family: var(--cond); font-weight: 700; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--float); }
+h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(32px, 6vw, 52px); line-height: 1; letter-spacing: .005em; text-wrap: balance; }
+h1 span { color: var(--accent); }
+.how { margin: 0; max-width: 52ch; color: var(--muted); }
+.how b { color: var(--fg); font-weight: 600; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+@media (max-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.pitch { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.stage { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); background: #9CC7E4; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: pointer; }
+canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.hud { display: flex; flex-wrap: wrap; gap: 4px 20px; font-family: var(--cond); font-size: 15px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hud b { color: var(--fg); font-weight: 700; }
+
+.ref { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ref-label { margin: 0; font-family: var(--cond); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.stagebox { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.st-name { margin: 0; font-family: var(--display); font-size: 21px; line-height: 1.1; }
+.st-bar { display: flex; gap: 4px; }
+.st-bar i { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+.st-bar i.done { background: var(--good); }
+.st-bar i.cur { background: var(--accent); }
+.slots { display: flex; gap: 6px; }
+.slots span { width: 36px; height: 32px; border-radius: 4px; border: 1px solid var(--line); display: grid; place-content: center; font-family: var(--cond); font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.slots span.full { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.slots span.zero { color: var(--bad); border-color: var(--bad); }
+.st-total { margin: 0; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.st-total b { color: var(--fg); }
+.st-msg { margin: 0; font-weight: 600; font-size: 14px; }
+.st-msg.pass { color: var(--good); }
+.st-msg.fail { color: var(--bad); }
+
+.ref-top { display: flex; align-items: center; gap: 14px; }
+.ref-top svg { flex: none; width: 80px; height: 104px; }
+.card { flex: none; width: 92px; height: 116px; border-radius: 5px; background: var(--accent); color: var(--accent-ink); display: grid; place-content: center; text-align: center; box-shadow: 0 2px 0 rgba(0,0,0,.18); transform-origin: 50% 100%; margin-top: 4px; }
+.card .num { font-family: var(--display); font-size: 52px; line-height: 1.05; }
+.card .of { font-family: var(--cond); font-weight: 700; font-size: 14px; letter-spacing: .1em; }
+.card.blank .num { opacity: .4; }
+.card.flip { animation: flip .55s cubic-bezier(.2,1.4,.4,1); }
+@keyframes flip { from { transform: rotateX(80deg) translateY(10px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .card.flip { animation: none; } }
+.pips { display: flex; gap: 5px; margin-top: 6px; }
+.pips i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--accent); }
+.pips i.on { background: var(--accent); }
+.quote { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.35; min-height: 2.7em; }
+.quote::before { content: "\201C"; } .quote::after { content: "\201D"; }
+
+.crit { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.crit li { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.crit .mark { font-weight: 700; color: var(--muted); }
+.crit .name { font-weight: 600; }
+.crit .name small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+.crit .val { font-family: var(--cond); font-weight: 700; font-size: 16px; color: var(--muted); text-align: right; }
+.crit li.ok .mark, .crit li.ok .val { color: var(--good); }
+.crit li.no .mark, .crit li.no .val { color: var(--bad); }
+
+.best { margin: 0; font-size: 14px; color: var(--muted); }
+.best b { color: var(--fg); }
+.btn { font: 700 16px var(--cond); letter-spacing: .06em; text-transform: uppercase; padding: 10px 14px; border-radius: 4px; cursor: pointer; background: var(--fg); color: var(--bg); border: 0; }
+.btn:hover { opacity: .88; }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn:disabled { opacity: .35; cursor: default; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <p class="eyebrow">Coarse fishing &middot; Four swims, five casts each</p>
+      <h1>Snatch a <span>Catch</span></h1>
+    </div>
+    <p class="how"><b>Hold</b> (or Space) and let go to cast. When the float <b>dips, tap fast</b> to strike. Then <b>hold</b> to wind up and <b>let go</b> to snatch the fish out of the water and over your shoulder. Land it in the toilet. Further casts catch bigger fish, but they're further from the loo.</p>
+  </header>
+
+  <main class="grid">
+    <section class="pitch" aria-label="Riverbank">
+      <div class="stage" id="stage">
+        <canvas id="game" tabindex="0" aria-label="Fishing game. Hold Space to cast, tap Space when the float dips, hold and release Space to snatch the fish into the toilet."></canvas>
+      </div>
+      <div class="hud">
+        <span>Swim <b id="hudLevel">–</b></span>
+        <span>Cast <b id="hudNo">1/5</b></span>
+        <span>On the hook <b id="hudFish">–</b></span>
+        <span>Toilet <b id="hudDist">–</b></span>
+        <span>Wind <b id="hudWind">–</b></span>
+      </div>
+    </section>
+
+    <aside class="ref" aria-label="Judge">
+      <div class="stagebox">
+        <p class="ref-label">Swim <span id="stNum">1</span> of 4</p>
+        <p class="st-name" id="stName">Village pond</p>
+        <div class="st-bar" id="stBar"><i></i><i></i><i></i><i></i></div>
+        <div class="slots" id="slots"><span>–</span><span>–</span><span>–</span><span>–</span><span>–</span></div>
+        <p class="st-total">Swim total <b id="stTotal">0</b> / 25 &middot; need <b id="stNeed">12</b> to unlock the next swim</p>
+        <p class="st-msg" id="stMsg" hidden></p>
+      </div>
+      <div class="ref-top">
+        <svg viewBox="0 0 80 104" aria-hidden="true">
+          <rect x="24" y="76" width="11" height="24" rx="3" fill="#2B3D6B"/>
+          <rect x="40" y="76" width="11" height="24" rx="3" fill="#2B3D6B"/>
+          <rect x="20" y="40" width="36" height="40" rx="6" fill="#3E5FA8"/>
+          <rect x="28" y="40" width="20" height="16" fill="#4F72BE"/>
+          <rect x="18" y="38" width="40" height="8" rx="3" fill="#D9DCDF"/>
+          <circle cx="38" cy="26" r="12" fill="#D9A882"/>
+          <path d="M25 22 Q38 8 51 22 L58 24 L25 24 Z" fill="#C83A30"/>
+          <circle cx="34" cy="27" r="1.6" fill="#1A2428"/><circle cx="43" cy="27" r="1.6" fill="#1A2428"/>
+          <path d="M31 33 Q38 30 45 33" stroke="#5A3A28" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M56 46 L70 22" stroke="#D9A882" stroke-width="7" stroke-linecap="round"/>
+          <path d="M72 6 L72 30" stroke="#8A5A34" stroke-width="3"/>
+          <path d="M64 4 Q72 -2 80 4 L80 8 L64 8 Z" fill="#B3312A"/>
+          <path d="M20 46 L12 70" stroke="#D9A882" stroke-width="7" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <p class="ref-label">The plumber's verdict</p>
+          <div class="card blank" id="card"><span class="num" id="cardNum">–</span><span class="of">OUT OF 5</span></div>
+        </div>
+      </div>
+      <div>
+        <p class="quote" id="quote" aria-live="polite">Fish goes in the pan. Not on my boots, not back in the pond. In the pan.</p>
+        <div class="pips" id="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <ol class="crit" id="crit"></ol>
+      <button class="btn" id="next" type="button" disabled>Next cast</button>
+      <p class="best">Best cast <b id="best">–</b> &middot; Furthest swim <b id="furthest">1</b></p>
+    </aside>
+  </main>
+</div>
+
+<script>
+(() => {
+  // ---------- world (metres) ----------
+  const W = 960, H = 540, PX = 22, OX = 20, GY = 430;
+  const sx = m => OX + m * PX, sy = m => GY - m * PX;
+  const G = 9.81, FR = 0.2, QUICK = 0.3, BIG_SPLASH = 9, SPECIMEN = 1.0;
+
+  const LEVELS = [
+    { name: "Village pond", need: 12, theme: "pond", shore: 24, bank: 1.0, toilet: 33, judge: 36.4, ang: 55, bite: 0.7, wind: [0, 0] },
+    { name: "Campsite", need: 11, theme: "camp", shore: 24, bank: 1.0, toilet: 35.5, judge: 38.8, ang: 55, bite: 0.6, wind: [0, 0.6], lid: true },
+    { name: "Seaside pier", need: 10, theme: "pier", shore: 22, bank: 2.0, toilet: 33.5, judge: 37, ang: 55, bite: 0.5, wind: [0.3, 1.0], gulls: true },
+    { name: "Stormy loch", need: 9, theme: "loch", shore: 24, bank: 1.0, toilet: 38.5, judge: 41.4, ang: 58, bite: 0.45, wind: [1.0, 1.8], hedge: { x0: 30.6, x1: 31.6, h: 2.8 }, rain: true },
+  ];
+
+  const SPECIES = [
+    { name: "Roach", min: 0.15, max: 0.5, body: "#B8C3C8", fin: "#D2493A", len: 0.5 },
+    { name: "Perch", min: 0.3, max: 1.2, body: "#8AA145", fin: "#E06A2C", len: 0.6, stripes: true },
+    { name: "Bream", min: 0.8, max: 2.4, body: "#B08A4A", fin: "#6E5532", len: 0.75 },
+    { name: "Carp", min: 1.6, max: 6.0, body: "#C9953A", fin: "#8C5A26", len: 0.95 },
+  ];
+  function pickFish(c) {
+    const pool = c < 9 ? [0, 0, 1] : c < 16 ? [1, 2, 2] : [2, 3, 3];
+    const s = SPECIES[pool[Math.floor(Math.random() * pool.length)]];
+    return { ...s, kg: Math.round((s.min + Math.random() * (s.max - s.min)) * 100) / 100 };
+  }
+
+  const LINES = {
+    escaped: ["Three bites and you missed the lot. The fish are laughing.", "It got away. They always do when you're that slow."],
+    water: ["Straight back in the water. The fish is delighted.", "Snatched it out and dropped it back in. Nice for the fish."],
+    ground: ["On the grass, flapping. That's not the toilet.", "Missed the pan. Somebody pick that fish up."],
+    away: ["Over the toilet and into the next field.", "That fish is still going. Not in my toilet, anyway."],
+    gull: ["A seagull had it. Nothing I can do about seagulls.", "Mugged by a gull. Happens to the best of us."],
+    hedge: ["Into the hedge. The fish lives there now.", "Hedge. The hedge always wins."],
+    1: ["It's in. That's all I'll say.", "In the pan. One."],
+    2: ["In, but scruffy. Two.", "It made it. Nobody's impressed."],
+    3: ["Decent. I've seen tidier.", "Three. The toilet's seen worse."],
+    4: ["Lovely. Only the {miss} let you down.", "Nearly perfect. Sort the {miss} and that's a five."],
+    5: ["Quick strike, big fish, clean in, and what a splash. I need a towel.", "Perfect. I'm soaked, but it's perfect."],
+  };
+  const MISS = { quick: "slow strike", clean: "bounce off the porcelain", specimen: "size of the fish", splash: "splash" };
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const canvas = $("game"), ctx = canvas.getContext("2d"), stage = $("stage"), critEl = $("crit");
+
+  let best = null, furthest = 1;
+  try {
+    const b = localStorage.getItem("castFlushBest"); if (b !== null) best = +b;
+    const f = localStorage.getItem("castFlushFurthest"); if (f !== null) furthest = +f;
+  } catch (e) {}
+  const save = (k, v) => { try { localStorage.setItem(k, String(v)); } catch (e) {} };
+  const showBest = () => { $("best").textContent = best === null ? "–" : best + "/5"; $("furthest").textContent = furthest; };
+
+  // ---------- state ----------
+  let L, levelIdx = 0, levelScores = [], levelOver = false, levelPassed = false, CRIT = [];
+  let state = "castAim", clock = 0, cardT = 0, autoAt = null, msgT = -10, msg = "";
+  let power = 0, chargeT = 0, wind = 0;
+  let bob, fishInfo, shadow, biteAt, biteT, misses, reaction, hookT, fish, touches, outcome, entrySpeed, resultAt, resultT, score = null, wetT = -10;
+  let parts = [], floaters = [], gulls = [], gullAt = 0;
+  const clouds = Array.from({ length: 5 }, (_, i) => ({ x: i * 220 + Math.random() * 120, y: 30 + Math.random() * 70, s: 0.6 + Math.random() * 0.6 }));
+
+  const anglerX = () => L.shore + 2;
+  const rodTip = () => {
+    const ax = anglerX(), by = L.bank;
+    if (state === "flight" || state === "landed" || state === "done") return { x: ax + 0.4, y: by + 4.2 };
+    if (state === "castCharge") return { x: ax + 1.2 + power * 0.6, y: by + 3.4 };
+    return { x: ax - 2.2, y: by + 2.9 };
+  };
+
+  // toilet geometry (big cartoon loo)
+  const K = 1.7; // cartoon toilet scale
+  function loo() {
+    const T = L.toilet, b = L.bank, rim = b + 0.75 * K;
+    return {
+      T, b, rim,
+      open: [T - 0.62 * K, T + 0.48 * K],
+      walls: [{ x0: T - 0.76 * K, x1: T - 0.62 * K, y0: b, y1: rim }, { x0: T + 0.48 * K, x1: T + 0.62 * K, y0: b, y1: rim }],
+      cistern: { x0: T + 0.62 * K, x1: T + 1.2 * K, y0: b + 0.3 * K, y1: rim + 1.4 * K },
+    };
+  }
+  function lidOpen(t = clock) {
+    if (!L.lid) return 1;
+    const p = ((t % 4) + 4) % 4;
+    if (p < 2.2) return 1; if (p < 2.6) return 1 - (p - 2.2) / 0.4; if (p < 3.6) return 0; return (p - 3.6) / 0.4;
+  }
+  function lidRect() {
+    const g = loo(), f = lidOpen();
+    if (f > 0.5) return { x0: g.T + 0.48 * K, x1: g.T + 0.62 * K, y0: g.rim, y1: g.rim + 1.25 * K };
+    return { x0: g.T - 0.76 * K, x1: g.T + 0.62 * K, y0: g.rim, y1: g.rim + 0.12 };
+  }
+
+  function startLevel(i) {
+    levelIdx = i; L = LEVELS[i];
+    levelScores = []; levelOver = false; levelPassed = false; autoAt = null;
+    CRIT = [
+      { k: "inpan", name: "In the toilet", need: "Fish lands in the pan" },
+      { k: "quick", name: "Quick strike", need: `Strike within ${QUICK} s of the bite` },
+      { k: "clean", name: "Clean in", need: "No bounce off the porcelain" },
+      { k: "specimen", name: "Specimen", need: `Fish of ${SPECIMEN} kg or more` },
+      { k: "splash", name: "Big splash", need: `Hits the water at ${BIG_SPLASH} m/s+` },
+    ];
+    critEl.innerHTML = CRIT.map(c =>
+      `<li data-k="${c.k}"><span class="mark">·</span><span class="name">${c.name}<small>${c.need}</small></span><span class="val">–</span></li>`).join("");
+    $("stNum").textContent = i + 1; $("stName").textContent = L.name; $("stNeed").textContent = L.need;
+    $("stBar").querySelectorAll("i").forEach((b, j) => b.className = j < i ? "done" : j === i ? "cur" : "");
+    $("stMsg").hidden = true;
+    $("quote").textContent = i === 0 ? "Fish goes in the pan. Not on my boots, not back in the pond. In the pan." : `Swim ${i + 1}: ${L.name}. Same pan, new problems.`;
+    $("card").classList.add("blank"); $("cardNum").textContent = "–";
+    $("pips").querySelectorAll("i").forEach(p => p.classList.remove("on"));
+    gulls = []; gullAt = clock + 1.5;
+    cardT = clock;
+    drawSlots();
+  }
+
+  function drawSlots() {
+    const el = $("slots").children;
+    for (let i = 0; i < 5; i++) {
+      const s = levelScores[i];
+      el[i].textContent = s === undefined ? "–" : s;
+      el[i].className = s === undefined ? "" : s === 0 ? "zero" : "full";
+    }
+    $("stTotal").textContent = levelScores.reduce((a, b) => a + b, 0);
+  }
+
+  function newCast() {
+    state = "castAim"; power = 0;
+    bob = null; fishInfo = null; shadow = null; fish = null; misses = 0; reaction = null; touches = 0; outcome = null; entrySpeed = 0; score = null; resultAt = null;
+    parts = []; floaters = [];
+    const mag = L.wind[0] + Math.random() * (L.wind[1] - L.wind[0]);
+    wind = Math.round(mag * (Math.random() < .5 ? -1 : 1) * 10) / 10;
+    $("hudLevel").textContent = `${levelIdx + 1} · ${L.name}`;
+    $("hudNo").textContent = `${levelScores.length + 1}/5`;
+    $("hudFish").textContent = "–"; $("hudDist").textContent = "–";
+    const mph = Math.round(Math.abs(wind) * 8);
+    $("hudWind").textContent = mph === 0 ? "Still" : `${mph} mph ${wind > 0 ? "→" : "←"}`;
+    $("next").disabled = true; $("next").textContent = "Next cast";
+  }
+
+  function say(text) { msg = text; msgT = clock; }
+
+  // ---------- input ----------
+  function press() {
+    if (clock - cardT < 1.1) return;
+    if (state === "castAim") { state = "castCharge"; chargeT = 0; }
+    else if (state === "wait") { biteAt += 1.5; say("Nothing there yet. You've spooked it."); bob.jerk = clock; }
+    else if (state === "bite") {
+      reaction = clock - biteT; state = "hooked"; hookT = clock;
+      $("hudFish").textContent = `${fishInfo.name}, ${fishInfo.kg.toFixed(2)} kg`;
+      $("hudDist").textContent = (L.toilet - bob.x).toFixed(1) + " m";
+      for (let i = 0; i < 10; i++) parts.push({ x: bob.x, y: 0.1, vx: (Math.random() - .5) * 3, vy: 1 + Math.random() * 2, life: .7, max: .7, type: "drop", r: 2 });
+    }
+    else if (state === "ready") { state = "snatchCharge"; chargeT = 0; }
+    else if (state === "done") advance();
+  }
+  function release() {
+    if (state === "castCharge") cast();
+    else if (state === "snatchCharge") snatch();
+  }
+  function advance() {
+    if (state !== "done" || clock - resultT < 0.4) return;
+    autoAt = null;
+    if (levelOver) startLevel(levelPassed ? (levelIdx + 1) % LEVELS.length : levelIdx);
+    newCast();
+  }
+  canvas.addEventListener("pointerdown", e => { e.preventDefault(); canvas.focus({ preventScroll: true }); press(); });
+  window.addEventListener("pointerup", release);
+  window.addEventListener("pointercancel", release);
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
+  window.addEventListener("keydown", e => {
+    if (e.code !== "Space" && e.code !== "Enter") return;
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") return;
+    e.preventDefault(); if (!e.repeat) press();
+  });
+  window.addEventListener("keyup", e => { if (e.code === "Space" || e.code === "Enter") release(); });
+  $("next").addEventListener("click", advance);
+
+  // ---------- phases ----------
+  function cast() {
+    const c = 3 + power * 19, tip = rodTip();
+    bob = { x0: tip.x, y0: tip.y, x: L.shore - c, y: 0, t0: clock, dur: 0.6 + power * 0.5, c, jerk: -10 };
+    state = "castFly";
+  }
+  function bobLanded() {
+    state = "wait";
+    fishInfo = pickFish(bob.c);
+    const side = Math.random() < .5 ? -1 : 1;
+    shadow = { x: bob.x + side * 4, tx: bob.x };
+    biteAt = clock + 1.3 + Math.random() * 2.2;
+    for (let i = 0; i < 3; i++) floaters.push({ ring: true, x: bob.x, t: clock + i * 0.15 });
+  }
+  let lastSnatch = null;
+  function snatch() {
+    lastSnatch = power;
+    const a = L.ang * Math.PI / 180, v = (7 + power * 15) * (1 - 0.025 * fishInfo.kg);
+    fish = { x: bob.x, y: 0.1, vx: v * Math.cos(a), vy: v * Math.sin(a), rot: 0, w: 9 + Math.random() * 4, lx: bob.x, ly: 0.1 };
+    for (let i = 0; i < 24; i++) parts.push({ x: bob.x, y: 0.1, vx: (Math.random() - .3) * 4, vy: 2 + Math.random() * 4, life: 1, max: 1, type: "drop", r: 2 + Math.random() * 2 });
+    state = "flight";
+  }
+
+  function finish(kind, delay) {
+    outcome = kind; state = "landed"; resultAt = clock + delay;
+    if (fish && (kind === "ground" || kind === "water" || kind === "away")) {
+      const dx = fish.x - loo().T;
+      say(kind === "away" ? "Way over the toilet" : dx < 0 ? `Short by ${(-dx).toFixed(1)} m` : `Over by ${dx.toFixed(1)} m`);
+    }
+  }
+
+  function collideRect(R) {
+    const cx = Math.max(R.x0, Math.min(fish.x, R.x1)), cy = Math.max(R.y0, Math.min(fish.y, R.y1));
+    let dx = fish.x - cx, dy = fish.y - cy, d = Math.hypot(dx, dy);
+    if (d >= FR) return false;
+    if (d === 0) {
+      const opts = [[fish.x - R.x0, -1, 0], [R.x1 - fish.x, 1, 0], [fish.y - R.y0, 0, -1], [R.y1 - fish.y, 0, 1]].sort((a, b) => a[0] - b[0])[0];
+      dx = opts[1]; dy = opts[2]; d = 1;
+    }
+    const nx = dx / d, ny = dy / d;
+    fish.x = cx + nx * FR; fish.y = cy + ny * FR;
+    const vn = fish.vx * nx + fish.vy * ny;
+    if (vn < 0) {
+      const tx = fish.vx - vn * nx, ty = fish.vy - vn * ny;
+      fish.vx = tx * 0.8 - 0.45 * vn * nx; fish.vy = ty * 0.8 - 0.45 * vn * ny;
+      if (Math.abs(vn) > 1.2) { touches++; floater("BOINK", fish.x, fish.y + 0.8, "#FFFFFF"); }
+    }
+    return true;
+  }
+
+  function stepFlight(h) {
+    const g = loo();
+    fish.lx = fish.x; fish.ly = fish.y;
+    fish.vy -= G * h; fish.vx += wind * h;
+    fish.x += fish.vx * h; fish.y += fish.vy * h; fish.rot += fish.w * h;
+    // seagulls
+    for (const gl of gulls) if (!gl.has && Math.hypot(gl.x - fish.x, gl.y - fish.y) < 0.75) { gl.has = true; floater("SQUAWK", fish.x, fish.y + 1, "#FFFFFF"); finish("gull", 1.6); return; }
+    // in the pan?
+    const lo = g.open[0] + 0.1, hi = g.open[1] - 0.1;
+    if (fish.ly >= g.rim && fish.y < g.rim && fish.x > lo && fish.x < hi && lidOpen() > 0.5) { inThePan(); return; }
+    // slid in past the rim another way (off the cistern or lid) still counts
+    if (fish.y < g.rim && fish.y > g.b - 1 && fish.x > g.open[0] && fish.x < g.open[1]) { inThePan(); return; }
+    if (fish.y < -4) { finish(fish.x < L.shore ? "water" : "ground", 0.8); return; }
+    // porcelain and obstacles
+    g.walls.forEach(collideRect); collideRect(g.cistern); collideRect(lidRect());
+    if (L.hedge) { const hd = L.hedge; if (collideRect({ x0: hd.x0, x1: hd.x1, y0: L.bank, y1: L.bank + hd.h })) { if (fish.y < L.bank + hd.h - 0.1 && Math.abs(fish.vx) < 2) { finish("hedge", 1.2); return; } } }
+    // ground / water
+    if (fish.x < L.shore && fish.y <= 0) {
+      for (let i = 0; i < 20; i++) parts.push({ x: fish.x, y: 0.1, vx: (Math.random() - .5) * 4, vy: 1 + Math.random() * 3, life: 1, max: 1, type: "drop", r: 2 });
+      fish.y = -0.3; finish("water", 1.2); return;
+    }
+    if (fish.x >= L.shore && fish.y - FR <= L.bank && !(fish.x > g.open[0] - 0.14 && fish.x < g.open[1] + 0.14)) {
+      fish.y = L.bank + FR;
+      if (Math.abs(fish.vy) > 2.5) { fish.vy = -fish.vy * 0.3; fish.vx *= 0.6; }
+      else { fish.vy = 0; fish.vx = 0; finish("ground", 1.3); return; }
+    }
+    if (fish.x > 44 || fish.x < -2) { finish("away", 0.6); return; }
+  }
+
+  function inThePan() {
+    const g = loo();
+    entrySpeed = Math.hypot(fish.vx, fish.vy);
+    fish.x = Math.max(g.open[0] + 0.25, Math.min(g.open[1] - 0.25, fish.x)); fish.y = g.rim - 0.2; fish.vx = 0; fish.vy = 0;
+    const n = Math.round(25 + entrySpeed * 9);
+    for (let i = 0; i < n; i++) {
+      const a = Math.PI / 2 + (Math.random() - .5) * 1.4, s = (0.4 + Math.random()) * (2 + entrySpeed * 0.55);
+      parts.push({ x: (g.open[0] + g.open[1]) / 2 + (Math.random() - .5) * 0.8, y: g.rim, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 2, max: 2, type: "drop", r: 2 + Math.random() * 3 });
+    }
+    if (entrySpeed >= BIG_SPLASH) { wetT = clock + 0.5; floater("SPLOOSH!", g.T, g.rim + 2.6, "#BFE3FF"); }
+    else floater("PLOP", g.T, g.rim + 1.8, "#BFE3FF");
+    finish("inpan", 1.6);
+  }
+
+  function update(dt) {
+    clock += dt;
+    clouds.forEach(c => { c.x += (8 + wind * 6) * dt * c.s; if (c.x > W + 120) c.x = -120; if (c.x < -140) c.x = W + 110; });
+    if (L.gulls) {
+      if (clock > gullAt) { gulls.push({ x: 46, y: 4.5 + Math.random() * 4.5, vx: -(4 + Math.random() * 2.5), has: false }); gullAt = clock + 2.2 + Math.random() * 2.5; }
+      gulls.forEach(g => { g.x += g.vx * dt; if (g.has) g.y += 1.5 * dt; });
+      gulls = gulls.filter(g => g.x > -4);
+    }
+
+    if (state === "castCharge") { chargeT += dt; power = 0.5 - 0.5 * Math.cos(chargeT * Math.PI * 2 / 1.6); }
+    else if (state === "castFly") { if (clock - bob.t0 >= bob.dur) bobLanded(); }
+    else if (state === "wait") {
+      shadow.x += (shadow.tx - shadow.x) * Math.min(1, dt * 0.9);
+      if (clock >= biteAt) { state = "bite"; biteT = clock; for (let i = 0; i < 2; i++) floaters.push({ ring: true, x: bob.x, t: clock + i * 0.1 }); }
+    } else if (state === "bite") {
+      if (clock - biteT > L.bite) {
+        misses++;
+        if (misses >= 3) { say("It's gone."); shadow.tx = bob.x + 8; finish("escaped", 1.0); }
+        else { state = "wait"; biteAt = clock + 1 + Math.random() * 1.5; say(misses === 1 ? "Too slow! It'll come back." : "Too slow again. Last chance."); }
+      }
+    } else if (state === "hooked") {
+      if (Math.random() < dt * 20) parts.push({ x: bob.x + (Math.random() - .5) * 0.6, y: 0.05, vx: (Math.random() - .5) * 2, vy: 1 + Math.random() * 1.5, life: .5, max: .5, type: "drop", r: 1.5 });
+      if (clock - hookT > 0.6) state = "ready";
+    } else if (state === "ready") {
+      if (Math.random() < dt * 12) parts.push({ x: bob.x + (Math.random() - .5) * 0.6, y: 0.05, vx: (Math.random() - .5) * 2, vy: 1 + Math.random() * 1.5, life: .5, max: .5, type: "drop", r: 1.5 });
+    } else if (state === "snatchCharge") { chargeT += dt; power = 0.5 - 0.5 * Math.cos(chargeT * Math.PI * 2 / 3.0); }
+    else if (state === "flight") {
+      const n = 6, h = dt / n;
+      for (let k = 0; k < n && state === "flight"; k++) stepFlight(h);
+    } else if ((state === "landed" || state === "done") && fish) {
+      if (outcome === "ground" && Math.random() < dt * 3) { fish.rot += Math.PI * (Math.random() < .5 ? 1 : -1) * 0.5; }
+      if (outcome === "gull") { const gl = gulls.find(g => g.has); if (gl) { fish.x = gl.x; fish.y = gl.y - 0.5; } }
+      if (outcome === "inpan") fish.y = Math.max(loo().rim - 0.6, fish.y - dt * 0.5);
+    }
+
+    if (resultAt !== null && clock >= resultAt) { resultAt = null; showResult(); }
+    if (autoAt !== null && clock >= autoAt) advance();
+
+    parts = parts.filter(p => (p.life -= dt) > 0);
+    parts.forEach(p => { if (p.type === "drop") p.vy -= G * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.y < -0.5) p.life = 0; });
+    floaters = floaters.filter(f => clock - f.t < 1.4);
+  }
+
+  function floater(text, x, y, col) { floaters.push({ text, x, y, t: clock, col }); }
+
+  // ---------- judging ----------
+  function showResult() {
+    const inpan = outcome === "inpan";
+    const res = {
+      inpan: { ok: inpan, val: inpan ? "Yes" : { escaped: "Got away", water: "Pond", ground: "Grass", away: "Gone", gull: "Gull", hedge: "Hedge" }[outcome] },
+      quick: { ok: reaction !== null && reaction <= QUICK, val: reaction === null ? "Missed" : reaction.toFixed(2) + " s" },
+      clean: { ok: touches === 0, val: touches ? `${touches} bounce${touches > 1 ? "s" : ""}` : "Yes" },
+      specimen: { ok: !!fishInfo && fishInfo.kg >= SPECIMEN && reaction !== null, val: fishInfo && reaction !== null ? `${fishInfo.name} ${fishInfo.kg.toFixed(2)} kg` : "–" },
+      splash: { ok: inpan && entrySpeed >= BIG_SPLASH, val: inpan ? entrySpeed.toFixed(1) + " m/s" : "–" },
+    };
+    score = inpan ? CRIT.filter(c => res[c.k].ok).length : 0;
+
+    critEl.querySelectorAll("li").forEach(li => {
+      const k = li.dataset.k, r = res[k], counts = inpan || k === "inpan";
+      li.className = !counts ? "" : r.ok ? "ok" : "no";
+      li.querySelector(".mark").textContent = !counts ? "·" : r.ok ? "✓" : "✗";
+      li.querySelector(".val").textContent = r.val;
+    });
+
+    const pool = inpan ? LINES[score] : LINES[outcome];
+    let line = pool[Math.floor(Math.random() * pool.length)];
+    if (line.includes("{miss}")) line = line.replace("{miss}", MISS[CRIT.find(c => !res[c.k].ok).k]);
+    $("quote").textContent = line;
+
+    const card = $("card");
+    $("cardNum").textContent = score;
+    card.classList.remove("blank", "flip"); void card.offsetWidth; card.classList.add("flip");
+    $("pips").querySelectorAll("i").forEach((p, i) => p.classList.toggle("on", i < score));
+
+    if (best === null || score > best) { best = score; save("castFlushBest", best); }
+    levelScores.push(score); drawSlots();
+    if (levelScores.length === 5) {
+      levelOver = true;
+      const total = levelScores.reduce((a, b) => a + b, 0);
+      levelPassed = total >= L.need;
+      const m = $("stMsg"); m.hidden = false;
+      if (levelPassed) {
+        const last = levelIdx === LEVELS.length - 1;
+        m.className = "st-msg pass";
+        m.textContent = last ? `${total}/25. All four swims cleared. Master of the pan.` : `${total}/25. Swim cleared. Next: ${LEVELS[levelIdx + 1].name}.`;
+        if (!last) { furthest = Math.max(furthest, levelIdx + 2); save("castFlushFurthest", furthest); }
+        $("next").textContent = last ? "Start again" : "Next swim";
+        autoAt = clock + 2.8;
+      } else {
+        m.className = "st-msg fail";
+        m.textContent = `${total}/25. You needed ${L.need}. Try the swim again.`;
+        $("next").textContent = "Retry swim";
+      }
+    }
+    showBest();
+    state = "done"; resultT = clock;
+    $("next").disabled = false;
+  }
+
+  // ---------- drawing ----------
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+  }
+  const cond = s => `700 ${s}px 'Barlow Condensed', 'Arial Narrow', sans-serif`;
+  const disp = s => `${s}px 'Bowlby One', 'Arial Black', Impact, sans-serif`;
+  const dark = () => L.theme === "loch";
+
+  const THEMES = {
+    pond: { sky: ["#93BEDA", "#E6F0E0"], hill: "#8FB574", far: "#A9C68E", ground: "#6E9E4A", soil: "#6B4F35", water: ["#5D9A9C", "#244F55"] },
+    camp: { sky: ["#EFA86E", "#FBE4C4"], hill: "#7F8F5A", far: "#A3A06A", ground: "#7C9447", soil: "#6B4F35", water: ["#5E8E90", "#294B50"] },
+    pier: { sky: ["#86BFE8", "#EAF4F8"], hill: "#C9C2A2", far: "#9FC1D6", ground: "#9A7B55", soil: "#6E5636", water: ["#3F86A6", "#173E55"] },
+    loch: { sky: ["#56636F", "#A2ACB2"], hill: "#4C5A50", far: "#6C7A80", ground: "#4F6B3A", soil: "#4E3D2C", water: ["#4A6670", "#1C3138"] },
+  };
+
+  function drawBackground() {
+    const T = THEMES[L.theme];
+    const g = ctx.createLinearGradient(0, 0, 0, GY);
+    g.addColorStop(0, T.sky[0]); g.addColorStop(1, T.sky[1]);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, GY);
+    ctx.fillStyle = dark() ? "rgba(90,98,104,.85)" : "rgba(255,255,255,.75)";
+    clouds.forEach(c => {
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y, 56 * c.s, 16 * c.s, 0, 0, Math.PI * 2);
+      ctx.ellipse(c.x + 28 * c.s, c.y - 11 * c.s, 30 * c.s, 16 * c.s, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    if (L.theme === "pier") {
+      ctx.fillStyle = T.far; ctx.fillRect(0, GY - 46, W, 46);
+      ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.fillRect(0, GY - 46, W, 2);
+      [[690, "#E05A4A"], [730, "#F2C230"], [770, "#4F8BC9"], [810, "#F4F1E8"], [850, "#5DAA6A"]].forEach(([x, c]) => {
+        ctx.fillStyle = c; ctx.fillRect(x, sy(L.bank) - 46, 30, 34);
+        ctx.fillStyle = "#6B5440"; ctx.beginPath(); ctx.moveTo(x - 3, sy(L.bank) - 46); ctx.lineTo(x + 15, sy(L.bank) - 60); ctx.lineTo(x + 33, sy(L.bank) - 46); ctx.fill();
+      });
+    } else {
+      ctx.fillStyle = T.far;
+      ctx.beginPath(); ctx.moveTo(0, GY);
+      for (let x = 0; x <= W; x += 20) ctx.lineTo(x, GY - (L.theme === "loch" ? 150 - Math.abs(Math.sin(x / 120)) * 90 : 70 + Math.sin(x / 150) * 22));
+      ctx.lineTo(W, GY); ctx.fill();
+      ctx.fillStyle = T.hill;
+      ctx.beginPath(); ctx.moveTo(0, GY);
+      for (let x = 0; x <= W; x += 20) ctx.lineTo(x, GY - 32 - Math.sin(x / 90 + 2) * 12);
+      ctx.lineTo(W, GY); ctx.fill();
+    }
+    if (L.theme === "pond") {
+      // willow behind the loo
+      const x = sx(40.5), y = sy(L.bank);
+      ctx.fillStyle = "#5C4630"; ctx.fillRect(x - 6, y - 90, 12, 90);
+      ctx.fillStyle = "#6F9C48";
+      for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.ellipse(x - 50 + i * 12, y - 70 + Math.abs(i - 4) * 6, 10, 46, 0, 0, Math.PI * 2); ctx.fill(); }
+    } else if (L.theme === "camp") {
+      ctx.fillStyle = "#3F5A3A";
+      [700, 760, 860, 900].forEach((x, i) => { ctx.beginPath(); ctx.moveTo(x - 26, GY - 20); ctx.lineTo(x, GY - 150 - i * 10); ctx.lineTo(x + 26, GY - 20); ctx.fill(); });
+      const tx = sx(41.4), ty = sy(L.bank);
+      ctx.fillStyle = "#E0762E"; ctx.beginPath(); ctx.moveTo(tx - 46, ty); ctx.lineTo(tx, ty - 56); ctx.lineTo(tx + 46, ty); ctx.fill();
+      ctx.fillStyle = "#8C3E18"; ctx.beginPath(); ctx.moveTo(tx - 10, ty); ctx.lineTo(tx, ty - 40); ctx.lineTo(tx + 10, ty); ctx.fill();
+      const fx = sx(29.4), fy = sy(L.bank);
+      ctx.fillStyle = "#5A4030"; ctx.fillRect(fx - 12, fy - 4, 24, 4);
+      for (let i = 0; i < 3; i++) { ctx.fillStyle = ["#F2C230", "#E8742A", "#D8452C"][i]; ctx.beginPath(); ctx.ellipse(fx, fy - 8 - i * 2, 9 - i * 2.5, 10 + Math.sin(clock * 12 + i) * 3 - i * 2, 0, 0, Math.PI * 2); ctx.fill(); }
+    } else if (L.theme === "loch") {
+      ctx.strokeStyle = "rgba(220,230,235,.4)"; ctx.lineWidth = 1.2; ctx.beginPath();
+      for (let i = 0; i < 110; i++) { const x = ((i * 97 + clock * 120 * Math.sign(wind || 1)) % (W + 100) + W + 100) % (W + 100) - 50, y = (i * 53 + clock * 700) % H; ctx.moveTo(x, y); ctx.lineTo(x + wind * 4, y + 14); }
+      ctx.stroke();
+    }
+  }
+
+  function drawWater() {
+    const T = THEMES[L.theme], right = L.theme === "pier" ? W : sx(L.shore) + 10;
+    const g = ctx.createLinearGradient(0, GY, 0, H);
+    g.addColorStop(0, T.water[0]); g.addColorStop(1, T.water[1]);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(0, H);
+    for (let x = 0; x <= right; x += 8) ctx.lineTo(x, GY + Math.sin(x / 24 + clock * (L.rain ? 4 : 2)) * (L.rain ? 2.5 : 1.4));
+    ctx.lineTo(right, H); ctx.fill();
+    ctx.strokeStyle = "rgba(230,245,245,.55)"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); for (let x = 0; x <= right; x += 8) { const y = GY + Math.sin(x / 24 + clock * (L.rain ? 4 : 2)) * (L.rain ? 2.5 : 1.4); x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke();
+    if (shadow && (state === "wait" || state === "bite")) {
+      ctx.fillStyle = "rgba(10,30,30,.35)";
+      ctx.beginPath(); ctx.ellipse(sx(shadow.x), GY + 16, 18, 6, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawBank() {
+    const T = THEMES[L.theme];
+    if (L.theme === "pier") {
+      const top = sy(L.bank);
+      ctx.fillStyle = "#5B4430";
+      for (let x = L.shore + 0.5; x < 44; x += 3) ctx.fillRect(sx(x) - 4, top, 8, H - top);
+      ctx.fillStyle = "#8A6A44"; ctx.fillRect(sx(L.shore), top, W - sx(L.shore), 10);
+      ctx.fillStyle = "rgba(0,0,0,.15)";
+      for (let x = sx(L.shore); x < W; x += 14) ctx.fillRect(x, top, 1, 10);
+      ctx.strokeStyle = "#6E5434"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(sx(L.shore), top - 26); ctx.lineTo(W, top - 26); ctx.stroke();
+      for (let x = L.shore; x < 44; x += 2.5) { ctx.beginPath(); ctx.moveTo(sx(x), top); ctx.lineTo(sx(x), top - 26); ctx.stroke(); }
+      return;
+    }
+    ctx.fillStyle = T.soil;
+    ctx.beginPath(); ctx.moveTo(sx(L.shore), GY + 6); ctx.lineTo(sx(L.shore) + 14, sy(L.bank)); ctx.lineTo(W, sy(L.bank)); ctx.lineTo(W, H); ctx.lineTo(sx(L.shore) - 6, H); ctx.fill();
+    ctx.fillStyle = T.ground; ctx.fillRect(sx(L.shore) + 10, sy(L.bank) - 3, W, 8);
+    ctx.strokeStyle = dark() ? "#2E4426" : "#4C6B33"; ctx.lineWidth = 2;
+    for (let i = 0; i < 9; i++) { const x = sx(L.shore) - 6 + i * 4; ctx.beginPath(); ctx.moveTo(x, GY + 4); ctx.quadraticCurveTo(x - 2, GY - 14, x - 5 + Math.sin(clock + i) * 2, GY - 26 - (i % 3) * 6); ctx.stroke(); }
+    if (L.hedge) {
+      const hd = L.hedge;
+      ctx.fillStyle = "#2F4A2A"; ctx.fillRect(sx(hd.x0), sy(L.bank + hd.h), (hd.x1 - hd.x0) * PX, hd.h * PX);
+      ctx.fillStyle = "#3B5C34";
+      for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(sx(hd.x0) + 4 + i * 4, sy(L.bank + hd.h) + 2, 6, 0, Math.PI * 2); ctx.fill(); }
+    }
+  }
+
+  function drawToilet(front) {
+    const g = loo(), b = sy(g.b), rim = sy(g.rim), T = g.T;
+    if (!front) {
+      // cistern + pipe
+      ctx.fillStyle = "#F4F6F7"; ctx.strokeStyle = "#9AA7AD"; ctx.lineWidth = 2;
+      rr(sx(g.cistern.x0), sy(g.cistern.y1), (g.cistern.x1 - g.cistern.x0) * PX, (g.cistern.y1 - g.cistern.y0) * PX, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#B8C2C7"; ctx.fillRect(sx(g.cistern.x1) - 6, sy(g.cistern.y1) + 8, 10, 4);
+      // pedestal
+      ctx.fillStyle = "#EEF1F2";
+      ctx.beginPath(); ctx.moveTo(sx(T - 0.35 * K), b); ctx.lineTo(sx(T - 0.5 * K), rim + 12); ctx.lineTo(sx(T + 0.42 * K), rim + 12); ctx.lineTo(sx(T + 0.32 * K), b); ctx.fill(); ctx.stroke();
+      // water in the bowl
+      ctx.fillStyle = "#6FB3E0"; ctx.fillRect(sx(g.open[0]), rim + 3, (g.open[1] - g.open[0]) * PX, 8);
+    } else {
+      // bowl walls and seat rim
+      ctx.fillStyle = "#F4F6F7"; ctx.strokeStyle = "#9AA7AD"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(sx(T - 0.76 * K), rim); ctx.lineTo(sx(T + 0.62 * K), rim);
+      ctx.quadraticCurveTo(sx(T + 0.6 * K), rim + 24, sx(T + 0.36 * K), rim + 22); ctx.lineTo(sx(T - 0.44 * K), rim + 22);
+      ctx.quadraticCurveTo(sx(T - 0.74 * K), rim + 19, sx(T - 0.76 * K), rim); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#2A2E31"; ctx.fillRect(sx(T - 0.78 * K), rim - 4, 1.42 * K * PX, 5);
+      // lid
+      const f = lidOpen(), hx = sx(T + 0.55 * K), hy = rim - 3, ang = -Math.PI / 2 * f;
+      ctx.save(); ctx.translate(hx, hy); ctx.rotate(Math.PI + ang);
+      ctx.fillStyle = "#2A2E31"; rr(0, -3, 1.35 * K * PX, 6, 2); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawAngler() {
+    const x = sx(anglerX()), y = sy(L.bank);
+    ctx.lineCap = "round";
+    ctx.fillStyle = "#3C5A3A"; ctx.fillRect(x - 10, y - 30, 20, 30);
+    ctx.strokeStyle = "#5A6F44"; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(x, y - 30); ctx.lineTo(x, y - 48); ctx.stroke();
+    ctx.fillStyle = "#DDAA84"; ctx.beginPath(); ctx.arc(x, y - 58, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#7A6A40"; ctx.beginPath(); ctx.ellipse(x, y - 63, 12, 3.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(x - 6, y - 70, 12, 7);
+    const tip = rodTip(), hx = x - 4, hy = y - 42;
+    ctx.strokeStyle = "#DDAA84"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x, y - 44); ctx.lineTo(hx, hy); ctx.stroke();
+    ctx.strokeStyle = "#3A2E26"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(hx + 6, hy + 8); ctx.lineTo(sx(tip.x), sy(tip.y)); ctx.stroke();
+    // line
+    let end = null;
+    if (state === "castFly") { const k = Math.min(1, (clock - bob.t0) / bob.dur); end = { x: bob.x0 + (bob.x - bob.x0) * k, y: bob.y0 + (0 - bob.y0) * k + Math.sin(k * Math.PI) * (1.5 + bob.c * 0.25) }; }
+    else if (bob && state !== "castAim" && state !== "castCharge" && !fish) end = { x: bob.x, y: 0.1 };
+    else if (fish && (state === "flight" || outcome === "inpan" || outcome === "ground")) end = { x: fish.x, y: fish.y };
+    if (end) {
+      ctx.strokeStyle = dark() ? "rgba(230,230,230,.6)" : "rgba(40,40,40,.55)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(sx(tip.x), sy(tip.y));
+      const tight = state === "hooked" || state === "ready" || state === "snatchCharge" || state === "flight";
+      ctx.quadraticCurveTo((sx(tip.x) + sx(end.x)) / 2, (sy(tip.y) + sy(end.y)) / 2 + (tight ? 4 : 28), sx(end.x), sy(end.y)); ctx.stroke();
+    }
+  }
+
+  function drawFloat() {
+    if (!bob || fish) return;
+    let x = bob.x, y = 0;
+    if (state === "castFly") { const k = Math.min(1, (clock - bob.t0) / bob.dur); x = bob.x0 + (bob.x - bob.x0) * k; y = bob.y0 * (1 - k) + Math.sin(k * Math.PI) * (1.5 + bob.c * 0.25); }
+    else if (state === "bite") y = -0.35 + Math.sin(clock * 30) * 0.05;
+    else if (state === "hooked" || state === "ready" || state === "snatchCharge") y = -0.2 + Math.sin(clock * 25) * 0.12;
+    else if (clock - bob.jerk < 0.3) y = 0.3;
+    else y = Math.sin(clock * 2.5) * 0.04;
+    const px = sx(x), py = sy(y);
+    ctx.fillStyle = "#F4F1E8"; ctx.beginPath(); ctx.ellipse(px, py + 2, 4, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#D8452C"; ctx.beginPath(); ctx.ellipse(px, py - 4, 4, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#1A2428"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(px, py - 9); ctx.lineTo(px, py - 14); ctx.stroke();
+    if (state === "bite") { ctx.fillStyle = "#FFF"; ctx.font = disp(26); ctx.textAlign = "center"; ctx.fillText("!", px, py - 22); }
+  }
+
+  function drawFish() {
+    if (!fish || outcome === "escaped") return;
+    const s = fishInfo, len = s.len * PX * 1.4;
+    ctx.save(); ctx.translate(sx(fish.x), sy(fish.y)); ctx.rotate(outcome === "inpan" ? -1.2 : fish.rot);
+    ctx.fillStyle = s.fin;
+    ctx.beginPath(); ctx.moveTo(-len / 2, 0); ctx.lineTo(-len / 2 - 9, -7); ctx.lineTo(-len / 2 - 9, 7); ctx.fill();
+    ctx.fillStyle = s.body; ctx.beginPath(); ctx.ellipse(0, 0, len / 2, len / 5 + 2, 0, 0, Math.PI * 2); ctx.fill();
+    if (s.stripes) { ctx.fillStyle = "rgba(30,50,20,.5)"; for (let i = -1; i <= 1; i++) ctx.fillRect(i * len / 6 - 1.5, -len / 5, 3, len / 2.5); }
+    ctx.fillStyle = s.fin; ctx.beginPath(); ctx.moveTo(-2, -len / 5); ctx.lineTo(4, -len / 5 - 6); ctx.lineTo(8, -len / 5); ctx.fill();
+    ctx.fillStyle = "#1A2428"; ctx.beginPath(); ctx.arc(len / 2 - 6, -2, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    if (outcome === "inpan") { drawToilet(true); }
+  }
+
+  function drawJudge() {
+    const x = sx(L.judge), y = sy(L.bank), up = state === "done", wet = clock > wetT && clock - wetT < 3;
+    ctx.lineCap = "round";
+    ctx.fillStyle = "#2B3D6B"; ctx.fillRect(x - 8, y - 18, 7, 18); ctx.fillRect(x + 1, y - 18, 7, 18);
+    ctx.fillStyle = "#3E5FA8"; ctx.fillRect(x - 10, y - 40, 20, 24);
+    ctx.fillStyle = "#D9A882"; ctx.beginPath(); ctx.arc(x, y - 48, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#C83A30"; ctx.beginPath(); ctx.arc(x, y - 50, 7.5, Math.PI, 0); ctx.fill(); ctx.fillRect(x, y - 51, 11, 3);
+    ctx.strokeStyle = "#D9A882"; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(x - 9, y - 36); ctx.lineTo(x - 14, y - 22); ctx.stroke();
+    ctx.strokeStyle = "#8A5A34"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x - 14, y - 22); ctx.lineTo(x - 14, y - 2); ctx.stroke();
+    ctx.fillStyle = "#B3312A"; ctx.beginPath(); ctx.ellipse(x - 14, y - 2, 6, 3, 0, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = "#D9A882"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x + 9, y - 36); ctx.lineTo(up ? x + 14 : x + 13, up ? y - 54 : y - 22); ctx.stroke();
+    if (up && score !== null) {
+      ctx.fillStyle = "#2E86C8"; ctx.fillRect(x + 4, y - 84, 22, 28);
+      ctx.fillStyle = "#FFFFFF"; ctx.font = disp(18); ctx.textAlign = "center"; ctx.fillText(score, x + 15, y - 63);
+    }
+    if (wet) {
+      ctx.fillStyle = "rgba(120,190,240,.9)";
+      for (let i = 0; i < 6; i++) { const dx = -10 + i * 4, dy = ((clock * 40 + i * 13) % 30); ctx.beginPath(); ctx.arc(x + dx, y - 40 + dy, 1.8, 0, Math.PI * 2); ctx.fill(); }
+      if (clock - wetT < 1.2) { ctx.fillStyle = "#FFFFFF"; ctx.font = disp(16); ctx.textAlign = "center"; ctx.fillText("OI!", x, y - 70); }
+    }
+  }
+
+  function drawGulls() {
+    gulls.forEach(g => {
+      const x = sx(g.x), y = sy(g.y), f = Math.sin(clock * 12 + g.x) * 8;
+      ctx.strokeStyle = "#F4F4F0"; ctx.lineWidth = 3; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(x - 14, y - f); ctx.quadraticCurveTo(x - 6, y - 8, x, y); ctx.quadraticCurveTo(x + 6, y - 8, x + 14, y - f); ctx.stroke();
+      ctx.fillStyle = "#F4F4F0"; ctx.beginPath(); ctx.ellipse(x, y + 1, 7, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#F2B530"; ctx.fillRect(x - 11, y, 4, 2);
+    });
+  }
+
+  function drawParticles() {
+    parts.forEach(p => {
+      const a = Math.min(1, p.life / p.max * 1.5);
+      ctx.fillStyle = `rgba(200,230,250,${a})`; ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), p.r, 0, Math.PI * 2); ctx.fill();
+    });
+    floaters.forEach(f => {
+      const k = (clock - f.t) / 1.4; if (k < 0) return;
+      if (f.ring) {
+        ctx.strokeStyle = `rgba(230,245,245,${0.8 * (1 - k)})`; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.ellipse(sx(f.x), GY + 2, 6 + k * 40, 2 + k * 5, 0, 0, Math.PI * 2); ctx.stroke(); return;
+      }
+      ctx.globalAlpha = 1 - k; ctx.fillStyle = f.col; ctx.font = disp(20); ctx.textAlign = "center";
+      ctx.fillText(f.text, sx(f.x), sy(f.y) - k * 30); ctx.globalAlpha = 1;
+    });
+  }
+
+  function drawMeter(label) {
+    const bx = W - 40, bt = 120, bh = 120;
+    ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.fillRect(bx - 2, bt - 2, 18, bh + 4);
+    const g = ctx.createLinearGradient(0, bt + bh, 0, bt);
+    g.addColorStop(0, "#5D9A3E"); g.addColorStop(.6, "#F2C230"); g.addColorStop(1, "#D8452C");
+    ctx.fillStyle = g; ctx.fillRect(bx, bt + bh * (1 - power), 14, bh * power);
+    ctx.strokeStyle = "rgba(26,36,40,.6)"; ctx.lineWidth = 1; ctx.strokeRect(bx - 2, bt - 2, 18, bh + 4);
+    if (label === "SNATCH" && lastSnatch !== null) { const ty = bt + bh * (1 - lastSnatch); ctx.fillStyle = dark() ? "#F4F1E6" : "#1A2428"; ctx.beginPath(); ctx.moveTo(bx - 4, ty); ctx.lineTo(bx - 12, ty - 5); ctx.lineTo(bx - 12, ty + 5); ctx.fill(); ctx.font = cond(11); ctx.textAlign = "right"; ctx.fillText("LAST", bx - 14, ty + 4); }
+    ctx.fillStyle = dark() ? "#F4F1E6" : "#1A2428"; ctx.font = cond(12); ctx.textAlign = "center";
+    ctx.fillText(label, bx + 7, bt - 8);
+  }
+
+  function banner(text) {
+    ctx.font = cond(20); ctx.textAlign = "center";
+    const w = ctx.measureText(text).width + 28;
+    ctx.fillStyle = "rgba(20,28,32,.8)"; rr(W / 2 - w / 2, 16, w, 34, 4); ctx.fill();
+    ctx.fillStyle = "#F4F7F7"; ctx.fillText(text, W / 2, 40);
+  }
+
+  function drawTitleCard() {
+    const k = (clock - cardT) / 2.2;
+    if (k >= 1) return;
+    ctx.globalAlpha = k < 0.75 ? 1 : 1 - (k - 0.75) / 0.25;
+    ctx.fillStyle = "rgba(14,22,26,.74)"; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#5AA8E2"; ctx.font = cond(22); ctx.fillText(`SWIM ${levelIdx + 1} OF ${LEVELS.length}`, W / 2, H / 2 - 50);
+    ctx.fillStyle = "#F4F7F7"; ctx.font = disp(56); ctx.fillText(L.name, W / 2, H / 2 + 14);
+    const extra = L.lid ? "The lid keeps shutting" : L.gulls ? "Watch out for seagulls" : L.hedge ? "Gale, rain and a hedge" : "Nice and easy";
+    ctx.font = cond(22); ctx.fillText(`${extra} · need ${L.need} from 5 casts`, W / 2, H / 2 + 52);
+    ctx.globalAlpha = 1;
+  }
+
+  function draw() {
+    drawBackground();
+    drawWater();
+    drawBank();
+    drawToilet(false);
+    drawJudge();
+    drawAngler();
+    drawFloat();
+    if (outcome === "inpan") { drawToilet(true); drawFish(); }
+    else { drawFish(); drawToilet(true); }
+    drawGulls();
+    drawParticles();
+
+    if (state === "castCharge") drawMeter("CAST");
+    if (state === "snatchCharge") drawMeter("SNATCH");
+    if (fish && sy(fish.y) < -10) { const x = sx(fish.x); ctx.fillStyle = "rgba(26,36,40,.8)"; ctx.beginPath(); ctx.moveTo(x, 6); ctx.lineTo(x - 8, 20); ctx.lineTo(x + 8, 20); ctx.fill(); }
+
+    const B = {
+      castAim: "Hold to cast", castCharge: "Let go to cast", castFly: "…", wait: "Wait for the float to dip",
+      bite: "STRIKE! Tap now", hooked: `Hooked! ${fishInfo ? fishInfo.name + ", " + fishInfo.kg.toFixed(2) + " kg" : ""}`,
+      ready: `Hold to wind up the snatch · toilet ${bob ? (L.toilet - bob.x).toFixed(1) : ""} m`, snatchCharge: "Let go to snatch!", flight: "Go on, go on…",
+    };
+    if (B[state]) banner(B[state]);
+    else if (state === "done") {
+      if (!levelOver) banner("Tap for the next cast");
+      else if (levelPassed) banner(levelIdx === LEVELS.length - 1 ? "Master of the pan · starting again" : `Swim cleared · ${LEVELS[levelIdx + 1].name} next`);
+      else banner(`Needed ${L.need} · Tap to retry the swim`);
+    }
+    if (clock - msgT < 1.6) {
+      ctx.globalAlpha = 1 - (clock - msgT) / 1.6;
+      ctx.fillStyle = "#FFFFFF"; ctx.font = disp(20); ctx.textAlign = "center"; ctx.fillText(msg, W / 2, 96);
+      ctx.globalAlpha = 1;
+    }
+    drawTitleCard();
+  }
+
+  // ---------- loop ----------
+  function fit() {
+    const r = stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(r.width * dpr)); canvas.height = Math.max(1, Math.round(r.height * dpr));
+  }
+  window.addEventListener("resize", fit);
+
+  let last = performance.now();
+  function frame(t) {
+    const dt = Math.min(0.033, (t - last) / 1000); last = t;
+    update(dt);
+    const k = canvas.width / W;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    draw();
+    requestAnimationFrame(frame);
+  }
+  fit();
+  showBest();
+  startLevel(0);
+  newCast();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
